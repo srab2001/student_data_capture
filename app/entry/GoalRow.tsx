@@ -64,6 +64,7 @@ export function GoalRow({
         </div>
         <button
           type="button"
+          data-tour="note-toggle"
           onClick={() => setNoteOpen((v) => !v)}
           className="min-h-11 shrink-0 rounded-md px-2 text-xs text-zinc-500 hover:bg-zinc-100 dark:text-zinc-500 dark:hover:bg-zinc-900"
           aria-expanded={noteOpen}
@@ -74,7 +75,7 @@ export function GoalRow({
 
       <div className="mt-2">
         {goal.metricType === "accuracy_pct" && (
-          <div className="flex items-center gap-2">
+          <div data-tour="accuracy-counter" className="flex items-center gap-2">
             <button
               type="button"
               disabled={disabled}
@@ -121,7 +122,7 @@ export function GoalRow({
         )}
 
         {goal.metricType === "frequency_count" && (
-          <div className="flex items-center gap-2">
+          <div data-tour="tally-counter" className="flex items-center gap-2">
             <button
               type="button"
               disabled={disabled}
@@ -135,17 +136,19 @@ export function GoalRow({
         )}
 
         {goal.metricType === "icon_scale" && (
-          <IconDegreePicker
-            iconSet={(goal.iconSet ?? "smiley_5") as IconSetKey}
-            value={dataPoint?.valueEnum}
-            onChange={onSetIconReading}
-            label={`${goal.goalText} rating`}
-            disabled={disabled}
-          />
+          <div data-tour="icon-picker">
+            <IconDegreePicker
+              iconSet={(goal.iconSet ?? "smiley_5") as IconSetKey}
+              value={dataPoint?.valueEnum}
+              onChange={onSetIconReading}
+              label={`${goal.goalText} rating`}
+              disabled={disabled}
+            />
+          </div>
         )}
 
         {goal.metricType === "duration_seconds" && (
-          <div className="flex items-center gap-2">
+          <div data-tour="timer" className="flex items-center gap-2">
             <span className="font-mono text-sm tabular-nums text-zinc-700 dark:text-zinc-300">
               {String(Math.floor(timerSeconds / 60)).padStart(2, "0")}:
               {String(timerSeconds % 60).padStart(2, "0")}
@@ -173,7 +176,12 @@ export function GoalRow({
         )}
 
         {goal.metricType === "prompt_level" && (
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Prompt level">
+          <div
+            data-tour="prompt-chips"
+            className="flex flex-wrap gap-1.5"
+            role="group"
+            aria-label="Prompt level"
+          >
             {PROMPT_LEVELS.map((level) => (
               <button
                 key={level.value}

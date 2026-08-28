@@ -62,6 +62,7 @@ export function StudentCard({
   return (
     <section
       aria-label={student.displayName}
+      data-tour="student-card"
       className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
     >
       <h2 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
@@ -94,7 +95,10 @@ export function StudentCard({
         )}
       </div>
 
-      <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+      <div
+        data-tour="accommodation-section"
+        className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800"
+      >
         <button
           type="button"
           onClick={() => setAccommodationOpen((v) => !v)}

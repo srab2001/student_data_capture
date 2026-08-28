@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { Sparkline } from "@/components/Sparkline";
+import { Walkthrough, TourLauncher } from "@/components/Walkthrough";
+import { SUMMARY_TOUR_STEPS, SUMMARY_TOUR_KEY } from "@/lib/tour-steps";
+import { useTour } from "@/lib/use-tour";
 import type { ProgressSummaryResponse, ClientGoalSummary } from "./types";
 
 const DOMAINS = ["all", "academic", "behavioral", "independence", "accommodation"] as const;
@@ -23,6 +26,7 @@ export function SummaryView() {
   const [selected, setSelected] = useState<{ studentName: string; goal: ClientGoalSummary } | null>(
     null
   );
+  const tour = useTour(SUMMARY_TOUR_KEY, !!data);
 
   useEffect(() => {
     const params = new URLSearchParams({ from, to });
@@ -64,7 +68,7 @@ export function SummaryView() {
         <h1 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
           Progress summary
         </h1>
-        <div className="flex gap-2">
+        <div data-tour="summary-export" className="flex gap-2">
           <a
             href={`/api/export/csv?${new URLSearchParams({
               from,
@@ -91,6 +95,7 @@ export function SummaryView() {
       </div>
 
       <form
+        data-tour="summary-filters"
         className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950"
         aria-label="Filters"
       >
@@ -150,7 +155,10 @@ export function SummaryView() {
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">
+        <div
+          data-tour="summary-table"
+          className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800"
+        >
           <table className="w-full text-left text-sm">
             <caption className="sr-only">Goals and current progress</caption>
             <thead className="bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:bg-zinc-900 dark:text-zinc-500">
@@ -204,7 +212,10 @@ export function SummaryView() {
           </table>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+        <div
+          data-tour="summary-detail"
+          className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+        >
           {selected ? (
             <>
               <p className="text-xs text-zinc-400 dark:text-zinc-600">{selected.studentName}</p>
@@ -251,6 +262,9 @@ export function SummaryView() {
           )}
         </div>
       </div>
+
+      <TourLauncher onClick={tour.launch} />
+      <Walkthrough steps={SUMMARY_TOUR_STEPS} open={tour.open} onClose={tour.close} />
     </main>
   );
 }

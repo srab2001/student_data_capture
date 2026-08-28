@@ -4,6 +4,9 @@ import { useEffect, useReducer, useRef, useState, useCallback } from "react";
 import { apiFetch } from "@/lib/api-client";
 import type { Student, Goal, Session, DataPoint } from "@/lib/db/types";
 import { StudentCard } from "./StudentCard";
+import { Walkthrough, TourLauncher } from "@/components/Walkthrough";
+import { ENTRY_TOUR_STEPS, ENTRY_TOUR_KEY } from "@/lib/tour-steps";
+import { useTour } from "@/lib/use-tour";
 
 const PERIOD_LABEL = "Daily Log";
 
@@ -30,6 +33,7 @@ export function EntryScreen({ currentStaffName }: { currentStaffName: string }) 
   );
   const queueRef = useRef<Map<string, Promise<unknown>>>(new Map());
   const [, bump] = useReducer((n: number) => n + 1, 0);
+  const tour = useTour(ENTRY_TOUR_KEY, !!students && students.length > 0);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -234,6 +238,9 @@ export function EntryScreen({ currentStaffName }: { currentStaffName: string }) 
           ))}
         </div>
       )}
+
+      <TourLauncher onClick={tour.launch} />
+      <Walkthrough steps={ENTRY_TOUR_STEPS} open={tour.open} onClose={tour.close} />
     </main>
   );
 }

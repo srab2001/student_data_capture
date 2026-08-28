@@ -29,18 +29,32 @@ export async function Header() {
             >
               Summary
             </Link>
+            <Link
+              href="/help"
+              className="min-h-11 flex items-center text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+            >
+              Guide
+            </Link>
             <span className="hidden text-xs text-zinc-500 sm:inline dark:text-zinc-500">
               {current.name} · {current.role}
             </span>
             <SignOutButton />
           </nav>
         ) : (
-          <Link
-            href="/login"
-            className="min-h-11 flex items-center rounded-lg border border-zinc-200 px-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
-          >
-            Sign in
-          </Link>
+          <nav className="flex items-center gap-4 text-sm">
+            <Link
+              href="/help"
+              className="min-h-11 flex items-center text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
+            >
+              Guide
+            </Link>
+            <Link
+              href="/login"
+              className="min-h-11 flex items-center rounded-lg border border-zinc-200 px-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            >
+              Sign in
+            </Link>
+          </nav>
         )}
       </div>
     </header>

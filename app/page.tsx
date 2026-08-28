@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const PHASES = [
   { id: "0", label: "Discovery, governance & prototype setup", status: "Complete" },
   { id: "1", label: "Data model & schema design", status: "Complete" },
@@ -71,9 +73,12 @@ export default function Home() {
           >
             Full plan &amp; compliance review
           </a>
-          <span className="font-mono text-xs text-zinc-400 dark:text-zinc-600">
-            docs/compliance.md
-          </span>
+          <Link
+            href="/help"
+            className="font-mono text-xs text-zinc-400 underline underline-offset-4 dark:text-zinc-600"
+          >
+            User guide
+          </Link>
         </div>
       </main>
     </div>
