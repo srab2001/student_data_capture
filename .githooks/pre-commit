@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# Blocks commits that contain common PII patterns.
+#
+# This is a basic safety net, not a substitute for the sign-off recorded
+# in docs/compliance.md. It cannot detect every way real student data
+# could end up in the repo — never rely on it as the only safeguard.
+#
+# Enable with: git config core.hooksPath .githooks
+
+set -euo pipefail
+
+mapfile -t staged_files < <(git diff --cached --name-only --diff-filter=ACM | grep -v '^\.githooks/' || true)
+
+if [ "${#staged_files[@]}" -eq 0 ]; then
+  exit 0
+fi
+
+found=0
+report=""
+
+# label|regex (extended regex, case-insensitive)
+patterns=(
+  "possible SSN|[0-9]{3}-[0-9]{2}-[0-9]{4}"
+  "possible embedded DB credentials|postgres(ql)?://[^[:space:]]+:[^[:space:]@]+@"
+  "is_synthetic explicitly set to false|is_synthetic[\"']?[[:space:]]*[:=][[:space:]]*false"
+)
+
+echo "Checking staged files for common PII patterns..."
+
+for file in "${staged_files[@]}"; do
+  content="$(git show ":${file}" 2>/dev/null || true)"
+  [ -z "$content" ] && continue
+  for entry in "${patterns[@]}"; do
+    label="${entry%%|*}"
+    pattern="${entry#*|}"
+
+    # .env*.example / *.sample files are templates by design and are
+    # expected to show the *shape* of a connection string with
+    # placeholder values — don't flag the credentials pattern there.
+    if [ "$label" = "possible embedded DB credentials" ]; then
+      case "$file" in
+        *.example|*.sample) continue ;;
+      esac
+    fi
+
+    matches="$(echo "$content" | grep -InE "$pattern" || true)"
+    if [ -n "$matches" ]; then
+      report+=$'\n'"  [$label] $file"$'\n'"$(echo "$matches" | sed 's/^/    /')"
+      found=1
+    fi
+  done
+done
+
+if [ "$found" -ne 0 ]; then
+  echo "$report"
+  echo ""
+  echo "Commit blocked: possible PII or credentials detected above."
+  echo "If this is a false positive, adjust the pattern in .githooks/pre-commit"
+  echo "rather than bypassing with --no-verify."
+  echo ""
+  echo "Reminder: this repo may only contain SYNTHETIC student data until"
+  echo "the sign-off in docs/compliance.md is complete."
+  exit 1
+fi
+
+exit 0
