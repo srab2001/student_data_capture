@@ -1,12 +1,12 @@
 const PHASES = [
-  { id: "0", label: "Discovery, governance & prototype setup", status: "In progress" },
-  { id: "1", label: "Data model & schema design", status: "Not started" },
-  { id: "2", label: "Backend / API layer", status: "Not started" },
-  { id: "3", label: "Frontend / UI build", status: "Not started" },
-  { id: "4", label: "Maryland Online IEP alignment", status: "Not started" },
-  { id: "5", label: "Security, access control & audit logging", status: "Not started" },
-  { id: "6", label: "Testing & pilot", status: "Not started" },
-  { id: "7", label: "Sponsorship pitch & real-data rollout", status: "Not started" },
+  { id: "0", label: "Discovery, governance & prototype setup", status: "Complete" },
+  { id: "1", label: "Data model & schema design", status: "Complete" },
+  { id: "2", label: "Backend / API layer", status: "Complete" },
+  { id: "3", label: "Frontend / UI build", status: "Complete" },
+  { id: "4", label: "Maryland Online IEP alignment", status: "Complete" },
+  { id: "5", label: "Security, access control & audit logging", status: "Gated — Track B" },
+  { id: "6", label: "Testing & pilot", status: "Dry-run only — Track A" },
+  { id: "7", label: "Sponsorship pitch & real-data rollout", status: "Gated — Track B" },
 ];
 
 export default function Home() {
@@ -51,9 +51,11 @@ export default function Home() {
               </span>
               <span
                 className={
-                  phase.status === "In progress"
-                    ? "font-mono text-xs text-amber-700 dark:text-amber-400"
-                    : "font-mono text-xs text-zinc-400 dark:text-zinc-600"
+                  phase.status === "Complete"
+                    ? "font-mono text-xs text-emerald-700 dark:text-emerald-400"
+                    : phase.status.startsWith("Gated")
+                      ? "font-mono text-xs text-red-700 dark:text-red-400"
+                      : "font-mono text-xs text-amber-700 dark:text-amber-400"
                 }
               >
                 {phase.status}

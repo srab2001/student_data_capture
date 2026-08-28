@@ -118,8 +118,31 @@ Provisioned 2026-08-28, on synthetic data only, no Policy 3060 sign-off:
 
 | Piece | Status | Notes |
 |---|---|---|
-| **Vercel project** | ✅ Deployed | `iep-capture-pilot`, production alias `iep-capture-pilot.vercel.app`. File-based deploy (not git-linked yet — see GitHub row). |
-| **Neon database** | ✅ Created | Dev branch project `iep-capture-pilot-dev` (`crimson-flower-01823647`, region `us-east-1`). Empty — no schema applied yet, that's Phase 1. Connection string lives only in the local, git-ignored `.env.local`; it is **not yet set as a Vercel environment variable** — no schema exists for it to serve yet, so the app doesn't need it in production until Phase 1/2. |
-| **GitHub repo** | ⛔ Not pushed | This build environment's GitHub access is scoped to a pre-configured allowlist of repos and cannot create or list new ones. The commit exists locally (`f61504e`); pushing it requires the human owner to create the repo under their own GitHub account and push from a machine with real access, or to configure this environment's GitHub access first. |
+| **Vercel project** | ✅ Deployed | `iep-capture-pilot`, production alias `iep-capture-pilot.vercel.app`. File-based deploy (not git-linked yet). |
+| **Neon database** | ✅ Created | Dev branch project `iep-capture-pilot-dev` (`crimson-flower-01823647`, region `us-east-1`). Schema applied in Phase 1 (below). |
+| **GitHub repo** | ✅ Pushed | `srab2001/student_data_capture`, branch `claude/student-data-capture-plan-dgb389`. |
 
-This row will be updated as each piece moves from prototype to reviewed.
+## Phase 1–4 build log
+
+Built 2026-08-28, on synthetic data only, no Policy 3060 sign-off (Track A):
+
+| Piece | Status | Notes |
+|---|---|---|
+| **Schema & migrations** | ✅ Applied | `staff`, `classrooms`, `students`, `goals`, `sessions`, `data_points`, `accommodation_logs`, `audit_log` — see `lib/db/schema.ts` and `drizzle/`. Applied directly to the `iep-capture-pilot-dev` Neon branch. `audit_log` DELETE is blocked by a database trigger (`drizzle/0001_audit_log_no_delete.sql`), not just an app-layer check. |
+| **Synthetic seed script** | ⚠️ Written, not yet run | `scripts/seed.ts` (`npm run db:seed`) refuses to run against a non-dev-looking `DATABASE_URL`. This build environment's network policy blocks direct outbound calls to Neon's data API, so the seed script needs to be run from a machine with normal Neon access — see "Known limitation" below. |
+| **API layer** | ✅ Built | Route handlers for `goals`, `data_points`, `accommodation_logs`, `students`, `sessions`, `summary`, and export, all behind the shared authorization helper in `lib/auth/authz.ts`. |
+| **Sign-in** | ⚠️ Prototype only | `lib/auth/session.ts` is a signed-cookie staff picker (`/login`), explicitly not real authentication. Replaced by HCPSS Google Workspace SSO in Phase 5 (Track B, gated) — do not extend this mechanism. |
+| **Entry screen & summary view** | ✅ Built | `/entry` (roster sweep) and `/summary` (PLAAFP-prep rollup, CSV export, print view) — see `app/entry/` and `app/summary/`. |
+| **Accessibility pass** | ✅ Done, human check recommended | Touch/click targets ≥44px, `aria-label`/`aria-pressed` on custom controls, native keyboard-navigable elements throughout, no color-only state indicators. Color contrast has not been measured with an automated tool — flagged for a human check before this leaves the prototype phase. |
+
+**Known limitation — not yet tested end-to-end.** This build environment's
+network policy blocks direct outbound calls to Neon's data API host, so the
+schema was applied through Neon's own tooling rather than `npm run
+db:migrate`, and the seed script and the running app itself have not been
+exercised against live data from inside this environment. `next build` and
+`next lint` pass, and the schema is confirmed live on the dev branch. Before
+treating this as a working prototype, run `npm install && npm run db:seed
+&& npm run dev` from a machine with normal network access and click through
+Phase 6's dry-run.
+
+This log will be updated as each piece moves from prototype to reviewed.

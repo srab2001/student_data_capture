@@ -43,14 +43,26 @@ sign-off above.
 npm install
 cp .env.local.example .env.local   # fill in your dev Neon connection string
 git config core.hooksPath .githooks
+npm run db:migrate                 # applies drizzle/*.sql to your dev branch
+npm run db:seed                    # generates a synthetic classroom
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000), then `/login` to pick
+a synthetic staff member to sign in as.
 
 ## Stack
 
 - [Next.js](https://nextjs.org) (App Router, TypeScript)
 - [Neon](https://neon.tech) (serverless Postgres) — dev branch only during
   the prototype phase
+- [Drizzle ORM](https://orm.drizzle.team) — schema & migrations (`lib/db/`, `drizzle/`)
 - [Vercel](https://vercel.com) — deployment
+
+## Where things live
+
+- `app/entry` — the roster-sweep data-entry screen (Phase 3)
+- `app/summary` — the PLAAFP-prep progress view, CSV export, print view (Phase 3/4)
+- `app/api` — Route Handlers, all scoped through `lib/auth/authz.ts`
+- `lib/db/schema.ts` — the schema; check against `docs/compliance.md` before adding a field
+- `lib/auth/session.ts` — **prototype-only** sign-in, replaced by SSO in Phase 5
