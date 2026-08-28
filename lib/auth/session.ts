@@ -69,11 +69,19 @@ export async function getCurrentStaff(): Promise<CurrentStaff | null> {
   const staffId = verify(token);
   if (!staffId) return null;
 
-  const [row] = await db
-    .select()
-    .from(staff)
-    .where(and(eq(staff.id, staffId), isNull(staff.deletedAt)))
-    .limit(1);
+  let row;
+  try {
+    [row] = await db
+      .select()
+      .from(staff)
+      .where(and(eq(staff.id, staffId), isNull(staff.deletedAt)))
+      .limit(1);
+  } catch (err) {
+    // Treat a database/config problem as "signed out" rather than
+    // crashing every page that renders the header (components/Header.tsx).
+    console.error("getCurrentStaff: database lookup failed", err);
+    return null;
+  }
 
   if (!row) return null;
 
