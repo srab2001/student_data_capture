@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { Student, Goal, DataPoint } from "@/lib/db/types";
 import { GoalRow } from "./GoalRow";
 import { EffectivenessRatingPicker } from "@/components/IconDegreePicker";
@@ -65,9 +66,17 @@ export function StudentCard({
       data-tour="student-card"
       className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
     >
-      <h2 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
-        {student.displayName}
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
+          {student.displayName}
+        </h2>
+        <Link
+          href={`/goals/${student.id}`}
+          className="min-h-11 flex items-center text-xs font-medium text-zinc-500 underline underline-offset-4 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-200"
+        >
+          Manage goals
+        </Link>
+      </div>
 
       <div className="mt-3 space-y-2">
         {goals.map((goal) => (

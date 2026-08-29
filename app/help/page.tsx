@@ -29,6 +29,7 @@ const TOC = [
   ["signing-in", "Signing in"],
   ["entry-screen", "The roster-sweep entry screen"],
   ["controls", "What each control does"],
+  ["managing-goals", "Changing a student's goals"],
   ["accommodations", "Logging accommodations"],
   ["summary", "The progress summary"],
   ["data-privacy", "Data & privacy"],
@@ -163,6 +164,22 @@ export default function HelpPage() {
               slowing down the sweep.
             </li>
           </ul>
+        </Section>
+
+        <Section id="managing-goals" title="Changing a student's goals">
+          <p>
+            Click <strong>Manage goals</strong> at the top of a student&apos;s card on{" "}
+            <span className="font-mono text-xs">/entry</span> to add a new goal, edit an
+            existing one (domain, goal text, which control it uses, target frequency, icon
+            set), or retire one. Retiring a goal removes it from the entry screen but keeps
+            its past data points — nothing is deleted.
+          </p>
+          <p>
+            Changing a goal&apos;s entry control (its metric type) changes which tap control
+            shows up for it going forward on the entry screen — for example switching a goal
+            from a plain tally to an icon-degree rating. Past data points logged under the old
+            control type are kept as-is.
+          </p>
         </Section>
 
         <Section id="accommodations" title="Logging accommodations">
