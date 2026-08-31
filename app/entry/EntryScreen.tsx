@@ -6,6 +6,7 @@ import type { Student, Goal, Session, DataPoint } from "@/lib/db/types";
 import { StudentCard } from "./StudentCard";
 import { GridView } from "./GridView";
 import { AccordionView } from "./AccordionView";
+import { AddStudentCard } from "./AddStudentCard";
 import type { EntryActions, EntryView } from "./types";
 import { Walkthrough, TourLauncher } from "@/components/Walkthrough";
 import { ENTRY_TOUR_STEPS, ENTRY_TOUR_KEY } from "@/lib/tour-steps";
@@ -182,6 +183,11 @@ export function EntryScreen({ currentStaffName }: { currentStaffName: string }) 
     }
   }
 
+  function handleStudentCreated(student: Student) {
+    setStudents((prev) => [...(prev ?? []), student]);
+    setGoalsByStudent((prev) => new Map(prev).set(student.id, []));
+  }
+
   if (error && !students) {
     return (
       <div className="p-6">
@@ -247,8 +253,6 @@ export function EntryScreen({ currentStaffName }: { currentStaffName: string }) 
 
       {!students ? (
         <p className="text-muted text-sm">Loading roster…</p>
-      ) : students.length === 0 ? (
-        <p className="text-muted text-sm">No students assigned to your classroom yet.</p>
       ) : view === "cards" ? (
         <div className="flex flex-col gap-4">
           {students.map((student) => (
@@ -259,18 +263,20 @@ export function EntryScreen({ currentStaffName }: { currentStaffName: string }) 
               actions={actions}
             />
           ))}
-          <div className="card" style={{ borderStyle: "dashed", textAlign: "center", color: "var(--color-neutral-500)" }}>
-            + Add student to roster
-          </div>
+          <AddStudentCard onCreated={handleStudentCreated} />
         </div>
       ) : view === "grid" ? (
-        <GridView students={students} goalsByStudent={goalsByStudent} actions={actions} />
+        students.length === 0 ? (
+          <p className="text-muted text-sm">
+            No students assigned to your classroom yet — switch to Card stack or Accordion to add one.
+          </p>
+        ) : (
+          <GridView students={students} goalsByStudent={goalsByStudent} actions={actions} />
+        )
       ) : (
         <div className="flex flex-col gap-3">
           <AccordionView students={students} goalsByStudent={goalsByStudent} actions={actions} />
-          <div className="card" style={{ borderStyle: "dashed", textAlign: "center", color: "var(--color-neutral-500)" }}>
-            + Add student to roster
-          </div>
+          <AddStudentCard onCreated={handleStudentCreated} />
         </div>
       )}
 

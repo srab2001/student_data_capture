@@ -92,6 +92,12 @@ export const updateDataPointSchema = z
   })
   .strict();
 
+export const createStudentSchema = z
+  .object({
+    displayName: z.string().trim().min(1).max(200),
+  })
+  .strict();
+
 export const createAccommodationLogSchema = z
   .object({
     studentId: z.uuid(),
