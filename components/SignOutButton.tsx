@@ -13,11 +13,7 @@ export function SignOutButton() {
   }
 
   return (
-    <button
-      type="button"
-      onClick={signOut}
-      className="min-h-11 rounded-lg border border-zinc-200 px-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
-    >
+    <button type="button" onClick={signOut} className="btn btn-ghost">
       Sign out
     </button>
   );

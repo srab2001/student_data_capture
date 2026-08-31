@@ -3,14 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { TourStep } from "@/lib/tour-steps";
 
-const HIGHLIGHT_CLASSES = [
-  "ring-4",
-  "ring-amber-400",
-  "ring-offset-2",
-  "dark:ring-offset-zinc-950",
-  "relative",
-  "z-40",
-];
+const HIGHLIGHT_CLASSES = ["relative", "z-40"];
+const HIGHLIGHT_STYLE = "0 0 0 4px var(--color-accent-300)";
 
 /**
  * A lightweight, non-blocking guided tour: a floating card that steps
@@ -45,6 +39,8 @@ export function Walkthrough({
     function clearHighlight() {
       if (highlightedRef.current) {
         highlightedRef.current.classList.remove(...HIGHLIGHT_CLASSES);
+        (highlightedRef.current as HTMLElement).style.boxShadow = "";
+        (highlightedRef.current as HTMLElement).style.borderRadius = "";
         highlightedRef.current = null;
       }
     }
@@ -62,6 +58,8 @@ export function Walkthrough({
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
         el.classList.add(...HIGHLIGHT_CLASSES);
+        (el as HTMLElement).style.boxShadow = HIGHLIGHT_STYLE;
+        (el as HTMLElement).style.borderRadius = "var(--radius-md)";
         highlightedRef.current = el;
       }
     }
@@ -76,54 +74,40 @@ export function Walkthrough({
 
   return (
     <>
-      <div className="fixed inset-0 z-30 bg-black/40" aria-hidden="true" />
+      <div className="fixed inset-0 z-30" style={{ background: "rgba(32, 30, 29, 0.4)" }} aria-hidden="true" />
       <div
         role="dialog"
         aria-modal="false"
         aria-label="Guided tour"
-        className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-sm rounded-2xl border border-zinc-200 bg-white p-4 shadow-lg sm:right-4 sm:left-auto dark:border-zinc-800 dark:bg-zinc-950"
+        className="card elev-sm fixed inset-x-4 bottom-4 z-50 mx-auto sm:right-4 sm:left-auto"
+        style={{ maxWidth: 384, boxShadow: "var(--shadow-lg)" }}
       >
         <div className="flex items-start justify-between gap-2">
-          <p className="font-mono text-xs text-zinc-400 dark:text-zinc-600">
+          <p className="text-muted text-xs">
             Step {stepIndex + 1} of {steps.length}
           </p>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close tour"
-            className="min-h-11 min-w-11 -mr-2 -mt-2 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
-          >
+          <button type="button" onClick={onClose} aria-label="Close tour" className="btn btn-ghost btn-icon">
             ✕
           </button>
         </div>
 
-        <h2 className="mt-1 text-base font-semibold text-zinc-950 dark:text-zinc-50">
-          {step.title}
-        </h2>
-        <p className="mt-1.5 text-sm leading-6 text-zinc-600 dark:text-zinc-400">{step.body}</p>
+        <h3 className="mt-1">{step.title}</h3>
+        <p className="text-muted mt-1.5 text-sm leading-6">{step.body}</p>
 
         <div className="mt-4 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-11 text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-200"
-          >
+          <button type="button" onClick={onClose} className="btn btn-ghost">
             Skip tour
           </button>
           <div className="flex gap-2">
             {!isFirst && (
-              <button
-                type="button"
-                onClick={() => setStepIndex((i) => i - 1)}
-                className="min-h-11 rounded-lg border border-zinc-200 px-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
-              >
+              <button type="button" onClick={() => setStepIndex((i) => i - 1)} className="btn btn-secondary">
                 Back
               </button>
             )}
             <button
               type="button"
               onClick={() => (isLast ? onClose() : setStepIndex((i) => i + 1))}
-              className="min-h-11 rounded-lg bg-zinc-950 px-3 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+              className="btn btn-primary"
             >
               {isLast ? "Done" : "Next"}
             </button>
@@ -140,7 +124,7 @@ export function TourLauncher({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="fixed bottom-4 left-4 z-20 min-h-11 rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
+      className="btn btn-secondary elev-sm fixed bottom-4 left-4 z-20"
     >
       ? Take the tour
     </button>

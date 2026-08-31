@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Architects+Daughter&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f0eee9;font-family:'Kalam',cursive}
+.dv-turn{padding:40px 44px 60px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 24px}
+.dv-tid{font:700 12px 'Kalam',cursive;padding:3px 9px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:700 18px 'Kalam',cursive;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}
+.dv-oid{font:700 13px 'Kalam',cursive;padding:4px 10px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:700 15px 'Kalam',cursive;color:rgba(0,0,0,.7)}
+.dv-card{background:#fffdf8;border:2.5px solid #1a1a1a;border-radius:10px;box-shadow:3px 4px 0 rgba(0,0,0,.15);overflow:hidden}
+.dv-opt:target .dv-oid{background:#c0392b;color:#fff}
+.dv-next{margin:26px 0 0;font:16px 'Kalam',cursive;color:rgba(0,0,0,.6);max-width:900px}
+.dv-next a{color:#c0392b}
+.scr{background:#fffdf8}
+.scrhead{font:700 13px 'Kalam',cursive;padding:8px 12px;background:#1a1a1a;color:#fff;letter-spacing:.5px}
+.box{border:2px solid #1a1a1a;border-radius:8px}
+.box-dash{border:2px dashed #999;border-radius:8px}
+.lbl{font:13px 'Kalam',cursive;color:#333}
+.lbl-sm{font:11px 'Kalam',cursive;color:#777}
+.tag{font:11px 'Kalam',cursive;padding:2px 8px;border-radius:20px;border:1.5px solid #1a1a1a}
+.note{font:14px 'Architects Daughter',cursive;color:#c0392b}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">IEP capture pilot — three directions on the dense-grid layout, cleaned up</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a" style="width:640px">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Card stack — same info, clearer rhythm</div>
+<div class="lbl-sm" style="max-width:600px">Keeps today's whole roster + every goal visible at once (no clicks to drill in). Cleans up by giving each goal row its own lane with a left-side icon for metric type, and pulling notes/accommodations into a collapsed drawer instead of always-there text.</div>
+
+<div class="dv-card">
+<div class="scrhead">LOGIN / STAFF PICKER</div>
+<div class="scr" style="padding:24px;display:flex;flex-direction:column;align-items:center;gap:16px">
+<div class="lbl" style="font-size:16px;font-weight:700">IEP Capture Pilot</div>
+<div class="box-dash" style="width:280px;height:36px;display:flex;align-items:center;padding:0 10px" ><span class="lbl-sm">[search staff name...]</span></div>
+<div style="display:flex;flex-direction:column;gap:8px;width:280px">
+<div class="box" style="padding:10px;display:flex;justify-content:space-between"><span class="lbl">Ms. Alvarez — Teacher</span><span class="lbl-sm">tap to sign in →</span></div>
+<div class="box" style="padding:10px;display:flex;justify-content:space-between"><span class="lbl">Mr. Diaz — Aide</span><span class="lbl-sm">tap to sign in →</span></div>
+<div class="box" style="padding:10px;display:flex;justify-content:space-between"><span class="lbl">J. Kim — Aide</span><span class="lbl-sm">tap to sign in →</span></div>
+</div>
+<div class="tag" style="border-color:#c0392b;color:#c0392b">synthetic staff only — pilot</div>
+</div>
+</div>
+
+<div class="dv-card">
+<div class="scrhead">ENTRY — ROSTER SWEEP</div>
+<div class="scr" style="padding:16px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+<div class="lbl" style="font-weight:700;font-size:15px">Daily Log · Ms. Alvarez · Aug 31</div>
+<div class="tag" style="border-color:#c0392b;color:#c0392b">synthetic data only</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div class="box" style="padding:10px">
+<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><span class="lbl" style="font-weight:700">Jordan T.</span><span class="lbl-sm">manage goals →</span></div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:8px"><span class="lbl-sm" style="width:80px">📊 Reading acc.</span><div class="box" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center">✓</div><div class="box" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center">✗</div><span class="lbl-sm">9/12 (75%)</span><span class="lbl-sm" style="margin-left:auto">+ note ▾</span></div>
+<div style="display:flex;align-items:center;gap:8px"><span class="lbl-sm" style="width:80px">⏱ On-task</span><span class="lbl" style="font-family:monospace">04:12</span><div class="box" style="padding:2px 10px">Stop</div></div>
+<div style="display:flex;align-items:center;gap:8px"><span class="lbl-sm" style="width:80px">🙂 Mood</span><span class="lbl-sm">😀 🙂 😐 🙁 😢 (tap one)</span></div>
+</div>
+</div>
+<div class="box" style="padding:10px">
+<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><span class="lbl" style="font-weight:700">Amara S.</span><span class="lbl-sm">manage goals →</span></div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:8px"><span class="lbl-sm" style="width:80px"># Blurting</span><div class="box" style="padding:2px 10px">Tally: 3</div></div>
+<div style="display:flex;align-items:center;gap:8px"><span class="lbl-sm" style="width:80px">🪜 Prompt lvl</span><span class="lbl-sm">Indep · Verbal · [Gestural] · Model · Physical</span></div>
+</div>
+</div>
+<div class="box-dash" style="padding:8px;text-align:center"><span class="lbl-sm">+ add student to roster</span></div>
+</div>
+</div>
+</div>
+
+<div class="dv-card">
+<div class="scrhead">GOAL EDITOR — PER STUDENT</div>
+<div class="scr" style="padding:16px">
+<div class="lbl" style="font-weight:700;margin-bottom:10px">Jordan T. — goals</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="box" style="padding:10px;display:flex;justify-content:space-between"><span class="lbl-sm">Reading accuracy · academic · accuracy_pct</span><span class="lbl-sm">edit / retire</span></div>
+<div class="box" style="padding:10px;display:flex;justify-content:space-between"><span class="lbl-sm">On-task duration · behavioral · duration_seconds</span><span class="lbl-sm">edit / retire</span></div>
+</div>
+<div class="box-dash" style="margin-top:12px;padding:12px;display:flex;flex-direction:column;gap:8px">
+<span class="lbl" style="font-weight:700">+ new goal</span>
+<div class="box-dash" style="height:28px;padding:0 8px;display:flex;align-items:center"><span class="lbl-sm">goal text...</span></div>
+<div style="display:flex;gap:8px"><div class="box-dash" style="flex:1;height:28px;display:flex;align-items:center;padding:0 8px"><span class="lbl-sm">domain ▾</span></div><div class="box-dash" style="flex:1;height:28px;display:flex;align-items:center;padding:0 8px"><span class="lbl-sm">metric type ▾</span></div></div>
+</div>
+</div>
+</div>
+
+<div class="dv-card">
+<div class="scrhead">SUMMARY — PROGRESS / PLAAFP</div>
+<div class="scr" style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div>
+<div style="display:flex;gap:6px;margin-bottom:8px"><div class="box-dash" style="padding:3px 8px"><span class="lbl-sm">from</span></div><div class="box-dash" style="padding:3px 8px"><span class="lbl-sm">to</span></div><div class="box-dash" style="padding:3px 8px"><span class="lbl-sm">domain ▾</span></div></div>
+<div class="box">
+<div style="display:flex;justify-content:space-between;padding:6px 8px;border-bottom:1.5px solid #1a1a1a"><span class="lbl-sm" style="font-weight:700">student / goal</span><span class="lbl-sm" style="font-weight:700">trend</span></div>
+<div style="display:flex;justify-content:space-between;padding:6px 8px"><span class="lbl-sm">Jordan T. — reading acc.</span><span class="lbl-sm">↗ 75%</span></div>
+<div style="display:flex;justify-content:space-between;padding:6px 8px"><span class="lbl-sm">Amara S. — blurting <span class="note">(no entry)</span></span><span class="lbl-sm">—</span></div>
+</div>
+</div>
+<div class="box" style="padding:10px">
+<div class="lbl-sm">Jordan T. — reading accuracy</div>
+<div class="box-dash" style="height:60px;margin-top:6px;display:flex;align-items:center;justify-content:center"><span class="lbl-sm">[sparkline]</span></div>
+<div style="margin-top:8px;display:flex;gap:8px"><div class="box" style="padding:2px 10px"><span class="lbl-sm">export CSV</span></div><div class="box" style="padding:2px 10px"><span class="lbl-sm">print view</span></div></div>
+</div>
+</div>
+</div>
+
+</div>
+
+<div class="dv-opt" id="1b" style="width:640px">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Spreadsheet grid — max density, fastest scanning</div>
+<div class="lbl-sm" style="max-width:600px">Students as rows, goals as columns — closer to the paper tracking sheet teachers already know. Fastest to scan the whole class at once; each cell opens the right widget on tap. Trades student-card grouping for a flatter table.</div>
+
+<div class="dv-card">
+<div class="scrhead">LOGIN / STAFF PICKER</div>
+<div class="scr" style="padding:24px;display:flex;flex-direction:column;align-items:center;gap:14px">
+<div class="lbl" style="font-size:16px;font-weight:700">Sign in</div>
+<div style="display:flex;gap:10px">
+<div class="box" style="padding:18px 22px;text-align:center"><div class="lbl">Ms. A.</div></div>
+<div class="box" style="padding:18px 22px;text-align:center"><div class="lbl">Mr. D.</div></div>
+<div class="box" style="padding:18px 22px;text-align:center"><div class="lbl">J. Kim</div></div>
+</div>
+<div class="lbl-sm">big tap targets — grab &amp; go on a shared Chromebook</div>
+</div>
+</div>
+
+<div class="dv-card">
+<div class="scrhead">ENTRY — ROSTER GRID</div>
+<div class="scr" style="padding:12px;overflow:auto">
+<div class="lbl" style="font-weight:700;margin-bottom:8px">Daily Log · Aug 31 <span class="tag" style="border-color:#c0392b;color:#c0392b;margin-left:8px">synthetic</span></div>
+<div class="box" style="min-width:580px">
+<div style="display:grid;grid-template-columns:110px 1fr 1fr 1fr;border-bottom:1.5px solid #1a1a1a">
+<div class="lbl-sm" style="padding:6px 8px;font-weight:700">student</div>
+<div class="lbl-sm" style="padding:6px 8px;font-weight:700;border-left:1px solid #ccc">reading acc.</div>
+<div class="lbl-sm" style="padding:6px 8px;font-weight:700;border-left:1px solid #ccc">on-task</div>
+<div class="lbl-sm" style="padding:6px 8px;font-weight:700;border-left:1px solid #ccc">blurting</div>
+</div>
+<div style="display:grid;grid-template-columns:110px 1fr 1fr 1fr;border-bottom:1px solid #ddd">
+<div class="lbl-sm" style="padding:8px">Jordan T.</div>
+<div style="padding:8px;border-left:1px solid #ccc;display:flex;gap:4px"><div class="box" style="width:22px;height:22px;display:flex;align-items:center;justify-content:center">✓</div><div class="box" style="width:22px;height:22px;display:flex;align-items:center;justify-content:center">✗</div><span class="lbl-sm">9/12</span></div>
+<div style="padding:8px;border-left:1px solid #ccc"><span class="lbl-sm" style="font-family:monospace">04:12 ⏸</span></div>
+<div style="padding:8px;border-left:1px solid #ccc"><span class="lbl-sm">—</span></div>
+</div>
+<div style="display:grid;grid-template-columns:110px 1fr 1fr 1fr">
+<div class="lbl-sm" style="padding:8px">Amara S.</div>
+<div style="padding:8px;border-left:1px solid #ccc"><span class="lbl-sm">—</span></div>
+<div style="padding:8px;border-left:1px solid #ccc"><span class="lbl-sm">—</span></div>
+<div style="padding:8px;border-left:1px solid #ccc"><div class="box" style="display:inline-block;padding:2px 8px">tally: 3</div></div>
+</div>
+</div>
+<div class="lbl-sm" style="margin-top:6px">columns scroll sideways per student's own goal set — no wasted blank cells</div>
+</div>
+</div>
+
+<div class="dv-card">
+<div class="scrhead">GOAL EDITOR</div>
+<div class="scr" style="padding:16px">
+<div class="lbl" style="font-weight:700;margin-bottom:8px">Jordan T. — goals (drag to reorder columns)</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div class="box" style="padding:8px;display:flex;justify-content:space-between"><span class="lbl-sm">↕ Reading accuracy — accuracy_pct</span><span class="lbl-sm">✎</span></div>
+<div class="box" style="padding:8px;display:flex;justify-content:space-between"><span class="lbl-sm">↕ On-task duration — duration_seconds</span><span class="lbl-sm">✎</span></div>
+<div class="box-dash" style="padding:8px;text-align:center"><span class="lbl-sm">+ add column / goal</span></div>
+</div>
+</div>
+</div>
+
+<div class="dv-card">
+<div class="scrhead">SUMMARY</div>
+<div class="scr" style="padding:14px">
+<div class="lbl" style="font-weight:700;margin-bottom:8px">Progress grid — same rows/cols as entry, values = latest reading</div>
+<div class="box">
+<div style="display:grid;grid-template-columns:110px 1fr 1fr;border-bottom:1.5px solid #1a1a1a"><div class="lbl-sm" style="padding:6px 8px;font-weight:700">student</div><div class="lbl-sm" style="padding:6px 8px;font-weight:700;border-left:1px solid #ccc">reading acc. (30d)</div><div class="lbl-sm" style="padding:6px 8px;font-weight:700;border-left:1px solid #ccc">on-task (30d)</div></div>
+<div style="display:grid;grid-template-columns:110px 1fr 1fr"><div class="lbl-sm" style="padding:8px">Jordan T.</div><div style="padding:8px;border-left:1px solid #ccc" class="lbl-sm">[sparkline] ↗75%</div><div style="padding:8px;border-left:1px solid #ccc" class="lbl-sm">[sparkline] 4m</div></div>
+</div>
+<div style="margin-top:8px;display:flex;gap:8px"><div class="box" style="padding:2px 10px"><span class="lbl-sm">export CSV</span></div><div class="box" style="padding:2px 10px"><span class="lbl-sm">print</span></div></div>
+</div>
+</div>
+
+</div>
+
+<div class="dv-opt" id="1c" style="width:640px">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Sticky-today accordion — light by default, expands on tap</div>
+<div class="lbl-sm" style="max-width:600px">Everything collapses to one line per student by default (name + tiny status dots) so the whole roster fits without scrolling; tapping a student expands their goal rows in place. A sticky bar up top always shows date/period + a save indicator.</div>
+
+<div class="dv-card">
+<div class="scrhead">LOGIN</div>
+<div class="scr" style="padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px">
+<div class="lbl" style="font-weight:700;font-size:16px">Who's logging today?</div>
+<div class="box-dash" style="width:260px;height:34px;display:flex;align-items:center;padding:0 8px"><span class="lbl-sm">type your name...</span></div>
+<div class="lbl-sm">recent: Ms. Alvarez, Mr. Diaz</div>
+</div>
+</div>
+
+<div class="dv-card">
+<div class="scrhead">ENTRY — COLLAPSED ROSTER</div>
+<div class="scr" style="padding:0">
+<div style="position:sticky;top:0;background:#1a1a1a;color:#fff;padding:8px 12px;display:flex;justify-content:space-between;align-items:center"><span class="lbl-sm" style="color:#fff">Daily Log · Aug 31 · saving ✓</span><span class="tag" style="border-color:#fff;color:#fff">synthetic</span></div>
+<div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+<div class="box" style="padding:10px;display:flex;justify-content:space-between;align-items:center"><span class="lbl">▾ Jordan T.</span><span class="lbl-sm">● ● ○ &nbsp; all goals logged today except 1</span></div>
+<div style="margin-left:16px;display:flex;flex-direction:column;gap:6px;padding:8px 0 0 0;border-left:2px dashed #999;padding-left:10px">
+<div style="display:flex;align-items:center;gap:8px"><span class="lbl-sm" style="width:90px">Reading acc.</span><div class="box" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">✓</div><div class="box" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">✗</div><span class="lbl-sm">9/12</span></div>
+<div style="display:flex;align-items:center;gap:8px"><span class="lbl-sm" style="width:90px">On-task</span><span class="lbl" style="font-family:monospace">04:12</span><div class="box" style="padding:2px 8px">Stop</div></div>
+</div>
+<div class="box" style="padding:10px;display:flex;justify-content:space-between;align-items:center"><span class="lbl">▸ Amara S.</span><span class="note">○ ○ &nbsp; nothing logged yet today</span></div>
+<div class="box" style="padding:10px;display:flex;justify-content:space-between;align-items:center"><span class="lbl">▸ Noah P.</span><span class="lbl-sm">● ● &nbsp; logged today</span></div>
+</div>
+</div>
+</div>
+
+<div class="dv-card">
+<div class="scrhead">GOAL EDITOR</div>
+<div class="scr" style="padding:16px">
+<div class="lbl" style="font-weight:700;margin-bottom:8px">Jordan T.</div>
+<div class="box" style="padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><span class="lbl">▾ Reading accuracy</span><span class="lbl-sm">retire</span></div>
+<div style="margin-left:16px;border-left:2px dashed #999;padding-left:10px;display:flex;flex-direction:column;gap:6px">
+<div class="lbl-sm">domain: academic</div>
+<div class="lbl-sm">metric: accuracy_pct</div>
+<div class="lbl-sm">target: 80% over 3 sessions</div>
+</div>
+<div class="box-dash" style="margin-top:10px;padding:10px;text-align:center"><span class="lbl-sm">+ new goal</span></div>
+</div>
+</div>
+
+<div class="dv-card">
+<div class="scrhead">SUMMARY</div>
+<div class="scr" style="padding:14px">
+<div style="display:flex;gap:6px;margin-bottom:10px"><div class="box-dash" style="padding:3px 8px"><span class="lbl-sm">last 30 days ▾</span></div><div class="box-dash" style="padding:3px 8px"><span class="lbl-sm">all students ▾</span></div></div>
+<div class="box" style="padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><span class="lbl">▾ Jordan T. — reading accuracy</span><span class="lbl-sm">↗ 75%</span></div>
+<div style="margin-left:16px;border-left:2px dashed #999;padding-left:10px"><div class="box-dash" style="height:50px;display:flex;align-items:center;justify-content:center"><span class="lbl-sm">[sparkline + session table]</span></div></div>
+<div class="box" style="padding:10px;margin-top:8px;display:flex;justify-content:space-between;align-items:center"><span class="lbl">▸ Amara S. — blurting <span class="note">no entry</span></span><span class="lbl-sm">—</span></div>
+</div>
+</div>
+
+</div>
+
+</div>
+<p class="dv-next">Try next: "more like <a href="#1c">1c</a> but keep the grid density of <a href="#1b">1b</a>" · "make the accommodation log visible without expanding" · "show me a tablet-width version of one direction"</p>
+</section>
+
+</x-dc>
+</body>
+</html>

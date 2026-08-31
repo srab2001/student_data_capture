@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { Student, Goal, DataPoint } from "@/lib/db/types";
+import type { Student, Goal } from "@/lib/db/types";
+import type { EntryActions } from "./types";
 import { GoalRow } from "./GoalRow";
 import { EffectivenessRatingPicker } from "@/components/IconDegreePicker";
 
@@ -14,115 +15,97 @@ const ACCOMMODATIONS = [
   "Chunked assignments",
 ];
 
+function isLogged(goal: Goal, actions: EntryActions): boolean {
+  const dp = actions.dataPointForGoal(goal.id);
+  switch (goal.metricType) {
+    case "accuracy_pct":
+      return (dp?.trialsTotal ?? 0) > 0;
+    case "duration_seconds":
+      return (dp?.valueNumeric ?? 0) > 0 || actions.timerRunningForGoal(goal.id);
+    case "frequency_count":
+      return (dp?.valueNumeric ?? 0) > 0;
+    case "prompt_level":
+    case "icon_scale":
+    case "accommodation_used":
+      return !!dp?.valueEnum;
+    case "task_analysis_step":
+      return dp?.valueNumeric != null;
+    default:
+      return false;
+  }
+}
+
 export function StudentCard({
   student,
   goals,
-  dataPointForGoal,
-  timerSecondsForGoal,
-  timerRunningForGoal,
-  onTapAccuracy,
-  onTapTally,
-  onSetIconReading,
-  onSetPromptLevel,
-  onSetFluencyRate,
-  onSetTaskStep,
-  onSetAccommodationUsed,
-  onStartTimer,
-  onStopTimer,
-  onNoteBlur,
-  onLogAccommodation,
-  disabled,
+  actions,
 }: {
   student: Student;
   goals: Goal[];
-  dataPointForGoal: (goalId: string) => DataPoint | undefined;
-  timerSecondsForGoal: (goalId: string) => number;
-  timerRunningForGoal: (goalId: string) => boolean;
-  onTapAccuracy: (goalId: string, correct: boolean) => void;
-  onTapTally: (goalId: string) => void;
-  onSetIconReading: (goalId: string, value: string) => void;
-  onSetPromptLevel: (goalId: string, value: string) => void;
-  onSetFluencyRate: (goalId: string, value: number) => void;
-  onSetTaskStep: (goalId: string, step: number) => void;
-  onSetAccommodationUsed: (goalId: string, used: boolean) => void;
-  onStartTimer: (goalId: string) => void;
-  onStopTimer: (goalId: string) => void;
-  onNoteBlur: (goalId: string, note: string) => void;
-  onLogAccommodation: (
-    studentId: string,
-    accommodationName: string,
-    used: boolean,
-    effectivenessRating: number
-  ) => void;
-  disabled?: boolean;
+  actions: EntryActions;
 }) {
   const [accommodationOpen, setAccommodationOpen] = useState(false);
   const [accommodationName, setAccommodationName] = useState(ACCOMMODATIONS[0]);
   const [effectiveness, setEffectiveness] = useState<number | null>(null);
 
+  const loggedCount = goals.filter((g) => isLogged(g, actions)).length;
+
   return (
-    <section
-      aria-label={student.displayName}
-      data-tour="student-card"
-      className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
-    >
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
-          {student.displayName}
-        </h2>
-        <Link
-          href={`/goals/${student.id}`}
-          className="min-h-11 flex items-center text-xs font-medium text-zinc-500 underline underline-offset-4 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-200"
-        >
+    <section aria-label={student.displayName} data-tour="student-card" className="card elev-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="card-kicker">
+            {goals.length > 0 && loggedCount === goals.length
+              ? "All goals logged today"
+              : `${loggedCount}/${goals.length} logged today`}
+          </div>
+          <div className="card-title">{student.displayName}</div>
+        </div>
+        <Link href={`/goals/${student.id}`} className="btn btn-ghost">
           Manage goals
         </Link>
       </div>
 
-      <div className="mt-3 space-y-2">
+      <div className="mt-3 flex flex-col gap-3">
         {goals.map((goal) => (
           <GoalRow
             key={goal.id}
             goal={goal}
-            dataPoint={dataPointForGoal(goal.id)}
-            timerSeconds={timerSecondsForGoal(goal.id)}
-            timerRunning={timerRunningForGoal(goal.id)}
-            onTapAccuracy={(correct) => onTapAccuracy(goal.id, correct)}
-            onTapTally={() => onTapTally(goal.id)}
-            onSetIconReading={(value) => onSetIconReading(goal.id, value)}
-            onSetPromptLevel={(value) => onSetPromptLevel(goal.id, value)}
-            onSetFluencyRate={(value) => onSetFluencyRate(goal.id, value)}
-            onSetTaskStep={(step) => onSetTaskStep(goal.id, step)}
-            onSetAccommodationUsed={(used) => onSetAccommodationUsed(goal.id, used)}
-            onStartTimer={() => onStartTimer(goal.id)}
-            onStopTimer={() => onStopTimer(goal.id)}
-            onNoteBlur={(note) => onNoteBlur(goal.id, note)}
-            disabled={disabled}
+            dataPoint={actions.dataPointForGoal(goal.id)}
+            timerSeconds={actions.timerSecondsForGoal(goal.id)}
+            timerRunning={actions.timerRunningForGoal(goal.id)}
+            onTapAccuracy={(correct) => actions.onTapAccuracy(goal.id, correct)}
+            onTapTally={() => actions.onTapTally(goal.id)}
+            onSetIconReading={(value) => actions.onSetIconReading(goal.id, value)}
+            onSetPromptLevel={(value) => actions.onSetPromptLevel(goal.id, value)}
+            onSetFluencyRate={(value) => actions.onSetFluencyRate(goal.id, value)}
+            onSetTaskStep={(step) => actions.onSetTaskStep(goal.id, step)}
+            onSetAccommodationUsed={(used) => actions.onSetAccommodationUsed(goal.id, used)}
+            onStartTimer={() => actions.onStartTimer(goal.id)}
+            onStopTimer={() => actions.onStopTimer(goal.id)}
+            onNoteBlur={(note) => actions.onNoteBlur(goal.id, note)}
+            disabled={actions.disabled}
           />
         ))}
-        {goals.length === 0 && (
-          <p className="text-sm text-zinc-400 dark:text-zinc-600">No active goals.</p>
-        )}
+        {goals.length === 0 && <p className="text-muted text-sm">No active goals.</p>}
       </div>
 
-      <div
-        data-tour="accommodation-section"
-        className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800"
-      >
+      <div data-tour="accommodation-section" className="mt-3" style={{ borderTop: "1px solid var(--color-neutral-200)", paddingTop: "var(--space-3)" }}>
         <button
           type="button"
           onClick={() => setAccommodationOpen((v) => !v)}
-          className="min-h-11 text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-200"
+          className="btn btn-ghost"
           aria-expanded={accommodationOpen}
         >
           {accommodationOpen ? "Hide accommodation log" : "+ Log accommodation"}
         </button>
 
         {accommodationOpen && (
-          <div className="mt-2 space-y-2">
+          <div className="mt-2 flex flex-col gap-2" style={{ maxWidth: 360 }}>
             <select
               value={accommodationName}
               onChange={(e) => setAccommodationName(e.target.value)}
-              className="min-h-11 w-full rounded-lg border border-zinc-200 px-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+              className="input"
               aria-label="Accommodation"
             >
               {ACCOMMODATIONS.map((name) => (
@@ -133,32 +116,32 @@ export function StudentCard({
             </select>
 
             <div className="flex items-center gap-3">
-              <span className="text-xs text-zinc-500 dark:text-zinc-500">Effectiveness</span>
+              <span className="text-muted text-xs">Effectiveness</span>
               <EffectivenessRatingPicker value={effectiveness} onChange={setEffectiveness} />
             </div>
 
             <div className="flex gap-2">
               <button
                 type="button"
-                disabled={disabled}
+                disabled={actions.disabled}
                 onClick={() => {
-                  onLogAccommodation(student.id, accommodationName, true, effectiveness ?? 3);
+                  actions.onLogAccommodation(student.id, accommodationName, true, effectiveness ?? 3);
                   setAccommodationOpen(false);
                   setEffectiveness(null);
                 }}
-                className="min-h-11 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm text-emerald-800 disabled:opacity-50 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
+                className="btn btn-secondary"
               >
                 Log as used
               </button>
               <button
                 type="button"
-                disabled={disabled}
+                disabled={actions.disabled}
                 onClick={() => {
-                  onLogAccommodation(student.id, accommodationName, false, effectiveness ?? 3);
+                  actions.onLogAccommodation(student.id, accommodationName, false, effectiveness ?? 3);
                   setAccommodationOpen(false);
                   setEffectiveness(null);
                 }}
-                className="min-h-11 rounded-lg border border-zinc-200 px-3 text-sm text-zinc-700 disabled:opacity-50 dark:border-zinc-800 dark:text-zinc-300"
+                className="btn btn-ghost"
               >
                 Log as not used
               </button>
@@ -169,3 +152,5 @@ export function StudentCard({
     </section>
   );
 }
+
+export { isLogged };

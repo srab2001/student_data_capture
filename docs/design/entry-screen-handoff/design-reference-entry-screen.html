@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="stylesheet" href="_ds/organic-3f1479aa-b9f3-4da3-8df6-dbc7ec993e9b/styles.css">
+<script src="_ds/organic-3f1479aa-b9f3-4da3-8df6-dbc7ec993e9b/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)}
+.page{max-width:1000px;margin:0 auto;padding:var(--space-6) var(--space-4) var(--space-8)}
+.chip{border:1.5px solid var(--color-neutral-300);border-radius:999px;padding:6px 14px;font-family:var(--font-body);font-size:13px;font-weight:600;background:var(--color-bg);cursor:pointer}
+.chip-on{border-color:var(--color-accent-600);background:var(--color-accent-100);color:var(--color-accent-800)}
+.iconbtn{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}
+.goalblock{border-top:1px solid var(--color-neutral-200);padding-top:var(--space-3)}
+.goalblock:first-child{border-top:none;padding-top:0}
+</style>
+</helmet>
+
+<nav class="nav">
+  <span class="nav-brand">IEP Capture Pilot</span>
+  <a href="#" aria-current="page">Entry</a>
+  <a href="#">Summary</a>
+  <a href="#">Guide</a>
+  <span class="text-muted" style="margin-left:auto;font-size:13px">Ms. Alvarez · Teacher</span>
+  <button type="button" class="btn btn-ghost">Sign out</button>
+</nav>
+
+<div class="page">
+  <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:var(--space-3);margin-bottom:var(--space-4)">
+    <div>
+      <h1 style="margin:0 0 4px">Roster sweep — Daily Log</h1>
+      <p class="text-muted" style="margin:0">Ms. Alvarez · {{ todayLabel }}</p>
+    </div>
+    <span class="tag tag-outline">Synthetic data only — pilot</span>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--space-3);margin-bottom:var(--space-4)">
+    <div class="seg" role="radiogroup" aria-label="Layout">
+      <label class="seg-opt"><input type="radio" name="layout" checked="{{ isCards }}" onChange="{{ setViewCards }}"/>Card stack</label>
+      <label class="seg-opt"><input type="radio" name="layout" checked="{{ isGrid }}" onChange="{{ setViewGrid }}"/>Grid</label>
+      <label class="seg-opt"><input type="radio" name="layout" checked="{{ isAccordion }}" onChange="{{ setViewAccordion }}"/>Accordion</label>
+    </div>
+  </div>
+
+  <sc-if value="{{ isCards }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:var(--space-4)">
+      <sc-for list="{{ students }}" as="student" hint-placeholder-count="3">
+        <div class="card elev-sm">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-3)">
+            <div>
+              <div class="card-kicker">{{ student.statusLabel }}</div>
+              <div class="card-title">{{ student.name }}</div>
+            </div>
+            <button type="button" class="btn btn-ghost">Manage goals</button>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:var(--space-3);margin-top:var(--space-3)">
+            <sc-for list="{{ student.goals }}" as="goal" hint-placeholder-count="2">
+              <div class="goalblock">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:var(--space-2)">
+                  <div>
+                    <div class="text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em">{{ goal.domain }}</div>
+                    <div style="font-weight:600">{{ goal.goalText }}</div>
+                  </div>
+                  <button type="button" class="btn btn-ghost" onClick="{{ goal.onToggleNote }}">{{ goal.noteToggleLabel }}</button>
+                </div>
+
+                <sc-if value="{{ goal.isAccuracy }}">
+                  <div style="display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-2)">
+                    <button type="button" class="btn btn-secondary iconbtn" aria-label="Correct trial" onClick="{{ goal.onCorrect }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>
+                    <button type="button" class="btn btn-secondary iconbtn" aria-label="Incorrect trial" onClick="{{ goal.onIncorrect }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
+                    <span class="text-muted">{{ goal.pctLabel }}</span>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ goal.isDuration }}">
+                  <div style="display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-2)">
+                    <span style="font-family:ui-monospace,monospace;font-size:15px">{{ goal.timerLabel }}</span>
+                    <sc-if value="{{ goal.timerRunning }}"><button type="button" class="btn btn-secondary" onClick="{{ goal.onStopTimer }}">Stop</button></sc-if>
+                    <sc-if value="{{ goal.timerNotRunning }}"><button type="button" class="btn btn-secondary" onClick="{{ goal.onStartTimer }}">Start</button></sc-if>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ goal.isFrequency }}">
+                  <button type="button" class="btn btn-secondary" onClick="{{ goal.onTally }}" style="margin-top:var(--space-2)">Tally: {{ goal.tally }}</button>
+                </sc-if>
+
+                <sc-if value="{{ goal.isPromptLevel }}">
+                  <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-2)">
+                    <sc-for list="{{ goal.promptLevels }}" as="level" hint-placeholder-count="5">
+                      <button type="button" class="{{ level.chipClass }}" onClick="{{ level.onSelect }}">{{ level.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ goal.isIconScale }}">
+                  <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-2)">
+                    <sc-for list="{{ goal.moods }}" as="mood" hint-placeholder-count="5">
+                      <button type="button" class="{{ mood.chipClass }}" onClick="{{ mood.onSelect }}">{{ mood.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ goal.isTaskStep }}">
+                  <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-2)">
+                    <sc-for list="{{ goal.steps }}" as="step" hint-placeholder-count="5">
+                      <button type="button" class="{{ step.chipClass }}" onClick="{{ step.onSelect }}">{{ step.n }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ goal.noteOpen }}">
+                  <textarea class="input" placeholder="Optional note…" defaultValue="{{ goal.noteValue }}" onBlur="{{ goal.onNoteBlur }}" rows="2" style="margin-top:var(--space-2);width:100%"></textarea>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="margin-top:var(--space-3);border-top:1px solid var(--color-neutral-200);padding-top:var(--space-3)">
+            <button type="button" class="btn btn-ghost" onClick="{{ student.onToggleAcc }}">{{ student.accToggleLabel }}</button>
+            <sc-if value="{{ student.accOpen }}">
+              <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-top:var(--space-2);max-width:360px">
+                <select class="input" aria-label="Accommodation">
+                  <option>Extended time</option>
+                  <option>Preferential seating</option>
+                  <option>Visual schedule</option>
+                  <option>Noise-cancelling headphones</option>
+                </select>
+                <div style="display:flex;gap:var(--space-2)">
+                  <button type="button" class="btn btn-secondary" onClick="{{ student.onToggleAcc }}">Log as used</button>
+                  <button type="button" class="btn btn-ghost" onClick="{{ student.onToggleAcc }}">Log as not used</button>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+
+      <div class="card elev-sm" style="border-style:dashed;text-align:center;color:var(--color-neutral-500)">+ Add student to roster</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isGrid }}" hint-placeholder-val="{{ false }}">
+    <div class="card elev-sm" style="padding:0;overflow:auto">
+      <table class="table">
+        <thead><tr><th>Student</th><th>Goal</th><th>Domain</th><th>Today</th></tr></thead>
+        <tbody>
+          <sc-for list="{{ flatRows }}" as="goal" hint-placeholder-count="6">
+            <tr>
+              <td style="white-space:nowrap">{{ goal.studentName }}</td>
+              <td>{{ goal.goalText }}</td>
+              <td><span class="tag tag-neutral">{{ goal.domain }}</span></td>
+              <td>
+                <sc-if value="{{ goal.isAccuracy }}">
+                  <div style="display:flex;align-items:center;gap:var(--space-2)">
+                    <button type="button" class="btn btn-secondary iconbtn" aria-label="Correct trial" onClick="{{ goal.onCorrect }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>
+                    <button type="button" class="btn btn-secondary iconbtn" aria-label="Incorrect trial" onClick="{{ goal.onIncorrect }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
+                    <span class="text-muted">{{ goal.pctLabel }}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ goal.isDuration }}">
+                  <div style="display:flex;align-items:center;gap:var(--space-2)">
+                    <span style="font-family:ui-monospace,monospace;font-size:14px">{{ goal.timerLabel }}</span>
+                    <sc-if value="{{ goal.timerRunning }}"><button type="button" class="btn btn-secondary" onClick="{{ goal.onStopTimer }}">Stop</button></sc-if>
+                    <sc-if value="{{ goal.timerNotRunning }}"><button type="button" class="btn btn-secondary" onClick="{{ goal.onStartTimer }}">Start</button></sc-if>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ goal.isFrequency }}">
+                  <button type="button" class="btn btn-secondary" onClick="{{ goal.onTally }}">Tally: {{ goal.tally }}</button>
+                </sc-if>
+                <sc-if value="{{ goal.isPromptLevel }}">
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{ goal.promptLevels }}" as="level" hint-placeholder-count="5">
+                      <button type="button" class="{{ level.chipClass }}" onClick="{{ level.onSelect }}">{{ level.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ goal.isIconScale }}">
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{ goal.moods }}" as="mood" hint-placeholder-count="5">
+                      <button type="button" class="{{ mood.chipClass }}" onClick="{{ mood.onSelect }}">{{ mood.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ goal.isTaskStep }}">
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{ goal.steps }}" as="step" hint-placeholder-count="5">
+                      <button type="button" class="{{ step.chipClass }}" onClick="{{ step.onSelect }}">{{ step.n }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isAccordion }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+      <sc-for list="{{ students }}" as="student" hint-placeholder-count="3">
+        <div class="card elev-sm">
+          <button type="button" onClick="{{ student.onToggleExpand }}" style="display:flex;width:100%;justify-content:space-between;align-items:center;gap:var(--space-3);background:none;border:none;padding:0;cursor:pointer;text-align:left;font-family:var(--font-body);color:var(--color-text)">
+            <span class="card-title" style="margin:0">{{ student.expandArrow }} {{ student.name }}</span>
+            <span class="text-muted" style="font-size:13px">{{ student.statusLabel }}</span>
+          </button>
+
+          <sc-if value="{{ student.expanded }}">
+            <div style="display:flex;flex-direction:column;gap:var(--space-3);margin-top:var(--space-3);border-left:2px dashed var(--color-neutral-300);padding-left:var(--space-3)">
+              <sc-for list="{{ student.goals }}" as="goal" hint-placeholder-count="2">
+                <div class="goalblock">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:var(--space-2)">
+                    <div>
+                      <div class="text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em">{{ goal.domain }}</div>
+                      <div style="font-weight:600">{{ goal.goalText }}</div>
+                    </div>
+                  </div>
+
+                  <sc-if value="{{ goal.isAccuracy }}">
+                    <div style="display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-2)">
+                      <button type="button" class="btn btn-secondary iconbtn" aria-label="Correct trial" onClick="{{ goal.onCorrect }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>
+                      <button type="button" class="btn btn-secondary iconbtn" aria-label="Incorrect trial" onClick="{{ goal.onIncorrect }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
+                      <span class="text-muted">{{ goal.pctLabel }}</span>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ goal.isDuration }}">
+                    <div style="display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-2)">
+                      <span style="font-family:ui-monospace,monospace;font-size:15px">{{ goal.timerLabel }}</span>
+                      <sc-if value="{{ goal.timerRunning }}"><button type="button" class="btn btn-secondary" onClick="{{ goal.onStopTimer }}">Stop</button></sc-if>
+                      <sc-if value="{{ goal.timerNotRunning }}"><button type="button" class="btn btn-secondary" onClick="{{ goal.onStartTimer }}">Start</button></sc-if>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ goal.isFrequency }}">
+                    <button type="button" class="btn btn-secondary" onClick="{{ goal.onTally }}" style="margin-top:var(--space-2)">Tally: {{ goal.tally }}</button>
+                  </sc-if>
+                  <sc-if value="{{ goal.isPromptLevel }}">
+                    <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-2)">
+                      <sc-for list="{{ goal.promptLevels }}" as="level" hint-placeholder-count="5">
+                        <button type="button" class="{{ level.chipClass }}" onClick="{{ level.onSelect }}">{{ level.label }}</button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ goal.isIconScale }}">
+                    <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-2)">
+                      <sc-for list="{{ goal.moods }}" as="mood" hint-placeholder-count="5">
+                        <button type="button" class="{{ mood.chipClass }}" onClick="{{ mood.onSelect }}">{{ mood.label }}</button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ goal.isTaskStep }}">
+                    <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-2)">
+                      <sc-for list="{{ goal.steps }}" as="step" hint-placeholder-count="5">
+                        <button type="button" class="{{ step.chipClass }}" onClick="{{ step.onSelect }}">{{ step.n }}</button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+      <div class="card elev-sm" style="border-style:dashed;text-align:center;color:var(--color-neutral-500)">+ Add student to roster</div>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  goalDefs = [
+    { id: 'g1', studentId: 's1', domain: 'Academic', goalText: 'Reading accuracy — decodable text', metricType: 'accuracy_pct' },
+    { id: 'g2', studentId: 's1', domain: 'Behavioral', goalText: 'On-task during independent work', metricType: 'duration_seconds' },
+    { id: 'g3', studentId: 's2', domain: 'Behavioral', goalText: 'Blurting out during group time', metricType: 'frequency_count' },
+    { id: 'g4', studentId: 's2', domain: 'Independence', goalText: 'Follows 2-step directions', metricType: 'prompt_level' },
+    { id: 'g5', studentId: 's3', domain: 'Behavioral', goalText: 'Daily mood check-in', metricType: 'icon_scale' },
+    { id: 'g6', studentId: 's3', domain: 'Independence', goalText: 'Hand-washing routine', metricType: 'task_analysis_step' },
+  ];
+  studentDefs = [
+    { id: 's1', name: 'Jordan T.' },
+    { id: 's2', name: 'Amara S.' },
+    { id: 's3', name: 'Noah P.' },
+  ];
+  promptLevelDefs = [
+    { value: 'independent', label: 'Indep' },
+    { value: 'verbal', label: 'Verbal' },
+    { value: 'gestural', label: 'Gestural' },
+    { value: 'model', label: 'Model' },
+    { value: 'physical', label: 'Physical' },
+  ];
+  moodDefs = [
+    { value: 'great', label: 'Great' },
+    { value: 'good', label: 'Good' },
+    { value: 'okay', label: 'Okay' },
+    { value: 'low', label: 'Low' },
+    { value: 'rough', label: 'Rough' },
+  ];
+
+  state = {
+    view: 'cards',
+    dp: {
+      g1: { correct: 9, total: 12 },
+      g2: { seconds: 252, running: false },
+      g3: { tally: 3 },
+      g4: { prompt: 'gestural' },
+      g5: { mood: null },
+      g6: { step: 2 },
+    },
+    noteOpen: {},
+    notes: {},
+    expanded: { s1: true, s2: false, s3: false },
+    accOpen: {},
+    tick: 0,
+  };
+
+  componentDidMount() {
+    this._interval = setInterval(() => {
+      const anyRunning = Object.values(this.state.dp).some((d) => d && d.running);
+      if (anyRunning) this.setState((s) => ({ tick: s.tick + 1 }));
+    }, 1000);
+  }
+  componentWillUnmount() {
+    clearInterval(this._interval);
+  }
+
+  setView(v) { this.setState({ view: v }); }
+  tapAccuracy(goalId, correct) {
+    this.setState((s) => {
+      const d = s.dp[goalId] || {};
+      return { dp: { ...s.dp, [goalId]: { ...d, total: (d.total ?? 0) + 1, correct: (d.correct ?? 0) + (correct ? 1 : 0) } } };
+    });
+  }
+  tapTally(goalId) {
+    this.setState((s) => {
+      const d = s.dp[goalId] || {};
+      return { dp: { ...s.dp, [goalId]: { ...d, tally: (d.tally ?? 0) + 1 } } };
+    });
+  }
+  startTimer(goalId) {
+    this.setState((s) => ({ dp: { ...s.dp, [goalId]: { ...s.dp[goalId], running: true, startedAt: Date.now() } } }));
+  }
+  stopTimer(goalId) {
+    this.setState((s) => {
+      const d = s.dp[goalId] || {};
+      const extra = d.running ? Math.floor((Date.now() - d.startedAt) / 1000) : 0;
+      return { dp: { ...s.dp, [goalId]: { ...d, seconds: (d.seconds ?? 0) + extra, running: false } } };
+    });
+  }
+  setPrompt(goalId, val) {
+    this.setState((s) => ({ dp: { ...s.dp, [goalId]: { ...s.dp[goalId], prompt: val } } }));
+  }
+  setMood(goalId, val) {
+    this.setState((s) => ({ dp: { ...s.dp, [goalId]: { ...s.dp[goalId], mood: val } } }));
+  }
+  setStep(goalId, n) {
+    this.setState((s) => ({ dp: { ...s.dp, [goalId]: { ...s.dp[goalId], step: n } } }));
+  }
+  toggleNote(goalId) {
+    this.setState((s) => ({ noteOpen: { ...s.noteOpen, [goalId]: !s.noteOpen[goalId] } }));
+  }
+  setNote(goalId, val) {
+    this.setState((s) => ({ notes: { ...s.notes, [goalId]: val } }));
+  }
+  toggleExpand(studentId) {
+    this.setState((s) => ({ expanded: { ...s.expanded, [studentId]: !s.expanded[studentId] } }));
+  }
+  toggleAcc(studentId) {
+    this.setState((s) => ({ accOpen: { ...s.accOpen, [studentId]: !s.accOpen[studentId] } }));
+  }
+  currentTimerSeconds(goalId) {
+    const d = this.state.dp[goalId] || {};
+    if (!d.running) return d.seconds ?? 0;
+    return (d.seconds ?? 0) + Math.floor((Date.now() - d.startedAt) / 1000);
+  }
+  fmt(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+
+  renderVals() {
+    const buildGoal = (g) => {
+      const dp = this.state.dp[g.id] || {};
+      const base = {
+        ...g,
+        isAccuracy: g.metricType === 'accuracy_pct',
+        isDuration: g.metricType === 'duration_seconds',
+        isFrequency: g.metricType === 'frequency_count',
+        isPromptLevel: g.metricType === 'prompt_level',
+        isIconScale: g.metricType === 'icon_scale',
+        isTaskStep: g.metricType === 'task_analysis_step',
+        noteOpen: !!this.state.noteOpen[g.id],
+        noteValue: this.state.notes[g.id] ?? '',
+        noteToggleLabel: this.state.noteOpen[g.id] ? 'Hide note' : '+ Note',
+        onToggleNote: () => this.toggleNote(g.id),
+        onNoteBlur: (e) => this.setNote(g.id, e.target.value),
+      };
+      if (base.isAccuracy) {
+        const total = dp.total ?? 0;
+        const correct = dp.correct ?? 0;
+        base.pctLabel = total > 0 ? `${correct}/${total} (${Math.round((correct / total) * 100)}%)` : 'No trials yet';
+        base.onCorrect = () => this.tapAccuracy(g.id, true);
+        base.onIncorrect = () => this.tapAccuracy(g.id, false);
+      }
+      if (base.isDuration) {
+        const secs = this.currentTimerSeconds(g.id);
+        base.timerLabel = this.fmt(secs);
+        base.timerRunning = !!dp.running;
+        base.timerNotRunning = !dp.running;
+        base.onStartTimer = () => this.startTimer(g.id);
+        base.onStopTimer = () => this.stopTimer(g.id);
+      }
+      if (base.isFrequency) {
+        base.tally = dp.tally ?? 0;
+        base.onTally = () => this.tapTally(g.id);
+      }
+      if (base.isPromptLevel) {
+        base.promptLevels = this.promptLevelDefs.map((p) => ({
+          ...p,
+          chipClass: dp.prompt === p.value ? 'chip chip-on' : 'chip',
+          onSelect: () => this.setPrompt(g.id, p.value),
+        }));
+      }
+      if (base.isIconScale) {
+        base.moods = this.moodDefs.map((m) => ({
+          ...m,
+          chipClass: dp.mood === m.value ? 'chip chip-on' : 'chip',
+          onSelect: () => this.setMood(g.id, m.value),
+        }));
+      }
+      if (base.isTaskStep) {
+        base.steps = [1, 2, 3, 4, 5].map((n) => ({
+          n,
+          chipClass: dp.step === n ? 'chip chip-on' : 'chip',
+          onSelect: () => this.setStep(g.id, n),
+        }));
+      }
+      return base;
+    };
+
+    const goalsByStudent = {};
+    this.goalDefs.forEach((g) => {
+      (goalsByStudent[g.studentId] ??= []).push(buildGoal(g));
+    });
+
+    const isLogged = (g) => {
+      const dp = this.state.dp[g.id] || {};
+      if (g.isAccuracy) return (dp.total ?? 0) > 0;
+      if (g.isDuration) return (dp.seconds ?? 0) > 0 || dp.running;
+      if (g.isFrequency) return (dp.tally ?? 0) > 0;
+      if (g.isPromptLevel) return !!dp.prompt;
+      if (g.isIconScale) return !!dp.mood;
+      if (g.isTaskStep) return !!dp.step;
+      return false;
+    };
+
+    const students = this.studentDefs.map((s) => {
+      const goals = goalsByStudent[s.id] || [];
+      const loggedCount = goals.filter(isLogged).length;
+      const expanded = !!this.state.expanded[s.id];
+      return {
+        ...s,
+        goals,
+        statusLabel: loggedCount === goals.length ? 'All goals logged today' : `${loggedCount}/${goals.length} logged today`,
+        expanded,
+        expandArrow: expanded ? '▾' : '▸',
+        onToggleExpand: () => this.toggleExpand(s.id),
+        accOpen: !!this.state.accOpen[s.id],
+        accToggleLabel: this.state.accOpen[s.id] ? 'Hide accommodation log' : '+ Log accommodation',
+        onToggleAcc: () => this.toggleAcc(s.id),
+      };
+    });
+
+    const flatRows = students.flatMap((s) => s.goals.map((g) => ({ ...g, studentName: s.name })));
+
+    return {
+      isCards: this.state.view === 'cards',
+      isGrid: this.state.view === 'grid',
+      isAccordion: this.state.view === 'accordion',
+      setViewCards: () => this.setView('cards'),
+      setViewGrid: () => this.setView('grid'),
+      setViewAccordion: () => this.setView('accordion'),
+      students,
+      flatRows,
+      todayLabel: 'Aug 31',
+    };
+  }
+}
+
+</script>
+</body>
+</html>
