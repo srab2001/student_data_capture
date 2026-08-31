@@ -10,11 +10,10 @@ Built independently by a teacher using [Claude Code](https://claude.com/claude-c
 Full plan, compliance review, and phase-by-phase build instructions:
 [IEP Capture Pilot — artifact](https://claude.ai/code/artifact/f42a3d9c-ee1a-4b8d-860d-e8a4326da173)
 
-**Live demo:** https://iep-capture-pilot-stus-projects-458dd35a.vercel.app
-— currently serving an older build; the code in this branch (Organic
-redesign, goal management, 3-layout entry screen) is **not live yet**. See
-"Deploying" below for why, and `docs/compliance.md`'s build log for the
-current status.
+**Live demo:** https://iep-capture-pilot.vercel.app — serving the Organic
+redesign, goal management, and 3-layout entry screen. Verified working end
+to end, including the production database connection (see
+`docs/compliance.md`'s build log).
 
 ## ⚠️ FERPA / student data notice
 
@@ -61,21 +60,21 @@ guide](http://localhost:3000/help) (`app/help/page.tsx`).
 
 ## Deploying
 
-The Vercel project (`iep-capture-pilot`) currently deploys via manual file
-upload, not a git integration — pushing to this branch does **not**
-auto-deploy, and **the manual-upload path is not reliable for this
-codebase's size**: it has failed twice trying to transfer the full ~56-file
-tree `next build` needs, coming back with an incomplete `lib/` directory
-and `Module not found` build errors both times. This is not a
-"retry and it'll work" situation.
+The Vercel project (`iep-capture-pilot`) is git-linked, with **`main` as
+the production branch**. Merging a PR into `main` triggers a real
+`git clone`-based build and deploys it to
+https://iep-capture-pilot.vercel.app automatically — confirmed working via
+PR #7. Pushing to this feature branch alone only produces a preview
+deployment (its own branch-specific URL), not production; open a PR into
+`main` to ship.
 
-**Fix it once, permanently:** Vercel dashboard → project → Settings → Git →
-**Connect Git Repository** → this repo, production branch
-`claude/student-data-capture-plan-dgb389`. Vercel then clones the repo
-itself on every push — no file-transfer step, no size ceiling, and it
-auto-deploys from here on. There's no API/CLI path that reconnects an
-*existing* unlinked project to a repo without risking a duplicate project,
-so this one step has to be done by hand in the dashboard.
+This wasn't always the setup — earlier in this project's history, Vercel
+deployed via a manual file-upload tool that reliably failed on this
+codebase's size (~150KB/56 files), and even the first couple of builds
+right after connecting Git failed too (turned out to be stale "Redeploy"
+actions replaying an old pre-link snapshot, not real failures of the git
+integration). See `docs/compliance.md`'s build log for the full story if
+deploys ever regress and this history is useful context again.
 
 ## Stack
 
