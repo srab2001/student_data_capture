@@ -1,26 +1,343 @@
 @import "tailwindcss";
 
+/*
+ * "Organic" design system tokens, per design_handoff_iep_entry_screen/README.md.
+ * Values are copied verbatim from that handoff's Design Tokens section —
+ * this is the app's one adopted visual language, not a page-local theme.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-bg: #f5ead8;
+  --color-surface: #ebddc5;
+  --color-text: #201e1d;
+
+  --color-accent: #c67139;
+  --color-accent-100: #fff2eb;
+  --color-accent-200: #ffe1d0;
+  --color-accent-300: #ffc6a5;
+  --color-accent-400: #f6a06b;
+  --color-accent-500: #d67f48;
+  --color-accent-600: #b2622d;
+  --color-accent-700: #8c491a;
+  --color-accent-800: #643312;
+  --color-accent-900: #402310;
+
+  --color-accent-2: #7a8a5e;
+  --color-accent-2-100: #f0fae1;
+  --color-accent-2-200: #e1eecc;
+  --color-accent-2-300: #ccdbb2;
+  --color-accent-2-400: #aebf92;
+  --color-accent-2-500: #8fa073;
+  --color-accent-2-600: #728157;
+  --color-accent-2-700: #56633f;
+  --color-accent-2-800: #3d472b;
+  --color-accent-2-900: #272e1b;
+
+  --color-neutral-100: #f9f4ed;
+  --color-neutral-200: #eee7db;
+  --color-neutral-300: #dcd3c4;
+  --color-neutral-400: #c0b6a5;
+  --color-neutral-500: #a19786;
+  --color-neutral-600: #82796a;
+  --color-neutral-700: #645c50;
+  --color-neutral-800: #474238;
+  --color-neutral-900: #2e2b25;
+
+  --space-1: 4.4px;
+  --space-2: 8.8px;
+  --space-3: 13.2px;
+  --space-4: 17.6px;
+  --space-6: 26.4px;
+  --space-8: 35.2px;
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 28px;
+
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2e2b25 14%, transparent);
+  --shadow-md: 0 4px 12px color-mix(in srgb, #2e2b25 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #2e2b25 22%, transparent);
+
+  --font-heading: var(--font-caprasimo), Georgia, serif;
+  --font-body: var(--font-figtree), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text);
+  --font-sans: var(--font-body);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  margin: 0;
+}
+h1 { font-size: 42px; line-height: 1.15; }
+h2 { font-size: 32px; line-height: 1.2; }
+h3 { font-size: 25px; line-height: 1.25; }
+h4 { font-size: 20px; line-height: 1.3; }
+h5 { font-size: 16px; line-height: 1.4; }
+h6 { font-size: 13px; line-height: 1.4; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.text-muted {
+  color: var(--color-neutral-600);
+}
+
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-8);
+}
+
+/* Nav */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-neutral-300);
+}
+.nav a {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-neutral-700);
+  text-decoration: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.nav a:hover, .nav a[aria-current="page"] {
+  color: var(--color-accent-700);
+}
+.nav a.nav-brand {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--color-accent-600);
+  color: #fff;
+  border-color: var(--color-accent-600);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-700);
+  border-color: var(--color-accent-700);
+}
+.btn-secondary {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-color: var(--color-neutral-400);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-neutral-100);
+  border-color: var(--color-neutral-500);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--color-neutral-700);
+  border-color: transparent;
+  padding: 0 10px;
+}
+.btn-ghost:hover:not(:disabled) {
+  color: var(--color-accent-700);
+  background: color-mix(in srgb, var(--color-accent-100) 60%, transparent);
+}
+.btn-icon {
+  padding: 0;
+  width: 44px;
+}
+.iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Tags */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-body);
+}
+.tag-outline {
+  border: 1.5px solid var(--color-accent-600);
+  color: var(--color-accent-700);
+  background: var(--color-accent-100);
+}
+.tag-neutral {
+  background: var(--color-neutral-200);
+  color: var(--color-neutral-700);
+}
+
+/* Cards */
+.card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+.elev-sm {
+  box-shadow: var(--shadow-sm);
+}
+.card-kicker {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-neutral-600);
+}
+.card-title {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  color: var(--color-text);
+}
+
+.goalblock {
+  border-top: 1px solid var(--color-neutral-200);
+  padding-top: var(--space-3);
+}
+.goalblock:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+/* Segmented control */
+.seg {
+  display: inline-flex;
+  background: var(--color-surface);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 2px;
+}
+.seg-opt {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-neutral-700);
+  cursor: pointer;
+}
+.seg-opt input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.seg-opt:has(input:checked) {
+  background: var(--color-bg);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Chips */
+.chip {
+  min-height: 44px;
+  border: 1.5px solid var(--color-neutral-300);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.chip:hover:not(:disabled) {
+  border-color: var(--color-neutral-500);
+}
+.chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.chip-on {
+  border-color: var(--color-accent-600);
+  background: var(--color-accent-100);
+  color: var(--color-accent-800);
+}
+
+/* Table */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+.table th {
+  background: var(--color-surface);
+  color: var(--color-neutral-700);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+}
+.table td {
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--color-neutral-200);
+  vertical-align: top;
+}
+
+/* Inputs */
+.input {
+  min-height: 44px;
+  width: auto;
+  border: 1.5px solid var(--color-neutral-400);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.input:focus {
+  outline: 2px solid var(--color-accent-500);
+  outline-offset: 1px;
+}
+textarea.input {
+  min-height: auto;
 }

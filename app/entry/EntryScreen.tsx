@@ -4,11 +4,20 @@ import { useEffect, useReducer, useRef, useState, useCallback } from "react";
 import { apiFetch } from "@/lib/api-client";
 import type { Student, Goal, Session, DataPoint } from "@/lib/db/types";
 import { StudentCard } from "./StudentCard";
+import { GridView } from "./GridView";
+import { AccordionView } from "./AccordionView";
+import type { EntryActions, EntryView } from "./types";
 import { Walkthrough, TourLauncher } from "@/components/Walkthrough";
 import { ENTRY_TOUR_STEPS, ENTRY_TOUR_KEY } from "@/lib/tour-steps";
 import { useTour } from "@/lib/use-tour";
 
 const PERIOD_LABEL = "Daily Log";
+
+const VIEW_OPTIONS: { value: EntryView; label: string }[] = [
+  { value: "cards", label: "Card stack" },
+  { value: "grid", label: "Grid" },
+  { value: "accordion", label: "Accordion" },
+];
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -20,13 +29,16 @@ export function EntryScreen({ currentStaffName }: { currentStaffName: string }) 
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savingCount, setSavingCount] = useState(0);
+  const [view, setView] = useState<EntryView>("cards");
 
   // Source of truth for data points and timers is kept in refs so rapid
   // taps read the latest value synchronously; `version` forces a
   // re-render whenever a ref changes. This keeps every tap an
   // independent write to the Phase 2 API (autosave — see Phase 3
   // wireframe), never batched client-side state the Chromebook could
-  // lose if it closes mid-period.
+  // lose if it closes mid-period. All three layouts read from this same
+  // state via the `actions` bundle below, so switching layouts never
+  // loses or duplicates data.
   const dpByGoalRef = useRef<Map<string, DataPoint>>(new Map());
   const timersRef = useRef<Map<string, { startedAt: number | null; baseSeconds: number }>>(
     new Map()
@@ -173,69 +185,92 @@ export function EntryScreen({ currentStaffName }: { currentStaffName: string }) 
   if (error && !students) {
     return (
       <div className="p-6">
-        <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+        <p role="alert" className="text-sm" style={{ color: "#b91c1c" }}>
           {error}
         </p>
       </div>
     );
   }
 
+  const actions: EntryActions = {
+    dataPointForGoal: (goalId) => dpByGoalRef.current.get(goalId),
+    timerSecondsForGoal: timerSeconds,
+    timerRunningForGoal: (goalId) => !!timersRef.current.get(goalId)?.startedAt,
+    onTapAccuracy: tapAccuracy,
+    onTapTally: tapTally,
+    onSetIconReading: (goalId, value) => upsertDataPoint(goalId, { valueEnum: value }),
+    onSetPromptLevel: (goalId, value) => upsertDataPoint(goalId, { valueEnum: value }),
+    onSetFluencyRate: (goalId, value) => upsertDataPoint(goalId, { valueNumeric: value }),
+    onSetTaskStep: (goalId, step) => upsertDataPoint(goalId, { valueNumeric: step }),
+    onSetAccommodationUsed: (goalId, used) =>
+      upsertDataPoint(goalId, { valueEnum: used ? "used" : "not_used" }),
+    onStartTimer: startTimer,
+    onStopTimer: stopTimer,
+    onNoteBlur: (goalId, note) => upsertDataPoint(goalId, { note: note || null }),
+    onLogAccommodation: logAccommodation,
+  };
+
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <main className="page w-full flex-1">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
-            Roster sweep — {PERIOD_LABEL}
-          </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-500">
+          <h1>Roster sweep — {PERIOD_LABEL}</h1>
+          <p className="text-muted mt-1">
             {currentStaffName} · {todayIso()}
             {savingCount > 0 && " · saving…"}
           </p>
         </div>
-        <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 font-mono text-xs text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-          Synthetic data only
-        </span>
+        <span className="tag tag-outline">Synthetic data only — pilot</span>
+      </div>
+
+      <div className="mb-4">
+        <div className="seg" role="radiogroup" aria-label="Layout">
+          {VIEW_OPTIONS.map((opt) => (
+            <label key={opt.value} className="seg-opt">
+              <input
+                type="radio"
+                name="layout"
+                checked={view === opt.value}
+                onChange={() => setView(opt.value)}
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
       </div>
 
       {error && (
-        <p role="alert" className="mb-4 text-sm text-red-700 dark:text-red-400">
+        <p role="alert" className="mb-4 text-sm" style={{ color: "#b91c1c" }}>
           {error}
         </p>
       )}
 
       {!students ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-500">Loading roster…</p>
+        <p className="text-muted text-sm">Loading roster…</p>
       ) : students.length === 0 ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-500">
-          No students assigned to your classroom yet.
-        </p>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <p className="text-muted text-sm">No students assigned to your classroom yet.</p>
+      ) : view === "cards" ? (
+        <div className="flex flex-col gap-4">
           {students.map((student) => (
             <StudentCard
               key={student.id}
               student={student}
               goals={goalsByStudent.get(student.id) ?? []}
-              dataPointForGoal={(goalId) => dpByGoalRef.current.get(goalId)}
-              timerSecondsForGoal={timerSeconds}
-              timerRunningForGoal={(goalId) => !!timersRef.current.get(goalId)?.startedAt}
-              onTapAccuracy={tapAccuracy}
-              onTapTally={tapTally}
-              onSetIconReading={(goalId, value) => upsertDataPoint(goalId, { valueEnum: value })}
-              onSetPromptLevel={(goalId, value) => upsertDataPoint(goalId, { valueEnum: value })}
-              onSetFluencyRate={(goalId, value) =>
-                upsertDataPoint(goalId, { valueNumeric: value })
-              }
-              onSetTaskStep={(goalId, step) => upsertDataPoint(goalId, { valueNumeric: step })}
-              onSetAccommodationUsed={(goalId, used) =>
-                upsertDataPoint(goalId, { valueEnum: used ? "used" : "not_used" })
-              }
-              onStartTimer={startTimer}
-              onStopTimer={stopTimer}
-              onNoteBlur={(goalId, note) => upsertDataPoint(goalId, { note: note || null })}
-              onLogAccommodation={logAccommodation}
+              actions={actions}
             />
           ))}
+          <div className="card" style={{ borderStyle: "dashed", textAlign: "center", color: "var(--color-neutral-500)" }}>
+            + Add student to roster
+          </div>
+        </div>
+      ) : view === "grid" ? (
+        <GridView students={students} goalsByStudent={goalsByStudent} actions={actions} />
+      ) : (
+        <div className="flex flex-col gap-3">
+          <AccordionView students={students} goalsByStudent={goalsByStudent} actions={actions} />
+          <div className="card" style={{ borderStyle: "dashed", textAlign: "center", color: "var(--color-neutral-500)" }}>
+            + Add student to roster
+          </div>
         </div>
       )}
 

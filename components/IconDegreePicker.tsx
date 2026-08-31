@@ -25,7 +25,7 @@ export function IconDegreePicker({
 
   return (
     <div role="group" aria-label={label}>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-2">
         {options.map((opt) => {
           const selected = opt.value === value;
           return (
@@ -37,11 +37,8 @@ export function IconDegreePicker({
               aria-label={opt.label}
               title={opt.label}
               onClick={() => onChange(opt.value)}
-              className={`flex min-h-11 min-w-11 items-center justify-center rounded-lg border px-2 text-lg transition-colors ${
-                selected
-                  ? "border-amber-600 bg-amber-100 dark:border-amber-500 dark:bg-amber-950"
-                  : "border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
-              } disabled:opacity-50`}
+              className={selected ? "chip chip-on" : "chip"}
+              style={{ fontSize: 16, lineHeight: 1 }}
             >
               <span aria-hidden="true">{opt.glyph}</span>
             </button>

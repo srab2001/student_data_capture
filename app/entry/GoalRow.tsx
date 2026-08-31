@@ -13,6 +13,41 @@ const DOMAIN_LABEL: Record<Goal["domain"], string> = {
   accommodation: "Accommodation",
 };
 
+function CheckIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function XIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M18 6 6 18" />
+      <path d="M6 6l12 12" />
+    </svg>
+  );
+}
+
 export function GoalRow({
   goal,
   dataPoint,
@@ -29,6 +64,8 @@ export function GoalRow({
   onStopTimer,
   onNoteBlur,
   disabled,
+  showDomainAndText = true,
+  showNote = true,
 }: {
   goal: Goal;
   dataPoint: DataPoint | undefined;
@@ -45,6 +82,10 @@ export function GoalRow({
   onStopTimer: () => void;
   onNoteBlur: (note: string) => void;
   disabled?: boolean;
+  /** Grid rows show the widget only — the goal text/domain live in their own columns. */
+  showDomainAndText?: boolean;
+  /** Grid and Accordion drop the note affordance for density (per design handoff). */
+  showNote?: boolean;
 }) {
   const [noteOpen, setNoteOpen] = useState(!!dataPoint?.note);
   const total = dataPoint?.trialsTotal ?? 0;
@@ -52,26 +93,28 @@ export function GoalRow({
   const pct = total > 0 ? Math.round((correct / total) * 100) : null;
 
   return (
-    <div className="rounded-lg border border-zinc-100 p-3 dark:border-zinc-800">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-xs font-mono uppercase tracking-wide text-zinc-400 dark:text-zinc-600">
-            {DOMAIN_LABEL[goal.domain]}
-          </p>
-          <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-            {goal.goalText}
-          </p>
+    <div className={showDomainAndText ? "goalblock" : undefined}>
+      {showDomainAndText && (
+        <div className="flex items-start justify-between gap-2" style={{ alignItems: "baseline" }}>
+          <div>
+            <p className="text-muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              {DOMAIN_LABEL[goal.domain]}
+            </p>
+            <p style={{ fontWeight: 600 }}>{goal.goalText}</p>
+          </div>
+          {showNote && (
+            <button
+              type="button"
+              data-tour="note-toggle"
+              onClick={() => setNoteOpen((v) => !v)}
+              className="btn btn-ghost shrink-0"
+              aria-expanded={noteOpen}
+            >
+              {noteOpen ? "Hide note" : "+ Note"}
+            </button>
+          )}
         </div>
-        <button
-          type="button"
-          data-tour="note-toggle"
-          onClick={() => setNoteOpen((v) => !v)}
-          className="min-h-11 shrink-0 rounded-md px-2 text-xs text-zinc-500 hover:bg-zinc-100 dark:text-zinc-500 dark:hover:bg-zinc-900"
-          aria-expanded={noteOpen}
-        >
-          {noteOpen ? "Hide note" : "+ Note"}
-        </button>
-      </div>
+      )}
 
       <div className="mt-2">
         {goal.metricType === "accuracy_pct" && (
@@ -80,32 +123,29 @@ export function GoalRow({
               type="button"
               disabled={disabled}
               onClick={() => onTapAccuracy(true)}
-              className="min-h-11 min-w-11 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-emerald-800 hover:bg-emerald-100 disabled:opacity-50 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
+              className="btn btn-secondary iconbtn"
               aria-label="Correct trial"
             >
-              ✓
+              <CheckIcon />
             </button>
             <button
               type="button"
               disabled={disabled}
               onClick={() => onTapAccuracy(false)}
-              className="min-h-11 min-w-11 rounded-lg border border-red-200 bg-red-50 px-3 text-red-800 hover:bg-red-100 disabled:opacity-50 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+              className="btn btn-secondary iconbtn"
               aria-label="Incorrect trial"
             >
-              ✗
+              <XIcon />
             </button>
-            <span className="font-mono text-sm text-zinc-600 dark:text-zinc-400">
-              {correct}/{total}
-              {pct !== null && ` (${pct}%)`}
+            <span className="text-muted">
+              {total > 0 ? `${correct}/${total}${pct !== null ? ` (${pct}%)` : ""}` : "No trials yet"}
             </span>
           </div>
         )}
 
         {goal.metricType === "fluency_rate" && (
           <div className="flex items-center gap-2">
-            <label className="text-xs text-zinc-500 dark:text-zinc-500">
-              Correct words / min
-            </label>
+            <label className="text-muted text-xs">Correct words / min</label>
             <input
               type="number"
               inputMode="numeric"
@@ -116,7 +156,8 @@ export function GoalRow({
                 const n = Number(e.target.value);
                 if (!Number.isNaN(n)) onSetFluencyRate(n);
               }}
-              className="min-h-11 w-24 rounded-lg border border-zinc-200 px-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+              className="input"
+              style={{ width: 96 }}
             />
           </div>
         )}
@@ -127,7 +168,7 @@ export function GoalRow({
               type="button"
               disabled={disabled}
               onClick={onTapTally}
-              className="min-h-11 min-w-11 rounded-lg border border-zinc-200 bg-white px-4 font-mono text-sm hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+              className="btn btn-secondary"
               aria-label="Tally occurrence"
             >
               Tally: {dataPoint?.valueNumeric ?? 0}
@@ -149,26 +190,16 @@ export function GoalRow({
 
         {goal.metricType === "duration_seconds" && (
           <div data-tour="timer" className="flex items-center gap-2">
-            <span className="font-mono text-sm tabular-nums text-zinc-700 dark:text-zinc-300">
+            <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 15 }}>
               {String(Math.floor(timerSeconds / 60)).padStart(2, "0")}:
               {String(timerSeconds % 60).padStart(2, "0")}
             </span>
             {timerRunning ? (
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={onStopTimer}
-                className="min-h-11 rounded-lg border border-red-200 bg-red-50 px-3 text-sm text-red-800 disabled:opacity-50 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
-              >
+              <button type="button" disabled={disabled} onClick={onStopTimer} className="btn btn-secondary">
                 Stop
               </button>
             ) : (
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={onStartTimer}
-                className="min-h-11 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm text-emerald-800 disabled:opacity-50 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
-              >
+              <button type="button" disabled={disabled} onClick={onStartTimer} className="btn btn-secondary">
                 Start
               </button>
             )}
@@ -176,12 +207,7 @@ export function GoalRow({
         )}
 
         {goal.metricType === "prompt_level" && (
-          <div
-            data-tour="prompt-chips"
-            className="flex flex-wrap gap-1.5"
-            role="group"
-            aria-label="Prompt level"
-          >
+          <div data-tour="prompt-chips" className="flex flex-wrap gap-2" role="group" aria-label="Prompt level">
             {PROMPT_LEVELS.map((level) => (
               <button
                 key={level.value}
@@ -189,11 +215,7 @@ export function GoalRow({
                 disabled={disabled}
                 aria-pressed={dataPoint?.valueEnum === level.value}
                 onClick={() => onSetPromptLevel(level.value)}
-                className={`min-h-11 rounded-full border px-3 text-xs font-medium disabled:opacity-50 ${
-                  dataPoint?.valueEnum === level.value
-                    ? "border-amber-600 bg-amber-100 text-amber-900 dark:border-amber-500 dark:bg-amber-950 dark:text-amber-200"
-                    : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
-                }`}
+                className={dataPoint?.valueEnum === level.value ? "chip chip-on" : "chip"}
               >
                 {level.label}
               </button>
@@ -202,7 +224,7 @@ export function GoalRow({
         )}
 
         {goal.metricType === "task_analysis_step" && (
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Task analysis step">
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Task analysis step">
             {[1, 2, 3, 4, 5].map((step) => (
               <button
                 key={step}
@@ -210,11 +232,7 @@ export function GoalRow({
                 disabled={disabled}
                 aria-pressed={dataPoint?.valueNumeric === step}
                 onClick={() => onSetTaskStep(step)}
-                className={`min-h-11 min-w-11 rounded-lg border text-sm font-medium disabled:opacity-50 ${
-                  dataPoint?.valueNumeric === step
-                    ? "border-amber-600 bg-amber-100 text-amber-900 dark:border-amber-500 dark:bg-amber-950 dark:text-amber-200"
-                    : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
-                }`}
+                className={dataPoint?.valueNumeric === step ? "chip chip-on" : "chip"}
               >
                 {step}
               </button>
@@ -223,17 +241,13 @@ export function GoalRow({
         )}
 
         {goal.metricType === "accommodation_used" && (
-          <div className="flex gap-1.5">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               disabled={disabled}
               aria-pressed={dataPoint?.valueEnum === "used"}
               onClick={() => onSetAccommodationUsed(true)}
-              className={`min-h-11 rounded-lg border px-3 text-sm font-medium disabled:opacity-50 ${
-                dataPoint?.valueEnum === "used"
-                  ? "border-emerald-600 bg-emerald-100 text-emerald-900 dark:border-emerald-500 dark:bg-emerald-950 dark:text-emerald-200"
-                  : "border-zinc-200 bg-white text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
-              }`}
+              className={dataPoint?.valueEnum === "used" ? "chip chip-on" : "chip"}
             >
               Used
             </button>
@@ -242,11 +256,7 @@ export function GoalRow({
               disabled={disabled}
               aria-pressed={dataPoint?.valueEnum === "not_used"}
               onClick={() => onSetAccommodationUsed(false)}
-              className={`min-h-11 rounded-lg border px-3 text-sm font-medium disabled:opacity-50 ${
-                dataPoint?.valueEnum === "not_used"
-                  ? "border-zinc-500 bg-zinc-200 text-zinc-900 dark:border-zinc-400 dark:bg-zinc-800 dark:text-zinc-100"
-                  : "border-zinc-200 bg-white text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
-              }`}
+              className={dataPoint?.valueEnum === "not_used" ? "chip chip-on" : "chip"}
             >
               Not used
             </button>
@@ -254,14 +264,15 @@ export function GoalRow({
         )}
       </div>
 
-      {noteOpen && (
+      {showNote && noteOpen && (
         <textarea
           defaultValue={dataPoint?.note ?? ""}
           onBlur={(e) => onNoteBlur(e.target.value)}
           disabled={disabled}
           placeholder="Optional note…"
           rows={2}
-          className="mt-2 w-full rounded-lg border border-zinc-200 px-2 py-1.5 text-sm disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950"
+          className="input mt-2"
+          style={{ width: "100%" }}
         />
       )}
     </div>

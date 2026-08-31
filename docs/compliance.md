@@ -145,4 +145,15 @@ treating this as a working prototype, run `npm install && npm run db:seed
 && npm run dev` from a machine with normal network access and click through
 Phase 6's dry-run.
 
+## Entry-screen redesign log
+
+Built 2026-08-31, on synthetic data only, no Policy 3060 sign-off (Track A):
+
+| Piece | Status | Notes |
+|---|---|---|
+| **"Organic" design system** | ✅ Adopted app-wide | Warm cream/terracotta palette, Caprasimo/Figtree type, pill buttons/chips — tokens and component classes in `app/globals.css`, fonts wired via `next/font/google` in `app/layout.tsx`. Source design handoff archived at `docs/design/entry-screen-handoff/`. |
+| **Three entry-screen layouts** | ✅ Built | `/entry` now has a Card stack / Grid / Accordion switcher (`app/entry/EntryScreen.tsx`) — all three read and write through the same autosave state (`app/entry/types.ts`'s `EntryActions`), never duplicated per layout. New: `app/entry/GridView.tsx`, `app/entry/AccordionView.tsx`. |
+| **Goal-management, home, login screens** | ✅ Restyled | Reskinned to the same tokens for visual consistency; functionality unchanged. |
+| **Summary and help screens** | ⚠️ Not yet restyled | Still on the prior look — the design handoff was scoped to the entry screen only. Follow-up task if full app-wide consistency is wanted. |
+
 This log will be updated as each piece moves from prototype to reviewed.
