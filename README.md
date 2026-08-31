@@ -10,10 +10,11 @@ Built independently by a teacher using [Claude Code](https://claude.com/claude-c
 Full plan, compliance review, and phase-by-phase build instructions:
 [IEP Capture Pilot — artifact](https://claude.ai/code/artifact/f42a3d9c-ee1a-4b8d-860d-e8a4326da173)
 
-**Live demo (synthetic data only):** https://iep-capture-pilot-stus-projects-458dd35a.vercel.app
-— see `docs/compliance.md`'s build logs for current deployment status. The
-Vercel project is not yet git-linked, so it doesn't auto-deploy on push;
-see "Deploying" below.
+**Live demo:** https://iep-capture-pilot-stus-projects-458dd35a.vercel.app
+— currently serving an older build; the code in this branch (Organic
+redesign, goal management, 3-layout entry screen) is **not live yet**. See
+"Deploying" below for why, and `docs/compliance.md`'s build log for the
+current status.
 
 ## ⚠️ FERPA / student data notice
 
@@ -62,12 +63,19 @@ guide](http://localhost:3000/help) (`app/help/page.tsx`).
 
 The Vercel project (`iep-capture-pilot`) currently deploys via manual file
 upload, not a git integration — pushing to this branch does **not**
-auto-deploy. To switch to auto-deploy-on-push (recommended once you're past
-the pure-prototype phase): Vercel dashboard → project → Settings → Git →
+auto-deploy, and **the manual-upload path is not reliable for this
+codebase's size**: it has failed twice trying to transfer the full ~56-file
+tree `next build` needs, coming back with an incomplete `lib/` directory
+and `Module not found` build errors both times. This is not a
+"retry and it'll work" situation.
+
+**Fix it once, permanently:** Vercel dashboard → project → Settings → Git →
 **Connect Git Repository** → this repo, production branch
-`claude/student-data-capture-plan-dgb389`. That's a one-time manual step;
-there's no API/CLI path that reconnects an *existing* unlinked project to a
-repo without risking a duplicate project, so it isn't automated here.
+`claude/student-data-capture-plan-dgb389`. Vercel then clones the repo
+itself on every push — no file-transfer step, no size ceiling, and it
+auto-deploys from here on. There's no API/CLI path that reconnects an
+*existing* unlinked project to a repo without risking a duplicate project,
+so this one step has to be done by hand in the dashboard.
 
 ## Stack
 
