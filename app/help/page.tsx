@@ -142,6 +142,12 @@ export default function HelpPage() {
             <strong>Every tap saves immediately</strong> as its own write to the server. Nothing
             is batched client-side, so closing the Chromebook mid-period doesn&apos;t lose data.
           </p>
+          <p>
+            The dashed <strong>+ Add student to roster</strong> card at the bottom of Card stack and
+            Accordion adds a new student to your classroom — just a name; add their goals
+            afterward from that student&apos;s <strong>Manage goals</strong> link. New students are
+            always synthetic during this prototype phase, the same as every other student.
+          </p>
         </Section>
 
         <Section id="controls" title="What each control does">

@@ -158,4 +158,12 @@ Built 2026-08-31, on synthetic data only, no Policy 3060 sign-off (Track A):
 | **Production deploy** | ✅ Live and verified | The Vercel project is git-linked to `main`; PR #7's merge (commit `eca5c3a`) triggered a real `git clone` build that compiled cleanly, type-checked, and generated all 20 routes. Confirmed live at https://iep-capture-pilot.vercel.app: home/`help`/`login` all serve the Organic redesign with correct styling, `/entry` correctly redirects an unauthenticated request to `/login`, and `/api/auth/staff` returned the real seeded roster (`Synthetic Teacher`, `Synthetic Aide`) — i.e. the production Neon connection works end-to-end, not just the build. |
 | **Production deploy — history** | Resolved | Two earlier problems, now both fixed: (1) before Vercel was git-linked, its manual file-upload tool failed twice on this codebase's size (~150KB/56 files) — the transferred tree came back missing most of `lib/`. (2) The first two builds *after* linking Git still failed, oddly, on a single `Module not found: Can't resolve './globals.css'` despite the file being confirmed present on GitHub — diagnosed as stale "Redeploy" actions replaying an old pre-link deployment's file snapshot (no `Cloning github.com/...` line in their logs), not real builds off current code. A genuine webhook-triggered build immediately after showed a proper clone step and succeeded, confirming the git integration itself was fine all along. |
 
+## Add-student log
+
+Built 2026-08-31, on synthetic data only, no Policy 3060 sign-off (Track A):
+
+| Piece | Status | Notes |
+|---|---|---|
+| **Create a student** | ✅ Built | The design handoff's dashed "+ Add student to roster" card was previously a static placeholder with no API behind it — `POST /api/students` (`lib/validation.ts`'s `createStudentSchema`) now backs it. `classroomId` is always taken from the signed-in staff member's own classroom, never client-supplied, and `isSynthetic` is hard-coded `true` server-side — the endpoint has no way to create a non-synthetic student, matching the Track A guardrail above rather than just documenting it. New goals are added afterward from the student's existing "Manage goals" screen. |
+
 This log will be updated as each piece moves from prototype to reviewed.
