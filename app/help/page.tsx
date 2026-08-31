@@ -109,10 +109,34 @@ export default function HelpPage() {
 
         <Section id="entry-screen" title="The roster-sweep entry screen">
           <p>
-            <span className="font-mono text-xs">/entry</span> shows one card per student in your
-            classroom, each listing only their own IEP goals. The design goal is a full sweep of
-            an 8–10 student caseload in under 3 minutes, so every control is a single tap — no
-            drill-down, no typing unless you want to add a note.
+            <span className="font-mono text-xs">/entry</span> shows one row per goal, one way or
+            another, for every student in your classroom, each listing only their own IEP goals.
+            The design goal is a full sweep of an 8–10 student caseload in under 3 minutes, so
+            every control is a single tap — no drill-down, no typing unless you want to add a note.
+          </p>
+          <p>
+            The pill switcher at the top of the screen — <strong>Card stack</strong>,{" "}
+            <strong>Grid</strong>, or <strong>Accordion</strong> — changes how dense that view is,
+            not what data is behind it:
+          </p>
+          <ul className="list-disc space-y-2 pl-5">
+            <li>
+              <strong>Card stack</strong> — one full card per student, every goal expanded. The
+              most spacious; best for a smaller caseload or a slower-paced sweep.
+            </li>
+            <li>
+              <strong>Grid</strong> — a spreadsheet-style table, one row per goal, flattened across
+              the whole roster. Fastest to scan, but drops the note and accommodation controls for
+              density — switch to Card stack or Accordion for those.
+            </li>
+            <li>
+              <strong>Accordion</strong> — one collapsed row per student; tap a name to expand
+              their goals. Good middle ground for a larger caseload.
+            </li>
+          </ul>
+          <p>
+            All three read and write the same underlying data — switching layouts mid-sweep never
+            loses or duplicates a tap.
           </p>
           <p>
             <strong>Every tap saves immediately</strong> as its own write to the server. Nothing
