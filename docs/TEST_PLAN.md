@@ -2,10 +2,11 @@
 
 ## Scope
 
-Phase 1–2 release: immutable observation events, derived session aggregates,
+Phase 1–3 release: immutable observation events, derived session aggregates,
 idempotent/offline retry, correction, goal versioning, local dates,
 goal-specific task steps, optional accommodation effectiveness, structured
-measurement plans, and accessible due/evidence and save status.
+measurement plans, accessible due/evidence and save status, shared roster
+groups, Roster/Focus/Timers workflows, and per-staff entry preferences.
 
 All automated and manual tests use synthetic data only.
 
@@ -29,12 +30,17 @@ All automated and manual tests use synthetic data only.
 | Due assignment | The local date, weekday schedule, effective dates, and signed-in role determine whether a goal is due. Weekends are not aliased to weekdays. |
 | Evidence sufficiency | Accuracy trials are grouped by configured opportunities; frequency requires an explicit completed window; duration accepts a stopped interval or no-occurrence completion; other non-note readings count as samples. Status changes at the exact threshold and student counts include due goals only. |
 | Procedure access | Card/Accordion expose collection directions; Grid exposes compact plan status. Native semantic controls remain keyboard and screen-reader operable. |
+| Workflow continuity | Switching Roster, Focus, and Timers preserves queued/saved observations, running timers, undo state, and due/evidence calculations. |
+| Roster groups | Teachers can create, edit, and soft-retire classroom-scoped groups. Aides can read/filter but receive 403 on writes. Cross-classroom membership is rejected. |
+| Focus mode | One selected student is visible; Previous/Next wraps within the filtered roster. The focused student is not persisted. |
+| Timers mode | Only duration goals in the selected roster are shown with large, named Start/Stop, No occurrence, and Undo controls. |
+| Staff preferences | Layout, workflow mode, and selected group persist independently per staff member; stale groups fall back to All students; rapid changes retain the final selection. |
 
 ## Automated checks
 
 1. `npm test` — aggregation, compatibility, validation, local date, fluency
-   completion, plan schedule/role/date, legacy-plan, and evidence-threshold unit
-   tests.
+   completion, plan schedule/role/date, legacy-plan, evidence-threshold,
+   roster filtering, focus navigation, and workflow-validation unit tests.
 2. `npm run lint` — ESLint across application and tests.
 3. `npx tsc --noEmit` — strict TypeScript verification.
 4. `npx next build --webpack` — production compilation, route generation, and
@@ -52,7 +58,8 @@ On a disposable Neon/Postgres development branch:
 1. Snapshot row counts and schema.
 2. Apply `drizzle/0002_mighty_maggott.sql`, then
    `drizzle/0003_elite_bloodstrike.sql`, then
-   `drizzle/0004_calm_red_ghost.sql`.
+   `drizzle/0004_calm_red_ghost.sql`, then
+   `drizzle/0005_colorful_clea.sql`.
 3. Confirm all existing `data_points.entry_kind` values are
    `legacy_snapshot` and existing task-analysis goals have five temporary
    backfill labels.
@@ -69,7 +76,11 @@ On a disposable Neon/Postgres development branch:
     no-occurrence event counts without manufacturing seconds.
 12. Edit a populated goal definition and measurement plan; verify the
     transaction and historical plan retention.
-13. Restore the database snapshot or discard the disposable branch.
+13. Create/update/retire a group as teacher; verify aide reads it but receives
+    403 on every mutation, and reject a student from another classroom.
+14. Save different preferences for teacher and aide; verify reload, stale-group
+    fallback, final-write ordering, and audit entries.
+15. Restore the database snapshot or discard the disposable branch.
 
 ## Browser tests
 
@@ -96,18 +107,33 @@ Use ChromeOS or Chrome at 1366×768 and 100%/200% zoom:
     at 100%/200% zoom and keyboard-only.
 13. Open collection directions with keyboard and verify screen-reader reading
     order and polite status announcements.
+14. Switch Roster/Focus/Timers while an observation is queued and a timer is
+    running; verify continuity and exactly-once persistence.
+15. Filter by a group in all modes; edit/retire it as teacher and confirm an
+    aide can use but cannot manage groups.
+16. Verify Focus Previous/Next wraps within the selected group and does not
+    restore the focused student after reload.
+17. Verify Timers includes only duration goals and exposes student-specific
+    accessible names at 100% and 200% zoom.
+18. Switch staff accounts and confirm mode/layout/group preferences remain
+    independent and restore on another Chromebook/browser session.
 
 ## External gates
 
-- Production migrations, read-only authenticated API checks, and a Chrome UI
-  smoke test passed against the synthetic pilot on 2026-09-03. See
-  `docs/TEST_RESULTS.md` for deployment IDs and evidence.
-- The database write scenarios above still require a disposable synthetic
-  Neon/Postgres branch. They were deliberately not run against the shared
-  production pilot during the read-only release smoke test.
+- Production migrations `0002`–`0005`, authenticated API checks, teacher group
+  create/update/retire, aide read/403 authorization, independent staff
+  preferences, and a Chrome Phase 1–3 smoke test passed against the synthetic
+  pilot on 2026-09-03. See `docs/TEST_RESULTS.md` for deployment IDs and
+  evidence. The temporary release-check group was soft-retired and both test
+  accounts were reset to default preferences.
+- Observation-event writes, direct audit-row inspection, cross-classroom
+  rejection, populated-goal versioning, and fresh/upgrade/rollback migration
+  rehearsal still require a disposable synthetic Neon/Postgres branch.
 - The full ChromeOS/offline/keyboard/screen-reader/200%-zoom matrix and the
   teacher/aide timed roster sweep still require human execution.
-- A post-test production runtime-log scan remains pending because the managed
-  approval service rejected the Vercel log-read request.
+- The Phase 3 production runtime error scan completed with no matching entries
+  in the one-hour post-test window.
+- The production seed has no active duration-goal fixture, so Timers empty-state
+  behavior passed but Start/Stop/No occurrence continuity remains untested.
 - HCPSS privacy, security, accessibility, and operational approval remains a
   Track B gate. These tests do not authorize real student data.

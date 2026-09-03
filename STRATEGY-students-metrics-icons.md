@@ -1,11 +1,12 @@
 # Strategy: adding students, evaluation metrics, and icons
 
 > **Status update — 2026-09-03:** The goals manager and add-student flow
-> described as missing below are now merged on `main`. The local Phase 1
-> data-integrity release also changes `data_points` from mutable per-session
-> aggregates to immutable observation events with `entry_kind` and an
-> idempotent `client_request_id`. The local Phase 2 release also requires a
-> structured measurement plan for new goals. Use `STRATEGY-application-improvement.md`
+> described as missing below are now merged on `main`. Deployed Phase 1
+> data integrity changes `data_points` from mutable per-session aggregates to
+> immutable observation events with `entry_kind` and an idempotent
+> `client_request_id`; deployed Phase 2 requires a structured measurement plan.
+> Deployed Phase 3 adds roster groups and per-staff classroom workflows. Use
+> `STRATEGY-application-improvement.md`
 > for the active roadmap. This document remains the detailed reference for
 > adding students, metric types, and icon sets.
 

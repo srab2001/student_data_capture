@@ -1,5 +1,6 @@
 import type { DataPoint } from "@/lib/db/types";
 import type { MeasurementPlanStatus } from "@/lib/measurement-plans";
+import type { EntryLayout } from "@/lib/entry-workflow";
 
 /**
  * The full set of per-goal/per-student actions the entry screen exposes.
@@ -37,4 +38,4 @@ export type EntryActions = {
   disabled?: boolean;
 };
 
-export type EntryView = "cards" | "grid" | "accordion";
+export type EntryView = EntryLayout;

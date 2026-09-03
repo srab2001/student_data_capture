@@ -1,11 +1,13 @@
 # Handoff: IEP Capture Pilot — Entry Screen Redesign
 
-> Historical design reference. The Phase 1–2 releases supersede
+> Historical design reference. The Phase 1–3 releases supersede
 > the state-management notes below: the production entry screen now records
 > immutable observation events, derives session aggregates, keeps idempotent
 > pending writes in a staff-specific browser queue, and exposes per-goal
 > save/undo status. Phase 2 also replaces "logged today" with plan-aware
-> due/evidence status and adds collapsed collection directions. The visual
+> due/evidence status and adds collapsed collection directions. Deployed Phase 3 adds
+> Roster/Focus/Timers workflows, shared roster groups, and saved staff
+> preferences around these original layouts. The visual
 > references remain useful; do not reintroduce
 > the former one-row-per-goal PATCH model.
 

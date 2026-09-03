@@ -115,9 +115,15 @@ export default function HelpPage() {
             every control is a single tap — no drill-down, no typing unless you want to add a note.
           </p>
           <p>
-            The pill switcher at the top of the screen — <strong>Card stack</strong>,{" "}
-            <strong>Grid</strong>, or <strong>Accordion</strong> — changes how dense that view is,
-            not what data is behind it:
+            Choose the workflow that matches the classroom moment. <strong>Roster</strong> shows
+            the selected roster group, <strong>Focus</strong> keeps one student on screen with
+            Previous and Next controls, and <strong>Timers</strong> gathers the selected
+            students&apos; duration goals into large start/stop controls. Focus mode does not save
+            which student you were viewing.
+          </p>
+          <p>
+            In Roster mode, the layout switcher — <strong>Card stack</strong>, <strong>Grid</strong>,
+            or <strong>Accordion</strong> — changes how dense that view is, not what data is behind it:
           </p>
           <ul className="list-disc space-y-2 pl-5">
             <li>
@@ -136,7 +142,14 @@ export default function HelpPage() {
           </ul>
           <p>
             All three read and write the same underlying data — switching layouts mid-sweep never
-            loses or duplicates a tap.
+            loses or duplicates a tap. Your workflow mode, roster layout, and selected group are
+            saved to your staff account for the next Chromebook session.
+          </p>
+          <p>
+            The roster-group menu narrows any workflow without changing classroom enrollment.
+            Teachers can open <strong>Manage groups</strong> to create, edit, or retire shared
+            instructional groups. Aides can select those groups but cannot change them. Retiring
+            a group does not remove students or their observations.
           </p>
           <p>
             <strong>Every tap is preserved as its own observation.</strong> The value updates
@@ -271,7 +284,8 @@ export default function HelpPage() {
             </li>
             <li>
               An aide can create entries but cannot edit or delete another staff member&apos;s
-              past entries; a teacher has full access within their own classroom only.
+              past entries or manage roster groups; a teacher has full access within their own
+              classroom only.
             </li>
             <li>
               Real, identifiable student data is not permitted in this system until HCPSS
@@ -306,6 +320,14 @@ export default function HelpPage() {
             <li>
               <strong>A goal is missing from today&apos;s due count:</strong> check its effective
               dates, scheduled weekday, and responsible collector role in Manage goals.
+            </li>
+            <li>
+              <strong>A student is missing from the entry screen:</strong> choose All students
+              in the roster-group menu. The selected group is saved per staff member.
+            </li>
+            <li>
+              <strong>Timers says there are no duration goals:</strong> choose All students or
+              another roster group, or return to Focus or Roster for non-duration goals.
             </li>
             <li>
               <strong>You want to see the tour again:</strong> the{" "}

@@ -89,17 +89,23 @@ export async function PATCH(
         .limit(1);
 
       if (existingObservation) {
-        const replacement = await db.transaction(async (tx) => {
-          const [created] = await tx
+        const replacementId = crypto.randomUUID();
+        const now = new Date();
+        const [createdRows] = await db.batch([
+          db
             .insert(goals)
-            .values({ ...nextDefinition, supersedesGoalId: existing.id })
-            .returning();
-          await tx
+            .values({
+              id: replacementId,
+              ...nextDefinition,
+              supersedesGoalId: existing.id,
+            })
+            .returning(),
+          db
             .update(goals)
-            .set({ deletedAt: new Date(), updatedAt: new Date() })
-            .where(eq(goals.id, existing.id));
-          return created;
-        });
+            .set({ deletedAt: now, updatedAt: now })
+            .where(eq(goals.id, existing.id)),
+        ]);
+        const [replacement] = createdRows;
 
         await recordAudit({
           actorStaffId: current.id,

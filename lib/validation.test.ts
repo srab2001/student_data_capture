@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createDataPointSchema, createGoalSchema } from "@/lib/validation";
+import {
+  createDataPointSchema,
+  createGoalSchema,
+  entryPreferencesSchema,
+  rosterGroupSchema,
+} from "@/lib/validation";
 
 const ids = {
   goalId: "00000000-0000-4000-8000-000000000001",
@@ -141,5 +146,46 @@ describe("createGoalSchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe("Phase 3 workflow validation", () => {
+  it("accepts a bounded roster group with unique students", () => {
+    expect(
+      rosterGroupSchema.safeParse({
+        name: "Morning reading",
+        studentIds: [
+          "00000000-0000-4000-8000-000000000011",
+          "00000000-0000-4000-8000-000000000012",
+        ],
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects duplicate roster membership", () => {
+    const studentId = "00000000-0000-4000-8000-000000000011";
+    expect(
+      rosterGroupSchema.safeParse({
+        name: "Morning reading",
+        studentIds: [studentId, studentId],
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts only known entry preferences", () => {
+    expect(
+      entryPreferencesSchema.safeParse({
+        layout: "accordion",
+        workflowMode: "focus",
+        selectedGroupId: null,
+      }).success
+    ).toBe(true);
+    expect(
+      entryPreferencesSchema.safeParse({
+        layout: "cards",
+        workflowMode: "dashboard",
+        selectedGroupId: null,
+      }).success
+    ).toBe(false);
   });
 });

@@ -1,7 +1,6 @@
 # Application improvement strategy
 
-Updated 2026-09-03 for the deployed Phase 1 data-integrity and Phase 2
-measurement-fidelity release. The product goal is:
+Updated 2026-09-03 for deployed Phases 1–3. The product goal is:
 
 > A teacher or aide records a valid observation in under two seconds, with
 > minimal attention diverted from instruction, and can later turn those
@@ -17,7 +16,7 @@ recorded there.
 |---|---|---|
 | 1 — Data integrity | Immutable observations, undo, resilient saving, accurate task/accommodation behavior, goal versioning | Deployed to the synthetic pilot; automated and read-only production smoke checks pass; full write/offline/assistive-technology matrix remains |
 | 2 — Measurement fidelity | Structured measurement plans, baseline/mastery criteria, setting, schedule, responsible collector, due/evidence guidance | Deployed to the synthetic pilot; migrations and plan-form/API smoke checks pass; populated-plan write/version scenarios remain |
-| 3 — Classroom workflow | Roster/focus/timer modes, grouping and staff preferences | Planned; due-today foundation delivered in Phase 2 |
+| 3 — Classroom workflow | Roster/focus/timer modes, grouping and staff preferences | Deployed to the synthetic pilot; migration, teacher/aide API flows, preference recovery, Chrome smoke, and runtime error scan pass; full timer/accessibility matrix remains |
 | 4 — Decision support | Aim lines, data sufficiency, frequency compliance, intervention annotations, appropriate categorical graphs | Planned |
 | 5 — District readiness | District SSO, governance, vendor/security/accessibility review, retention and incident procedures | Gated |
 
@@ -141,9 +140,60 @@ on 2026-09-03. The remaining high-fidelity checks are:
 4. Confirm a plan edit on a populated goal creates a new version and retains
    the prior plan in historical summary/API data.
 
+## Phase 3 delivered requirements
+
+### FR10 — Match the active classroom workflow
+
+The entry screen offers three workflow modes over one observation state:
+Roster for a whole-group sweep, Focus for one student with Previous/Next
+navigation, and Timers for large-control access to duration goals.
+
+Acceptance: switching modes does not reset running timers, queued observations,
+session aggregates, undo state, or due/evidence calculations.
+
+### FR11 — Share instructional roster groups safely
+
+Teachers can create, edit, and retire named groups containing students from
+their classroom. Aides can filter by those groups but cannot mutate them.
+Groups never change classroom enrollment, and retirement is a soft delete.
+
+Acceptance: cross-classroom membership is rejected server-side; an aide write
+returns 403; retiring a selected group returns the user to All students without
+removing students or observations.
+
+### FR12 — Resume each staff member's preferred entry setup
+
+Roster layout, workflow mode, and selected group are stored on the signed-in
+staff record. Writes are validated, classroom-scoped, rate-limited, and
+serialized in the client so rapid switches cannot arrive out of order. The
+currently focused student is not persisted.
+
+Acceptance: teacher and aide preferences remain independent and restore after
+reload on another Chromebook.
+
+## Phase 3 release validation
+
+Completed for the synthetic production pilot on 2026-09-03: migration `0005`,
+teacher group create/update/retire and duplicate rejection, aide read/403
+authorization, independent preferences, Focus navigation/wrapping, Timers
+empty state, stale-group recovery, and a clean post-test runtime error scan.
+
+Before any broader pilot decision:
+
+1. Rehearse `0005_colorful_clea.sql` on a disposable synthetic database after
+   `0004`, including fresh, upgrade, and rollback/discard paths.
+2. Exercise cross-classroom rejection and inspect the resulting audit rows
+   directly; the single-classroom production fixture cannot cover that scope.
+3. Add a duration-goal fixture and test Roster, Focus, and Timers at 1366×768
+   and 200% zoom with keyboard and
+   screen reader, including active timers while switching modes/groups.
+4. Stress rapid preference changes and confirm the final selection on a second
+   device/browser session.
+
 ## Next phase
 
-Phase 3 should build on the delivered due-today foundation with teacher-defined
-roster groups, a single-student focus mode, timer-focused workflow, and saved
-per-staff layout/preferences. It should not duplicate the shared observation
-state or weaken the Phase 1–2 integrity and measurement-plan rules.
+Phase 4 should add decision support: aim lines, data-sufficiency warnings,
+collection-frequency compliance, intervention annotations, and graphs whose
+form matches the metric. It should consume the existing immutable events,
+versioned plans, groups, and staff preferences rather than adding parallel
+sources of truth.

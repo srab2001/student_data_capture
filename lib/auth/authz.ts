@@ -31,6 +31,12 @@ export function requireStaff(current: CurrentStaff | null): CurrentStaff {
   return current;
 }
 
+export function assertTeacher(current: CurrentStaff) {
+  if (current.role !== "teacher") {
+    throw new AuthzError("Only teachers can manage roster groups.", 403);
+  }
+}
+
 /** Can this staff member see/act within this classroom at all? */
 export function assertClassroomScope(current: CurrentStaff, classroomId: string) {
   if (current.classroomId !== classroomId) {

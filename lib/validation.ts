@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { collectionDayValues } from "@/lib/measurement-plans";
+import { entryLayoutValues, workflowModeValues } from "@/lib/entry-workflow";
 
 /**
  * Field-level validation for every write to goals, data_points, and
@@ -251,5 +252,26 @@ export const updateAccommodationLogSchema = z
     accommodationName: z.string().trim().min(1).max(200).optional(),
     used: z.boolean().optional(),
     effectivenessRating: z.number().int().min(1).max(5).nullable().optional(),
+  })
+  .strict();
+
+export const rosterGroupSchema = z
+  .object({
+    name: z.string().trim().min(1).max(80),
+    studentIds: z
+      .array(z.uuid())
+      .min(1)
+      .max(50)
+      .refine((ids) => new Set(ids).size === ids.length, {
+        message: "Each student can appear only once in a group.",
+      }),
+  })
+  .strict();
+
+export const entryPreferencesSchema = z
+  .object({
+    layout: z.enum(entryLayoutValues),
+    workflowMode: z.enum(workflowModeValues),
+    selectedGroupId: z.uuid().nullable(),
   })
   .strict();

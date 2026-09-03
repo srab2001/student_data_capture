@@ -198,6 +198,22 @@ async function main() {
     )
     .returning();
 
+  const [readingGroup] = await db
+    .insert(schema.rosterGroups)
+    .values({
+      classroomId: classroom.id,
+      name: "Synthetic reading group",
+      createdByStaffId: teacher.id,
+    })
+    .returning();
+  await db.insert(schema.rosterGroupStudents).values(
+    students.slice(0, Math.min(4, students.length)).map((student, position) => ({
+      groupId: readingGroup.id,
+      studentId: student.id,
+      position,
+    }))
+  );
+
   const goalsByStudent = new Map<string, (typeof schema.goals.$inferSelect)[]>();
   for (const student of students) {
     const goalCount = randomInt(2, 4);
@@ -318,7 +334,7 @@ async function main() {
   }
 
   console.log(
-    `Seeded 1 classroom, 2 staff, ${students.length} students, ` +
+    `Seeded 1 classroom, 2 staff, ${students.length} students, 1 roster group, ` +
       `${sessions.length} sessions, ${dataPointRows.length} data points.`
   );
 }

@@ -14,7 +14,17 @@ import { StudentCard } from "./StudentCard";
 import { GridView } from "./GridView";
 import { AccordionView } from "./AccordionView";
 import { AddStudentCard } from "./AddStudentCard";
+import { RosterGroupManager } from "./RosterGroupManager";
+import { TimerView } from "./TimerView";
 import type { EntryActions, EntryView } from "./types";
+import {
+  adjacentStudentId,
+  DEFAULT_ENTRY_PREFERENCES,
+  studentsInSelectedGroup,
+  type EntryPreferences,
+  type RosterGroupSummary,
+  type WorkflowMode,
+} from "@/lib/entry-workflow";
 import { Walkthrough, TourLauncher } from "@/components/Walkthrough";
 import { ENTRY_TOUR_STEPS, ENTRY_TOUR_KEY } from "@/lib/tour-steps";
 import { useTour } from "@/lib/use-tour";
@@ -26,6 +36,12 @@ const VIEW_OPTIONS: { value: EntryView; label: string }[] = [
   { value: "cards", label: "Card stack" },
   { value: "grid", label: "Grid" },
   { value: "accordion", label: "Accordion" },
+];
+
+const WORKFLOW_OPTIONS: { value: WorkflowMode; label: string }[] = [
+  { value: "roster", label: "Roster" },
+  { value: "focus", label: "Focus" },
+  { value: "timers", label: "Timers" },
 ];
 
 type NewObservationKind = Exclude<ObservationEntryKind, "legacy_snapshot">;
@@ -113,7 +129,16 @@ export function EntryScreen({
   const [goalsByStudent, setGoalsByStudent] = useState<Map<string, Goal[]>>(new Map());
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<EntryView>("cards");
+  const [groups, setGroups] = useState<RosterGroupSummary[]>([]);
+  const [view, setView] = useState<EntryView>(DEFAULT_ENTRY_PREFERENCES.layout);
+  const [workflowMode, setWorkflowMode] = useState<WorkflowMode>(
+    DEFAULT_ENTRY_PREFERENCES.workflowMode
+  );
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [focusStudentId, setFocusStudentId] = useState<string | null>(null);
+  const [preferenceStatus, setPreferenceStatus] = useState<
+    "idle" | "saving" | "saved" | "failed"
+  >("idle");
 
   const eventsByGoalRef = useRef<Map<string, DataPoint[]>>(new Map());
   const goalsByIdRef = useRef<Map<string, Goal>>(new Map());
@@ -122,6 +147,8 @@ export function EntryScreen({
   const failedIdsRef = useRef<Set<string>>(new Set());
   const lastSavedGoalsRef = useRef<Set<string>>(new Set());
   const timersRef = useRef<Map<string, number | null>>(new Map());
+  const preferenceQueueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const preferenceVersionRef = useRef(0);
   const [, bump] = useReducer((n: number) => n + 1, 0);
   const tour = useTour(ENTRY_TOUR_KEY, !!students && students.length > 0);
 
@@ -201,13 +228,15 @@ export function EntryScreen({
     async function load() {
       try {
         const sessionDate = localDateIso();
-        const [studentsRes, goalsRes, sessionRes] = await Promise.all([
+        const [studentsRes, goalsRes, sessionRes, groupsRes, preferencesRes] = await Promise.all([
           apiFetch<{ students: Student[] }>("/api/students"),
           apiFetch<{ goals: Goal[] }>("/api/goals"),
           apiFetch<{ session: Session }>("/api/sessions", {
             method: "POST",
             body: JSON.stringify({ sessionDate, periodLabel: PERIOD_LABEL }),
           }),
+          apiFetch<{ groups: RosterGroupSummary[] }>("/api/roster-groups"),
+          apiFetch<{ preferences: EntryPreferences }>("/api/entry-preferences"),
         ]);
         if (cancelled) return;
 
@@ -239,6 +268,16 @@ export function EntryScreen({
         setStudents(studentsRes.students);
         setGoalsByStudent(byStudent);
         setSession(sessionRes.session);
+        setGroups(groupsRes.groups);
+        setView(preferencesRes.preferences.layout);
+        setWorkflowMode(preferencesRes.preferences.workflowMode);
+        setSelectedGroupId(
+          groupsRes.groups.some(
+            (group) => group.id === preferencesRes.preferences.selectedGroupId
+          )
+            ? preferencesRes.preferences.selectedGroupId
+            : null
+        );
         bump();
         flushPending();
       } catch (err) {
@@ -403,6 +442,42 @@ export function EntryScreen({
     setGoalsByStudent((prev) => new Map(prev).set(student.id, []));
   }
 
+  function savePreferences(preferences: EntryPreferences) {
+    const version = ++preferenceVersionRef.current;
+    setView(preferences.layout);
+    setWorkflowMode(preferences.workflowMode);
+    setSelectedGroupId(preferences.selectedGroupId);
+    setPreferenceStatus("saving");
+    preferenceQueueRef.current = preferenceQueueRef.current
+      .catch(() => undefined)
+      .then(() =>
+        apiFetch<{ preferences: EntryPreferences }>("/api/entry-preferences", {
+          method: "PUT",
+          body: JSON.stringify(preferences),
+        })
+      )
+      .then(() => {
+        if (version === preferenceVersionRef.current) setPreferenceStatus("saved");
+      })
+      .catch((preferenceError) => {
+        if (version !== preferenceVersionRef.current) return;
+        setPreferenceStatus("failed");
+        setError(
+          preferenceError instanceof Error
+            ? preferenceError.message
+            : "Entry preferences could not be saved."
+        );
+      });
+  }
+
+  function updateGroups(nextGroups: RosterGroupSummary[]) {
+    setGroups(nextGroups);
+    if (selectedGroupId && !nextGroups.some((group) => group.id === selectedGroupId)) {
+      setFocusStudentId(null);
+      savePreferences({ layout: view, workflowMode, selectedGroupId: null });
+    }
+  }
+
   if (error && !students) {
     return (
       <div className="p-6">
@@ -474,11 +549,23 @@ export function EntryScreen({
     onLogAccommodation: logAccommodation,
   };
 
+  const visibleStudents = students
+    ? studentsInSelectedGroup(students, groups, selectedGroupId)
+    : [];
+  const activeFocusStudentId = visibleStudents.some(
+    (student) => student.id === focusStudentId
+  )
+    ? focusStudentId
+    : (visibleStudents[0]?.id ?? null);
+  const focusedStudent = visibleStudents.find(
+    (student) => student.id === activeFocusStudentId
+  );
+
   return (
     <main className="page w-full flex-1">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1>Roster sweep — {PERIOD_LABEL}</h1>
+          <h1>Classroom capture — {PERIOD_LABEL}</h1>
           <p className="text-muted mt-1">
             {currentStaffName} · {localDateIso()}
           </p>
@@ -486,21 +573,84 @@ export function EntryScreen({
         <span className="tag tag-outline">Synthetic data only — pilot</span>
       </div>
 
-      <div className="mb-4">
-        <div className="seg" role="radiogroup" aria-label="Layout">
-          {VIEW_OPTIONS.map((opt) => (
+      <div data-tour="workflow-modes" className="mb-4 flex flex-wrap items-end gap-3">
+        <div>
+          <p className="card-kicker mb-1">Workflow</p>
+          <div className="seg" role="radiogroup" aria-label="Workflow mode">
+            {WORKFLOW_OPTIONS.map((option) => (
+              <label key={option.value} className="seg-opt">
+                <input
+                  type="radio"
+                  name="workflow-mode"
+                  checked={workflowMode === option.value}
+                  onChange={() => {
+                    setFocusStudentId(null);
+                    savePreferences({
+                      layout: view,
+                      workflowMode: option.value,
+                      selectedGroupId,
+                    });
+                  }}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <label data-tour="roster-group-filter" className="flex flex-col gap-1">
+          <span className="card-kicker">Roster group</span>
+          <select
+            className="input"
+            value={selectedGroupId ?? ""}
+            onChange={(event) => {
+              const groupId = event.target.value || null;
+              setFocusStudentId(null);
+              savePreferences({ layout: view, workflowMode, selectedGroupId: groupId });
+            }}
+          >
+            <option value="">All students</option>
+            {groups.map((group) => (
+              <option key={group.id} value={group.id}>{group.name}</option>
+            ))}
+          </select>
+        </label>
+
+        <p className="text-muted text-xs" role="status" aria-live="polite">
+          {preferenceStatus === "saving"
+            ? "Saving preferences…"
+            : preferenceStatus === "saved"
+              ? "Preferences saved"
+              : preferenceStatus === "failed"
+                ? "Preferences not saved"
+                : ""}
+        </p>
+      </div>
+
+      {workflowMode === "roster" && (
+        <div className="mb-4">
+          <p className="card-kicker mb-1">Roster layout</p>
+          <div className="seg" role="radiogroup" aria-label="Layout">
+            {VIEW_OPTIONS.map((opt) => (
             <label key={opt.value} className="seg-opt">
               <input
                 type="radio"
                 name="layout"
                 checked={view === opt.value}
-                onChange={() => setView(opt.value)}
+                onChange={() =>
+                  savePreferences({
+                    layout: opt.value,
+                    workflowMode,
+                    selectedGroupId,
+                  })
+                }
               />
               {opt.label}
             </label>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {error && (
         <div className="mb-4 flex items-start justify-between gap-3" role="alert">
@@ -513,11 +663,73 @@ export function EntryScreen({
         </div>
       )}
 
+      {students && currentStaffRole === "teacher" && (
+        <div className="mb-4">
+          <RosterGroupManager students={students} groups={groups} onChange={updateGroups} />
+        </div>
+      )}
+
       {!students ? (
         <p className="text-muted text-sm">Loading roster…</p>
+      ) : workflowMode === "timers" ? (
+        <TimerView
+          students={visibleStudents}
+          goalsByStudent={goalsByStudent}
+          actions={actions}
+        />
+      ) : workflowMode === "focus" ? (
+        focusedStudent ? (
+          <div className="flex flex-col gap-3">
+            <div className="card flex flex-wrap items-end justify-between gap-3">
+              <label className="flex flex-col gap-1">
+                <span className="card-kicker">Focused student</span>
+                <select
+                  className="input"
+                  value={focusedStudent.id}
+                  onChange={(event) => setFocusStudentId(event.target.value)}
+                >
+                  {visibleStudents.map((student) => (
+                    <option key={student.id} value={student.id}>{student.displayName}</option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex gap-2" role="group" aria-label="Move between students">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() =>
+                    setFocusStudentId(
+                      adjacentStudentId(visibleStudents, focusedStudent.id, -1)
+                    )
+                  }
+                >
+                  ← Previous
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() =>
+                    setFocusStudentId(
+                      adjacentStudentId(visibleStudents, focusedStudent.id, 1)
+                    )
+                  }
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+            <StudentCard
+              student={focusedStudent}
+              goals={goalsByStudent.get(focusedStudent.id) ?? []}
+              actions={actions}
+            />
+          </div>
+        ) : (
+          <p className="text-muted text-sm">This roster group has no students.</p>
+        )
       ) : view === "cards" ? (
         <div className="flex flex-col gap-4">
-          {students.map((student) => (
+          {visibleStudents.map((student) => (
             <StudentCard
               key={student.id}
               student={student}
@@ -525,20 +737,20 @@ export function EntryScreen({
               actions={actions}
             />
           ))}
-          <AddStudentCard onCreated={handleStudentCreated} />
+          {!selectedGroupId && <AddStudentCard onCreated={handleStudentCreated} />}
         </div>
       ) : view === "grid" ? (
-        students.length === 0 ? (
+        visibleStudents.length === 0 ? (
           <p className="text-muted text-sm">
-            No students assigned to your classroom yet — switch to Card stack or Accordion to add one.
+            No students in this roster view.
           </p>
         ) : (
-          <GridView students={students} goalsByStudent={goalsByStudent} actions={actions} />
+          <GridView students={visibleStudents} goalsByStudent={goalsByStudent} actions={actions} />
         )
       ) : (
         <div className="flex flex-col gap-3">
-          <AccordionView students={students} goalsByStudent={goalsByStudent} actions={actions} />
-          <AddStudentCard onCreated={handleStudentCreated} />
+          <AccordionView students={visibleStudents} goalsByStudent={goalsByStudent} actions={actions} />
+          {!selectedGroupId && <AddStudentCard onCreated={handleStudentCreated} />}
         </div>
       )}
 

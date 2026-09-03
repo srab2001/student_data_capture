@@ -48,6 +48,11 @@ https://claude.ai/code/artifact/f42a3d9c-ee1a-4b8d-860d-e8a4326da173
   observation duration when applicable, responsible collector role, and
   effective start/end dates. These fields describe how an IEP goal is measured;
   they do not expand the student-identifying data collected.
+- Classroom roster-group names and student membership, used only to narrow the
+  teacher/aide entry screen during instruction. Groups remain scoped to one
+  classroom and are managed by teachers.
+- Per-staff entry-screen preferences: roster layout, workflow mode, and
+  optional selected group. The currently focused student is not persisted.
 
 No other fields should be added without updating this document first —
 see "Data minimization" in the full compliance review.
@@ -149,11 +154,12 @@ Built 2026-08-28, on synthetic data only, no Policy 3060 sign-off (Track A):
 | **Entry screen & summary view** | ✅ Built | `/entry` (roster sweep) and `/summary` (PLAAFP-prep rollup, CSV export, print view) — see `app/entry/` and `app/summary/`. |
 | **Accessibility pass** | ✅ Done, human check recommended | Touch/click targets ≥44px, `aria-label`/`aria-pressed` on custom controls, native keyboard-navigable elements throughout, no color-only state indicators. Color contrast has not been measured with an automated tool — flagged for a human check before this leaves the prototype phase. |
 
-**Historical limitation — resolved for read-only production use.** The
+**Historical limitation — resolved for scoped synthetic production use.** The
 original build environment could not exercise the Neon-backed app. On
 2026-09-03, the production migration ran within Vercel, and authenticated API
 and browser smoke tests loaded the synthetic roster and goals successfully.
-The write/offline/assistive-technology matrix remains open in
+Phase 3 later added synthetic teacher/aide group and preference write checks.
+The remaining observation/goal write, offline, and assistive-technology matrix remains open in
 `docs/TEST_PLAN.md`; this resolution does not change the synthetic-data-only
 restriction.
 
@@ -219,4 +225,20 @@ Released 2026-09-03 to the existing synthetic-data Vercel/Neon pilot:
 | **First migration-first deploy** | ❌ Stopped safely | Deployment `dpl_GKP6QhUSyaCjm6AyiJGyXuAusd23` found an empty Drizzle journal beside the manually applied legacy schema and failed before alias promotion. The prior production deployment remained live. |
 | **Legacy migration reconciliation** | ✅ Guarded | `scripts/migrate.ts` leaves a genuinely empty database for normal migration, and records baseline migrations `0000`–`0001` only when the journal is empty and all eight expected tables plus the append-only audit trigger are present; a partial baseline causes a hard failure. |
 | **Production deployment** | ✅ Live | Deployment `dpl_6DWUEXX1wJw1spUgAb6sSY4oPXiA` applied migrations `0002`–`0004`, completed the Next.js build, reached `READY`, and received the `iep-capture-pilot.vercel.app` alias. |
-| **Production verification** | ✅ Read-only smoke passed | Public pages, prototype teacher login, scoped roster/goals APIs, Card/Grid layouts, accessible control names, legacy plan warnings, and the measurement-plan editor passed. Runtime-log inspection was blocked by the managed approval service; full write/offline/assistive-technology testing remains open. |
+| **Production verification** | ✅ Read-only smoke passed; transaction defect fixed in Phase 3 | Public pages, prototype teacher login, scoped roster/goals APIs, Card/Grid layouts, accessible control names, legacy plan warnings, and the measurement-plan editor passed. A later review found the untested goal-version write used an unsupported Neon HTTP interactive transaction; Phase 3 replaced and deployed it with atomic batch execution. Populated-goal execution remains unrun, while the Phase 3 group batches passed. |
+
+## Phase 3 classroom-workflow release log
+
+Implemented and deployed 2026-09-03, on synthetic data only, no Policy 3060
+sign-off:
+
+| Piece | Status | Notes |
+|---|---|---|
+| **Roster, Focus, and Timers** | ✅ Code complete | The three workflows reuse one observation/session/timer/undo state. Timers shows only duration goals with large, student-specific controls. Focused student is transient. |
+| **Roster groups** | ✅ Code complete | Teachers can create, edit, and soft-retire classroom-scoped groups; aides can read/filter only. Membership writes validate every student against the signed-in classroom and use Neon HTTP atomic batches. |
+| **Staff preferences** | ✅ Code complete | Validated JSON stores layout, workflow mode, and selected group on the staff row. Client writes are serialized and status-announced; the focused student is not stored. |
+| **Migration `0005`** | ✅ Applied to synthetic production | Added `staff.entry_preferences`, `roster_groups`, and soft-deletable `roster_group_students` with foreign keys and indexes. Fresh/upgrade/rollback rehearsal on a disposable branch remains open. |
+| **Deployment** | ✅ Live | Vercel deployment `dpl_4xUDdv7586vRJiRtirnRE8kdK4A4` applied `0005`, generated all 22 routes, reached `READY`, and received the `iep-capture-pilot.vercel.app` alias. |
+| **API verification** | ✅ Scoped synthetic writes passed | Teacher group create/update/retire and duplicate rejection passed; aide list passed and all three aide mutations returned 403; per-staff preferences restored independently. The temporary group was retired and both preferences were reset. Cross-classroom rejection and direct audit-row inspection remain open. |
+| **Browser verification** | ✅ Smoke passed; full matrix open | Chrome restored teacher Focus/group preferences, wrapped Next navigation, restored Timers after reload, preserved independent aide Grid/Timers preferences, hid group management from the aide, and fell back to All students after group retirement. The seed has no duration fixture, and zoom/keyboard/screen-reader/offline checks remain open. |
+| **Runtime verification** | ✅ Clean post-test scan | The Vercel one-hour error scan returned no matching entries after API and Chrome testing. |

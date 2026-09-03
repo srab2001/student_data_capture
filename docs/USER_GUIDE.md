@@ -1,23 +1,43 @@
 # User guide
 
-This is the repository copy of the Phase 1–2 workflow guide. The same guidance
+This is the repository copy of the Phase 1–3 workflow guide. The same guidance
 is presented in the application at `/help`.
 
 ## Prerequisites
 
 - Use synthetic students only. Real identifiable student data is prohibited
   until the approvals in `docs/compliance.md` are complete.
-- The environment must have migrations `0002_mighty_maggott.sql`,
-  `0003_elite_bloodstrike.sql`, and `0004_calm_red_ghost.sql` applied in order.
-  They are applied on the hosted synthetic pilot as of 2026-09-03; local and
-  preview databases still require `npm run db:migrate` before use.
+- The environment must have migrations `0002_mighty_maggott.sql` through
+  `0005_colorful_clea.sql` applied in order. Migrations `0002`–`0005` are
+  applied on the hosted synthetic pilot as of 2026-09-03; local and preview
+  databases still require `npm run db:migrate` before use.
 - Sign in at `/login` as a synthetic teacher or aide. The picker is not
   production authentication.
 
+## Choose a classroom workflow
+
+Open `/entry` and select the workflow that fits the moment:
+
+- **Roster** shows the selected roster group using Card stack, Grid, or
+  Accordion. Switching layouts never changes the underlying observation data.
+- **Focus** keeps one student on screen. Use the student menu or Previous/Next
+  buttons to move through the selected group.
+- **Timers** gathers duration goals for the selected students into large
+  start/stop controls. Choose **No occurrence** when a planned window ends
+  without the target behavior.
+
+Your workflow mode, Roster layout, and selected group are saved to your staff
+account. The currently focused student is not saved.
+
+Use the roster-group menu to narrow any workflow. Teachers can open **Manage
+groups** to create, edit, or retire groups. Aides can use teacher-created groups
+but cannot change them. Groups only filter the screen; they do not add or
+remove students from the classroom.
+
 ## Record observations
 
-Open `/entry` and choose Card stack, Grid, or Accordion. All three layouts use
-the same data.
+All workflow modes use the same session, observation queue, timers, save state,
+and undo behavior.
 
 Read the plan status before collecting:
 
@@ -114,10 +134,16 @@ have data in the selected period.
 - **Failed:** use Undo last and record the observation again. Save the visible
   error message for support if it repeats.
 - **Entry screen will not load:** sign out and back in. If it persists, the
-  database may be unavailable or missing migrations `0002`, `0003`, or `0004`.
+  database may be unavailable or missing migrations `0002` through `0005`.
 - **Goal stays marked plan incomplete:** open Manage goals, complete every plan
   field except the optional end date, and enter opportunities or a window.
 - **Goal is not in today's due count:** confirm its effective dates, weekday
   schedule, and responsible collector role in Manage goals.
 - **Wrong staff member:** sign out before switching users. Pending queues are
   isolated by prototype staff ID.
+- **A student is missing:** choose **All students** from the roster-group menu.
+- **Timers is empty:** the selected group has no duration goals; choose another
+  group or use Focus/Roster for other goal types.
+- **Preferences did not save:** keep working in the current view, reconnect,
+  and change the setting once more. Observation saving is separate from
+  preference saving.

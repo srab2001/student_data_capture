@@ -10,13 +10,16 @@ Built independently by a teacher using [Claude Code](https://claude.com/claude-c
 Full plan, compliance review, and phase-by-phase build instructions:
 [IEP Capture Pilot — artifact](https://claude.ai/code/artifact/f42a3d9c-ee1a-4b8d-860d-e8a4326da173)
 
-**Live synthetic-data pilot:** https://iep-capture-pilot.vercel.app — Phase
-1 data integrity and Phase 2 measurement fidelity were deployed and smoke
-tested on 2026-09-03. Migrations `0002`–`0004` are applied, the production
-roster remains synthetic-only, and the public, authenticated API, and browser
-checks are recorded in `docs/TEST_RESULTS.md`. Full offline, assistive-
-technology, and write-path integration exercises remain release follow-ups;
-see `docs/compliance.md` for the governance boundary and deployment history.
+**Live synthetic-data pilot:** https://iep-capture-pilot.vercel.app — Phases
+1–3 were deployed and smoke tested on 2026-09-03. Migrations `0002`–`0005`
+are applied, the production roster remains synthetic-only, and authenticated
+teacher/aide group, preference, Focus, Timers-empty-state, and stale-group
+recovery checks are recorded in `docs/TEST_RESULTS.md`. The release also
+replaces the unsupported goal-versioning transaction primitive with the Neon
+HTTP driver's atomic batch API. Full offline, populated-goal versioning,
+cross-classroom, timer-fixture, zoom, keyboard, and screen-reader exercises
+remain follow-ups; see `docs/compliance.md` for the governance boundary and
+deployment history.
 
 ## ⚠️ FERPA / student data notice
 
@@ -68,7 +71,8 @@ Before running this branch against an existing database, apply all pending
 migrations with `npm run db:migrate`. Migration `0002` converts future data
 entry to immutable observation events while preserving prototype history;
 migration `0003` adds versioned measurement plans to goals; migration `0004`
-adds an explicit completed-observation event for valid zero-occurrence data.
+adds an explicit completed-observation event for valid zero-occurrence data;
+migration `0005` adds roster groups and staff entry preferences.
 
 ## Deploying
 
@@ -101,8 +105,8 @@ deploys ever regress and this history is useful context again.
 
 ## Where things live
 
-- `app/entry` — the roster-sweep data-entry screen: Card stack, Grid, and
-  Accordion layouts, all sharing one event-based autosave/offline queue
+- `app/entry` — Roster, Focus, and Timers workflows, with Card stack, Grid,
+  and Accordion roster layouts, all sharing one event-based autosave/offline queue
   (see `app/entry/types.ts`'s `EntryActions`)
 - `app/goals/[studentId]` — add/edit/retire a student's goals
 - `app/summary` — the PLAAFP-prep progress view, CSV export, print view (Phase 3/4)
@@ -152,3 +156,16 @@ gates in `docs/compliance.md` are complete.
 - Pre-Phase-2 goals remain usable and are labeled `Measurement plan incomplete`
   until a teacher supplies the real baseline and criteria. The migration never
   fabricates educational data.
+
+## Phase 3 classroom-workflow behavior
+
+- Roster mode retains Card stack, Grid, and Accordion layouts. Focus mode keeps
+  one student on screen with Previous/Next navigation. Timers mode gathers
+  duration goals into large start/stop controls.
+- A roster-group filter narrows any mode without changing classroom enrollment.
+  Teachers create, edit, and retire shared groups; aides can use but not manage
+  them.
+- Workflow mode, roster layout, and selected group are stored per staff member.
+  The currently focused student is deliberately not persisted.
+- All modes reuse the same observation queue, timers, save states, undo, and
+  measurement-plan calculations.

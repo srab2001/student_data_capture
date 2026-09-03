@@ -147,7 +147,9 @@ Append-only operational record. Do not include credentials or student data.
   could not write its usual npm log outside the workspace.
 - **Root cause:** Managed network and filesystem restrictions.
 - **Resolution:** Re-ran the read-only production audit with approved registry
-  access; it reported zero vulnerabilities.
+  access; it reported zero vulnerabilities. The same restriction recurred
+  during the Phase 3 final gate and the approved retry again reported zero
+  vulnerabilities.
 - **Prevention:** Expect explicit registry access for fresh advisory data in
   managed workspaces and keep audit output free of credentials.
 - **Status:** Resolved.
@@ -212,7 +214,117 @@ Append-only operational record. Do not include credentials or student data.
   the rejection.
 - **Resolution:** Did not bypass the control. Recorded the runtime-log scan as
   blocked while retaining direct HTTP, authenticated API, browser, build, and
-  deployment evidence.
+  deployment evidence. During the Phase 3 release, the same read-only scan was
+  approved and returned no error entries in the one-hour post-test window.
 - **Prevention:** Run the log scan from an approved operator session or CI
   release job and attach the result to the next verification record.
-- **Status:** Open operational verification gap.
+- **Status:** Resolved during the Phase 3 production release.
+
+## 2026-09-03 — New workflow routes exceeded two compile-time registries
+
+- **Context:** First TypeScript pass for Phase 3 roster groups and staff
+  preferences.
+- **Symptom:** New audit table names were rejected by `recordAudit`, and the
+  generated `RouteContext` union did not yet contain the newly added dynamic
+  roster-group route.
+- **Root cause:** The audit helper uses an intentional table-name allowlist,
+  and `.next/types` reflected the routes from the previous build.
+- **Resolution:** Extended the audit allowlist for the two approved workflow
+  records and used the repository's existing explicit async `params` type for
+  dynamic routes. No authorization check was removed.
+- **Prevention:** Update bounded audit registries with each approved schema
+  addition, and do not depend on generated route unions until type generation
+  has run for a newly created route.
+- **Status:** Resolved.
+
+## 2026-09-03 — Markdown search backticks were interpreted by the shell
+
+- **Context:** Scanning all documentation for stale Phase 2 release language.
+- **Symptom:** Backticked migration names inside a double-quoted `rg` pattern
+  were treated as shell command substitutions, producing harmless `command not
+  found` messages.
+- **Root cause:** The search expression used shell-significant quoting.
+- **Resolution:** No files were changed and no sensitive output was produced;
+  subsequent searches use single-quoted literal patterns or omit backticks.
+- **Prevention:** Keep Markdown backticks inside single-quoted shell arguments
+  and avoid interpolated search expressions.
+- **Status:** Resolved.
+
+## 2026-09-03 — Roster-group path IDs needed explicit scope-safe validation
+
+- **Context:** Phase 3 security review of the new group update/retire route.
+- **Symptom:** A malformed path ID could reach PostgreSQL and become a 500,
+  while a valid group ID from another classroom produced 403 and therefore
+  revealed that the record existed.
+- **Root cause:** The first route draft loaded by ID and applied classroom scope
+  as a second step.
+- **Resolution:** Validate the path parameter as a UUID and include the signed-
+  in classroom in the lookup itself. Missing and out-of-scope groups now share
+  the same 404 path; membership writes retain their separate classroom checks.
+- **Prevention:** Treat path parameters as request data, validate before query,
+  and make tenant/classroom scope part of the record lookup rather than a
+  post-query assertion.
+- **Status:** Resolved.
+
+## 2026-09-03 — Neon HTTP does not support interactive Drizzle transactions
+
+- **Context:** Runtime-oriented review of Phase 3 group mutations and the
+  existing Phase 2 goal-versioning path.
+- **Symptom:** The code compiled, but `db.transaction(async ...)` in the
+  installed `drizzle-orm/neon-http` driver unconditionally throws `No
+  transactions support in neon-http driver` at runtime.
+- **Root cause:** Interactive transaction syntax was written against the base
+  Drizzle API without checking the selected driver's runtime implementation.
+- **Resolution:** Replaced interactive transactions with `db.batch([...])`,
+  which the Neon HTTP driver executes through its atomic transaction endpoint.
+  IDs are generated before the batch so inserts and dependent writes remain in
+  one atomic request. This fixes Phase 3 group mutations and the previously
+  untested Phase 2 goal replacement/retirement operation.
+- **Prevention:** Check driver-specific transaction support before choosing a
+  transaction primitive and add credentialed write-path integration tests; a
+  successful TypeScript/build result cannot prove driver runtime support.
+- **Status:** Resolved and deployed. Phase 3 group batches executed
+  successfully in production; direct populated-goal versioning execution is a
+  separate remaining test gap.
+
+## 2026-09-03 — Production migration used the pooled application URL
+
+- **Context:** Phase 3 migration-first Vercel production deployment.
+- **Symptom:** The migration completed, but its redacted host classification
+  showed that `DATABASE_URL` points to Neon's pooled endpoint rather than a
+  dedicated direct migration endpoint.
+- **Root cause:** The Vercel project currently exposes the application URL to
+  the migration script and has no separate `DATABASE_URL_UNPOOLED` variable.
+- **Resolution:** Drizzle's Neon HTTP migrator completed `0005` successfully,
+  the 22-route build reached `READY`, and the new APIs passed credentialed
+  writes. No credential or hostname was recorded in documentation.
+- **Prevention:** Add a Vercel-only unpooled migration secret and update the
+  migration runner to prefer it before the next schema release.
+- **Status:** Open configuration-hardening item; this release succeeded.
+
+## 2026-09-03 — Production seed could not exercise duration timer controls
+
+- **Context:** Phase 3 production Chrome verification of Timers mode.
+- **Symptom:** The active synthetic goals contained no duration metric, so the
+  designed empty state rendered but Start, Stop, No occurrence, and active-
+  timer continuity could not be exercised.
+- **Root cause:** The production synthetic seed did not guarantee at least one
+  active goal for every metric type.
+- **Resolution:** Verified the empty state, preference restoration, and no
+  framework error overlay without inventing or retaining extra instructional
+  data in the shared pilot.
+- **Prevention:** Make disposable integration fixtures deterministic across
+  metric types and run timer stories on an isolated database branch.
+- **Status:** Open test-data gap.
+
+## 2026-09-03 — Compliance-document patch used an incorrect absolute path
+
+- **Context:** Synchronizing release documentation after Phase 3 deployment.
+- **Symptom:** The first `apply_patch` call failed before editing because the
+  absolute workspace path omitted part of the macOS user directory name.
+- **Root cause:** Manual path transcription error.
+- **Resolution:** Reissued the patch with the verified repository path; the
+  failed call made no file changes.
+- **Prevention:** Reuse the working-directory path returned by `pwd` for
+  absolute patch targets.
+- **Status:** Resolved.

@@ -14,6 +14,7 @@ import {
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import type { MeasurementPlan } from "@/lib/measurement-plans";
+import type { EntryPreferences } from "@/lib/entry-workflow";
 
 // See docs/compliance.md — this file is the source of truth for what data
 // this app stores. Do not add a field here without updating that document
@@ -105,6 +106,9 @@ export const staff = pgTable("staff", {
   // Teacher: the classroom they own. Aide: the same classroom as their
   // assigned teacher. Null only until a staff member is assigned.
   classroomId: uuid("classroom_id").references(() => classrooms.id),
+  // Small, non-instructional UI preference object. The currently focused
+  // student is deliberately not persisted.
+  entryPreferences: jsonb("entry_preferences").$type<EntryPreferences>(),
   ...timestamps,
 });
 
@@ -120,6 +124,41 @@ export const students = pgTable("students", {
   isSynthetic: boolean("is_synthetic").notNull().default(true),
   ...timestamps,
 });
+
+export const rosterGroups = pgTable(
+  "roster_groups",
+  {
+    ...identity,
+    classroomId: uuid("classroom_id")
+      .notNull()
+      .references(() => classrooms.id),
+    name: text("name").notNull(),
+    createdByStaffId: uuid("created_by_staff_id")
+      .notNull()
+      .references(() => staff.id),
+    ...timestamps,
+  },
+  (table) => [index("roster_groups_classroom_id_idx").on(table.classroomId)]
+);
+
+export const rosterGroupStudents = pgTable(
+  "roster_group_students",
+  {
+    ...identity,
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => rosterGroups.id),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id),
+    position: integer("position").notNull().default(0),
+    ...timestamps,
+  },
+  (table) => [
+    index("roster_group_students_group_id_idx").on(table.groupId),
+    index("roster_group_students_student_id_idx").on(table.studentId),
+  ]
+);
 
 export const goals = pgTable(
   "goals",

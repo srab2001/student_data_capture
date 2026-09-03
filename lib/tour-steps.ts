@@ -5,13 +5,23 @@ export type TourStep = {
   body: string;
 };
 
-export const ENTRY_TOUR_KEY = "iep_pilot_tour_entry_v1";
+export const ENTRY_TOUR_KEY = "iep_pilot_tour_entry_v2";
 export const SUMMARY_TOUR_KEY = "iep_pilot_tour_summary_v1";
 
 export const ENTRY_TOUR_STEPS: TourStep[] = [
   {
-    title: "Welcome to the roster sweep",
-    body: "This is the screen you and your aide use during class to log IEP progress — one card per student, everything tap-based. Each goal shows whether it is due and how many observations are required. Every tap is preserved, and Undo last corrects a mistaken tap.",
+    title: "Welcome to classroom capture",
+    body: "This is the screen you and your aide use during class to log IEP progress. Each goal shows whether it is due and how many observations are required. Every tap is preserved, and Undo last corrects a mistaken tap.",
+  },
+  {
+    target: '[data-tour="workflow-modes"]',
+    title: "Choose the workflow that fits the moment",
+    body: "Roster shows the whole selected group, Focus keeps one student on screen with Previous and Next navigation, and Timers collects every duration goal into large start/stop controls. Your mode and roster layout are saved to your staff account.",
+  },
+  {
+    target: '[data-tour="roster-group-filter"]',
+    title: "Narrow to an instructional group",
+    body: "Choose a teacher-defined roster group without changing the underlying classroom roster. Teachers can manage shared groups; aides can use them. Choose All students to return to the full roster.",
   },
   {
     target: '[data-tour="student-card"]',
