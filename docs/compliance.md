@@ -184,6 +184,17 @@ Built 2026-08-31, on synthetic data only, no Policy 3060 sign-off (Track A):
 |---|---|---|
 | **Create a student** | ✅ Built | The design handoff's dashed "+ Add student to roster" card was previously a static placeholder with no API behind it — `POST /api/students` (`lib/validation.ts`'s `createStudentSchema`) now backs it. `classroomId` is always taken from the signed-in staff member's own classroom, never client-supplied, and `isSynthetic` is hard-coded `true` server-side — the endpoint has no way to create a non-synthetic student, matching the Track A guardrail above rather than just documenting it. New goals are added afterward from the student's existing "Manage goals" screen. |
 
+## Feature-backlog Phase 1 + 2 log
+
+Built 2026-09-03, on synthetic data only, no Policy 3060 sign-off (Track A):
+
+| Piece | Status | Notes |
+|---|---|---|
+| **Phase 1 — edit/retire a student** | ✅ Built | `PATCH`/`DELETE /api/students/[id]` (`lib/validation.ts`'s `updateStudentSchema`), closing the asymmetry where goals had full CRUD but students only had create. Retire is a soft-delete (`deletedAt`) — past goals and data points are kept, matching the existing goal-retirement pattern. UI: a rename field + "Retire student" button on `/goals/[studentId]` (`GoalsManager.tsx`'s `StudentDetailsEditor`). |
+| **Phase 2 — per-student accommodations** | ✅ Built | New table `student_accommodations` (migration `drizzle/0002_sparkling_sharon_carter.sql`, applied to the `crimson-flower-01823647` dev branch) replaces the accommodation picker's previously hardcoded, one-size-fits-all list. Full CRUD at `/api/student-accommodations` (+ `/[id]`), managed from a new "Accommodations" section on `/goals/[studentId]`. `StudentCard.tsx`'s accommodation-log picker on `/entry` now reads each student's own configured list instead of `StudentCard.tsx`'s old `ACCOMMODATIONS` constant. |
+
+**Unrelated observation, not from this work:** the live dev database also has `roster_groups` and `roster_group_students` tables that aren't in `lib/db/schema.ts` — they weren't created by any migration in this repo's history, so they're drift from something outside this codebase. Left untouched; worth checking with whoever added them before the next schema change touches that area.
+
 This log will be updated as each piece moves from prototype to reviewed.
 
 ## Phase 1 data-integrity release log

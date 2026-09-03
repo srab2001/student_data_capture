@@ -240,6 +240,18 @@ export const dataPoints = pgTable(
   ]
 );
 
+// The accommodations configured for a student's IEP — what shows up in
+// the picker on their entry-screen card. Separate from accommodation_logs
+// below, which records each time one was actually used.
+export const studentAccommodations = pgTable("student_accommodations", {
+  ...identity,
+  studentId: uuid("student_id")
+    .notNull()
+    .references(() => students.id),
+  name: text("name").notNull(),
+  ...timestamps,
+});
+
 export const accommodationLogs = pgTable("accommodation_logs", {
   ...identity,
   studentId: uuid("student_id")

@@ -1,5 +1,9 @@
 {
+ claude/student-data-capture-plan-dgb389
+  "id": "c890fc0c-35ca-4bc0-8362-311081887f20",
+
   "id": "fbc7469c-b331-4159-a0bc-8fcf65a6c148",
+ main
   "prevId": "19d8ca71-b5ab-4110-a92c-5248fb69c228",
   "version": "7",
   "dialect": "postgresql",
@@ -257,20 +261,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "entry_kind": {
-          "name": "entry_kind",
-          "type": "observation_entry_kind",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'legacy_snapshot'"
-        },
-        "client_request_id": {
-          "name": "client_request_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "value_numeric": {
           "name": "value_numeric",
           "type": "integer",
@@ -322,6 +312,9 @@
           "notNull": false
         }
       },
+ claude/student-data-capture-plan-dgb389
+      "indexes": {},
+
       "indexes": {
         "data_points_client_request_id_unique": {
           "name": "data_points_client_request_id_unique",
@@ -366,6 +359,7 @@
           "with": {}
         }
       },
+ main
       "foreignKeys": {
         "data_points_goal_id_goals_id_fk": {
           "name": "data_points_goal_id_goals_id_fk",
@@ -456,6 +450,8 @@
           "primaryKey": false,
           "notNull": false
         },
+ claude/student-data-capture-plan-dgb389
+
         "task_analysis_steps": {
           "name": "task_analysis_steps",
           "type": "jsonb",
@@ -468,6 +464,7 @@
           "primaryKey": false,
           "notNull": false
         },
+ main
         "target_frequency": {
           "name": "target_frequency",
           "type": "target_frequency",
@@ -496,6 +493,9 @@
           "notNull": false
         }
       },
+ claude/student-data-capture-plan-dgb389
+      "indexes": {},
+
       "indexes": {
         "goals_supersedes_goal_id_idx": {
           "name": "goals_supersedes_goal_id_idx",
@@ -513,6 +513,7 @@
           "with": {}
         }
       },
+ main
       "foreignKeys": {
         "goals_student_id_students_id_fk": {
           "name": "goals_student_id_students_id_fk",
@@ -526,6 +527,8 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
+ claude/student-data-capture-plan-dgb389
+
         },
         "goals_supersedes_goal_id_goals_id_fk": {
           "name": "goals_supersedes_goal_id_goals_id_fk",
@@ -539,6 +542,7 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
+ main
         }
       },
       "compositePrimaryKeys": {},
@@ -704,6 +708,74 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+ claude/student-data-capture-plan-dgb389
+    "public.student_accommodations": {
+      "name": "student_accommodations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "student_accommodations_student_id_students_id_fk": {
+          "name": "student_accommodations_student_id_students_id_fk",
+          "tableFrom": "student_accommodations",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+
+ main
     "public.students": {
       "name": "students",
       "schema": "",
@@ -812,6 +884,8 @@
         "accommodation_used"
       ]
     },
+ claude/student-data-capture-plan-dgb389
+
     "public.observation_entry_kind": {
       "name": "observation_entry_kind",
       "schema": "public",
@@ -828,6 +902,7 @@
         "note"
       ]
     },
+ main
     "public.prompt_level": {
       "name": "prompt_level",
       "schema": "public",

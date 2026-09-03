@@ -243,6 +243,12 @@ export default function HelpPage() {
             usable but are visibly marked <strong>Measurement plan incomplete</strong> until a
             teacher updates them.
           </p>
+          <p>
+            The same <strong>Manage goals</strong> screen also has a field to rename the student
+            and a <strong>Retire student</strong> button — retiring removes them from the
+            entry-screen roster but keeps their past goals and data points, same as retiring a
+            single goal.
+          </p>
         </Section>
 
         <Section id="accommodations" title="Logging accommodations">
@@ -252,6 +258,12 @@ export default function HelpPage() {
             used for icon-degree goals, and log it as used or not used. Leaving the rating blank
             stores no rating; the app does not substitute a default. This is separate from goal
             observations and currently requires a network connection.
+          </p>
+          <p>
+            The accommodation list is per student, configured from their <strong>Manage
+            goals</strong> screen — add, rename, or retire accommodations there to match what&apos;s
+            actually on that student&apos;s IEP, rather than picking from every student&apos;s combined
+            list.
           </p>
         </Section>
 

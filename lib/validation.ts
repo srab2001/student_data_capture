@@ -238,6 +238,25 @@ export const createStudentSchema = z
   })
   .strict();
 
+export const updateStudentSchema = z
+  .object({
+    displayName: z.string().trim().min(1).max(200).optional(),
+  })
+  .strict();
+
+export const createStudentAccommodationSchema = z
+  .object({
+    studentId: z.uuid(),
+    name: z.string().trim().min(1).max(200),
+  })
+  .strict();
+
+export const updateStudentAccommodationSchema = z
+  .object({
+    name: z.string().trim().min(1).max(200).optional(),
+  })
+  .strict();
+
 export const createAccommodationLogSchema = z
   .object({
     studentId: z.uuid(),

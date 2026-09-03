@@ -1,5 +1,10 @@
 "use client";
 
+ claude/student-data-capture-plan-dgb389
+import { useEffect, useReducer, useRef, useState, useCallback } from "react";
+import { apiFetch } from "@/lib/api-client";
+import type { Student, Goal, Session, DataPoint, StudentAccommodation } from "@/lib/db/types";
+
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type { Student, Goal, Session, DataPoint } from "@/lib/db/types";
@@ -10,6 +15,7 @@ import {
   type ObservationEntryKind,
 } from "@/lib/observations";
 import { measurementPlanStatus } from "@/lib/measurement-plans";
+ main
 import { StudentCard } from "./StudentCard";
 import { GridView } from "./GridView";
 import { AccordionView } from "./AccordionView";
@@ -127,6 +133,9 @@ export function EntryScreen({
 }) {
   const [students, setStudents] = useState<Student[] | null>(null);
   const [goalsByStudent, setGoalsByStudent] = useState<Map<string, Goal[]>>(new Map());
+  const [accommodationsByStudent, setAccommodationsByStudent] = useState<
+    Map<string, StudentAccommodation[]>
+  >(new Map());
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [groups, setGroups] = useState<RosterGroupSummary[]>([]);
@@ -227,10 +236,15 @@ export function EntryScreen({
 
     async function load() {
       try {
+ claude/student-data-capture-plan-dgb389
+        const [studentsRes, goalsRes, accommodationsRes, sessionRes] = await Promise.all([
+
         const sessionDate = localDateIso();
         const [studentsRes, goalsRes, sessionRes, groupsRes, preferencesRes] = await Promise.all([
+ main
           apiFetch<{ students: Student[] }>("/api/students"),
           apiFetch<{ goals: Goal[] }>("/api/goals"),
+          apiFetch<{ accommodations: StudentAccommodation[] }>("/api/student-accommodations"),
           apiFetch<{ session: Session }>("/api/sessions", {
             method: "POST",
             body: JSON.stringify({ sessionDate, periodLabel: PERIOD_LABEL }),
@@ -249,6 +263,14 @@ export function EntryScreen({
         goalsByIdRef.current = new Map(
           goalsRes.goals.map((goal) => [goal.id, goal])
         );
+
+        const accommodationsByStudentId = new Map<string, StudentAccommodation[]>();
+        for (const acc of accommodationsRes.accommodations) {
+          const list = accommodationsByStudentId.get(acc.studentId) ?? [];
+          list.push(acc);
+          accommodationsByStudentId.set(acc.studentId, list);
+        }
+        setAccommodationsByStudent(accommodationsByStudentId);
 
         const dpRes = await apiFetch<{ dataPoints: DataPoint[] }>(
           `/api/data-points?sessionId=${sessionRes.session.id}`
@@ -440,6 +462,7 @@ export function EntryScreen({
   function handleStudentCreated(student: Student) {
     setStudents((prev) => [...(prev ?? []), student]);
     setGoalsByStudent((prev) => new Map(prev).set(student.id, []));
+    setAccommodationsByStudent((prev) => new Map(prev).set(student.id, []));
   }
 
   function savePreferences(preferences: EntryPreferences) {
@@ -734,6 +757,7 @@ export function EntryScreen({
               key={student.id}
               student={student}
               goals={goalsByStudent.get(student.id) ?? []}
+              accommodations={accommodationsByStudent.get(student.id) ?? []}
               actions={actions}
             />
           ))}

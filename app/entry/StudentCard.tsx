@@ -2,18 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { Student, Goal } from "@/lib/db/types";
+import type { Student, Goal, StudentAccommodation } from "@/lib/db/types";
 import type { EntryActions } from "./types";
 import { GoalRow } from "./GoalRow";
 import { EffectivenessRatingPicker } from "@/components/IconDegreePicker";
-
-const ACCOMMODATIONS = [
-  "Extended time",
-  "Preferential seating",
-  "Visual schedule",
-  "Noise-cancelling headphones",
-  "Chunked assignments",
-];
 
 function isLogged(goal: Goal, actions: EntryActions): boolean {
   const dp = actions.dataPointForGoal(goal.id);
@@ -40,15 +32,18 @@ function isLogged(goal: Goal, actions: EntryActions): boolean {
 export function StudentCard({
   student,
   goals,
+  accommodations,
   actions,
 }: {
   student: Student;
   goals: Goal[];
+  accommodations: StudentAccommodation[];
   actions: EntryActions;
 }) {
   const [accommodationOpen, setAccommodationOpen] = useState(false);
-  const [accommodationName, setAccommodationName] = useState(ACCOMMODATIONS[0]);
+  const [accommodationName, setAccommodationName] = useState("");
   const [effectiveness, setEffectiveness] = useState<number | null>(null);
+  const selectedAccommodation = accommodationName || accommodations[0]?.name || "";
 
   const dueStatuses = goals
     .map((goal) => actions.measurementStatusForGoal(goal.id))
@@ -113,24 +108,61 @@ export function StudentCard({
         </button>
 
         {accommodationOpen && (
-          <div className="mt-2 flex flex-col gap-2" style={{ maxWidth: 360 }}>
-            <select
-              value={accommodationName}
-              onChange={(e) => setAccommodationName(e.target.value)}
-              className="input"
-              aria-label="Accommodation"
-            >
-              {ACCOMMODATIONS.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
+          accommodations.length === 0 ? (
+            <p className="text-muted mt-2 text-sm">
+              No accommodations configured yet —{" "}
+              <Link href={`/goals/${student.id}`} className="underline underline-offset-4">
+                add some
+              </Link>
+              .
+            </p>
+          ) : (
+            <div className="mt-2 flex flex-col gap-2" style={{ maxWidth: 360 }}>
+              <select
+                value={selectedAccommodation}
+                onChange={(e) => setAccommodationName(e.target.value)}
+                className="input"
+                aria-label="Accommodation"
+              >
+                {accommodations.map((a) => (
+                  <option key={a.id} value={a.name}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
 
-            <div className="flex items-center gap-3">
-              <span className="text-muted text-xs">Effectiveness</span>
-              <EffectivenessRatingPicker value={effectiveness} onChange={setEffectiveness} />
-            </div>
+              <div className="flex items-center gap-3">
+                <span className="text-muted text-xs">Effectiveness</span>
+                <EffectivenessRatingPicker value={effectiveness} onChange={setEffectiveness} />
+              </div>
+
+ claude/student-data-capture-plan-dgb389
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={actions.disabled}
+                  onClick={() => {
+                    actions.onLogAccommodation(student.id, selectedAccommodation, true, effectiveness ?? 3);
+                    setAccommodationOpen(false);
+                    setEffectiveness(null);
+                  }}
+                  className="btn btn-secondary"
+                >
+                  Log as used
+                </button>
+                <button
+                  type="button"
+                  disabled={actions.disabled}
+                  onClick={() => {
+                    actions.onLogAccommodation(student.id, selectedAccommodation, false, effectiveness ?? 3);
+                    setAccommodationOpen(false);
+                    setEffectiveness(null);
+                  }}
+                  className="btn btn-ghost"
+                >
+                  Log as not used
+                </button>
+              </div>
 
             <div className="flex gap-2">
               <button
@@ -157,8 +189,9 @@ export function StudentCard({
               >
                 Log as not used
               </button>
+ main
             </div>
-          </div>
+          )
         )}
       </div>
     </section>
