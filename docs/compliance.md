@@ -182,7 +182,7 @@ Provisioned 2026-08-28, on synthetic data only, no Policy 3060 sign-off:
 
 | Piece | Status | Notes |
 |---|---|---|
-| **Vercel project** | ✅ Deployed | `iep-capture-pilot`, production alias `iep-capture-pilot.vercel.app`. File-based deploy (not git-linked yet). |
+| **Vercel project** | ✅ Deployed | `iep-capture-pilot`, production alias `iep-capture-pilot.vercel.app`. Git-linked to `main`; the 2026-09-03 admin release is deployment `dpl_91TrcdW5EkVYRr5gaQq4vcSNvizL`. |
 | **Neon database** | ✅ Created | Dev branch project `iep-capture-pilot-dev` (`crimson-flower-01823647`, region `us-east-1`). Schema applied in Phase 1 (below). |
 | **GitHub repo** | ✅ Pushed | `srab2001/student_data_capture`, branch `claude/student-data-capture-plan-dgb389`. |
 
@@ -301,8 +301,8 @@ sign-off:
 
 ## Phase 4 decision-support implementation log
 
-Implemented locally 2026-09-03, synthetic data only, no Policy 3060 sign-off.
-It is intentionally not deployed until migration and browser gates pass:
+Implemented and deployed to the synthetic pilot 2026-09-03; no Policy 3060
+sign-off and no authorization for identifiable student data:
 
 | Piece | Status | Notes |
 |---|---|---|
@@ -311,29 +311,31 @@ It is intentionally not deployed until migration and browser gates pass:
 | **Explicit aim lines** | ✅ Code complete | Teachers may enter a bounded numeric baseline/date, target/date, and direction for quantitative goals. Direction and date relationships are validated. Existing and categorical goals receive null; narrative IEP text is never converted automatically. Target edits participate in goal versioning. |
 | **Intervention annotations** | ✅ Code complete | Teachers can add and soft-retire short, dated, classroom-scoped annotations; aides can read them. Every operation is authenticated, bounded, rate-limited for writes, and audited. |
 | **Role boundary** | ✅ Code complete | Configuration writes now use explicit permissions rather than a role label. The teacher preset retains student/goal/group/target/intervention access; the aide preset retains observation entry and summary review; the new admin preset receives all classroom capabilities. |
-| **Migration `0006`** | ✅ Upgrade and fresh rehearsals passed; not production | The 26-goal clone preserved null targets and added the JSONB column, annotation table, foreign keys, and index. An empty database ran `0000`–`0006` and exposed 11 expected tables, seven journal rows, and the append-only audit trigger. The first clone was discarded; the final prepared clone and fresh-test branch await explicit completion/cleanup. |
-| **Local verification** | ✅ Automated gates passed | 58 unit tests, ESLint, strict TypeScript, webpack production build, Drizzle metadata check, whitespace check, and production dependency audit passed. CSV formula neutralization and shared-color contrast are covered. Turbopack alone hit the documented managed-host worker-port restriction. |
+| **Migration** | ✅ Consolidated `0007` applied | The earlier local Phase 4 migration number was superseded when upstream `0006_melted_nomad.sql` became the production accommodation baseline. Its additive target, annotation, enum, and constraint changes ship in `0007_superb_tiger_shark.sql`; the exact production payload passed managed clone rehearsal and journal verification before application. |
+| **Verification** | ✅ Local and hosted gates passed | 81 unit tests, ESLint, strict TypeScript, webpack production build, Vercel Turbopack builds, Drizzle metadata, whitespace, guarded live API, and browser checks passed. CSV formula neutralization and shared-color contrast are covered. Local Turbopack alone hit the documented managed-host worker-port restriction. |
 | **Disposable API/database integration** | ✅ Passed | Synthetic teacher target versioning, idempotent observation retry, annotation lifecycle, summary/CSV/print context, invalid filters, and missing-goal behavior passed. Aide read plus five mutation denials passed. A genuine second classroom produced six isolation denials; direct inspection confirmed no leaked mutation, no duplicate ID, zero real students, and expected audit rows. |
 | **Browser/accessibility verification** | ✅ Automated scope passed; human AT open | Role visibility, direct aide route guarding, keyboard login, Timers start/stop/undo, eight metric chart stories, exact text/table equivalents, 1366×768 layout, and half-width reflow passed with no browser errors. Muted text and primary buttons were raised to 5.53:1 and 6.81:1 contrast. Native 200% zoom and a real screen reader remain human checks. |
-| **Deployment / remaining gates** | ⏳ Awaiting confirmation | Production remains on Phase 3. The exact tested production migration is prepared. After explicit approval: apply it, clean disposable branches, commit/push, verify the Git-linked deployment, and run authenticated synthetic smoke/error scans. Desktop-spreadsheet, offline/reconnect, native zoom, and screen-reader exercises remain follow-ups. |
+| **Deployment / remaining gates** | ✅ Live synthetic pilot; human gates remain | Commit `a44997f` is live as `dpl_91TrcdW5EkVYRr5gaQq4vcSNvizL`; guarded API, rendered browser, and runtime-error checks passed. Desktop-spreadsheet, offline/reconnect, native zoom, and screen-reader exercises remain follow-ups. |
 
 ## Classroom administration implementation log
 
-Implemented locally 2026-09-03, synthetic data only, no Policy 3060 sign-off:
+Implemented and deployed to the synthetic pilot 2026-09-03, with no Policy
+3060 sign-off:
 
 | Piece | Status | Notes |
 |---|---|---|
 | **User and access administration** | ✅ Code complete | Classroom-scoped managers can add, edit, disable/reactivate, and soft-retire users; apply teacher/aide/admin presets; and configure six explicit capabilities. Self-lockout and removal of the last active user manager are blocked. |
 | **Student and goal administration** | ✅ Code complete | Permitted admins can add, rename, and soft-retire synthetic students and reuse the version-safe goal create/edit/retire workflow with complete measurement-plan validation. Student retirement preserves every related record. |
 | **Color guide** | ✅ Code complete | Classroom colors have bounded names, six-digit values, explanations, order, soft deletion, and audit history. All staff in the classroom may read the guide; only permitted users may mutate it. Visible names, keyboard focus, and described tooltips prevent color-only communication. |
-| **Audit oversight** | ✅ Code complete; credentialed integration open | User managers can review bounded, newest-first classroom audit history, including retired actors. The API returns changed-field names rather than stored diff values and records each audit-history read. Classroom isolation and permission checks are enforced in the route; disposable credentialed verification remains open. |
-| **Migration `0007`** | ✅ Disposable upgrade passed; not production | Adds the admin enum value, access/capability columns, and `classroom_colors`. Existing active teachers become initial managers on upgrade; the synthetic seed also creates a dedicated admin and three example colors. |
-| **Verification** | ✅ Automated/API/browser scope passed | 65 unit tests, lint, strict types, webpack build, metadata, diff, and dependency audit passed. Disposable API testing covered user/access, permission denial, cross-classroom denial, color, student, and goal lifecycles. Browser testing confirmed the console and focus-triggered color explanation. |
-| **Deployment** | ⏳ Not deployed | Production schema and Vercel deployment remain unchanged. Migration `0007` must follow `0006`; both require the existing explicit production-release approval path. |
+| **Audit oversight** | ✅ Live verified | User managers can review bounded, newest-first classroom audit history, including retired actors. The API returns changed-field names rather than stored diff values and records each audit-history read. The production browser displayed the verification suite's create/update/soft-delete history without exposing stored values. |
+| **Migration `0007`** | ✅ Applied to synthetic production | Adds the admin enum value, access/capability columns, `classroom_colors`, and related pending schema. Existing active teachers become initial managers; legacy accommodation configuration fields remain nullable until explicitly reconciled. |
+| **Verification** | ✅ Automated/API/browser scope passed | 81 tests, lint, strict types, webpack and Vercel Turbopack builds, metadata, diff, and migration rehearsals passed. Live API testing covered user/access, disabled-session revocation, five permission denials, color, student, and goal lifecycles with cleanup. Disposable tests retain true cross-classroom coverage. |
+| **Deployment** | ✅ Live | Production database has eight journal rows and zero non-synthetic students; commit `a44997f` is live on the canonical alias. |
 
 ## Data readiness and contextual analytics implementation log
 
-Implemented locally 2026-09-03, synthetic data only, no Policy 3060 sign-off:
+Implemented and deployed to the synthetic pilot 2026-09-03, with no Policy
+3060 sign-off:
 
 | Piece | Status | Notes |
 |---|---|---|
@@ -341,6 +343,6 @@ Implemented locally 2026-09-03, synthetic data only, no Policy 3060 sign-off:
 | **Due-first capture and exposure** | ✅ Code complete | Entry defaults to goals due on the local date/collector role and separately reveals optional goals. Frequency window completion requires actual positive duration or opportunities and reports an explicit normalized unit. |
 | **Descriptive reporting** | ✅ Code complete | Quantitative trends use the configured improvement direction and show sample count, date span, and range. Prompt and task-analysis changes retain temporal/step context. Accommodation results are grouped by student, support, and setting with `n` and a no-causation warning. |
 | **Context linkage** | ✅ Code complete | Accommodation logs may link to a validated session and active same-student goal and store bounded setting, activity, implementation fidelity, and reason not used. Ratings/fidelity are accepted only for used supports. |
-| **Migrations `0009`–`0010`** | ✅ Disposable rehearsal passed; not production | Nullable exposure/context columns preserve legacy rows. Foreign keys, indexes, positive exposure constraints, and 1–5 rating/fidelity constraints passed on the retained disposable Neon branch. |
-| **Verification** | ✅ Local gates passed; authenticated preview open | 79 tests, lint, strict types, webpack build, migration metadata, disposable schema application, and public Chromium smoke passed. Authenticated browser/API lifecycle, fresh seed execution, native 200% zoom, and real screen-reader testing remain pre-release gates because this host has no local synthetic `DATABASE_URL`. |
-| **Deployment** | ⏳ Not deployed | Production remains on Phase 3. Migrations `0006`–`0010` and the corresponding application must move together through the approved migration-first synthetic release process before any production verification. |
+| **Migration** | ✅ Consolidated `0007` applied | The former local `0009`–`0010` numbers were superseded during the upstream merge. Nullable exposure/context columns, foreign keys, indexes, positive exposure checks, and 1–5 rating/fidelity checks are included in production `0007_superb_tiger_shark.sql`. |
+| **Verification** | ✅ Local and live gates passed | 81 tests, lint, strict types, webpack build, migration metadata, two managed production-clone rehearsals, live API lifecycle, and authenticated Chromium admin smoke passed. Native 200% zoom and a real screen reader remain human gates. |
+| **Deployment** | ✅ Live synthetic pilot | The production readiness screen rendered 26 incomplete plans, 3 default prompt ladders, and 33 historical support reconciliations. No error-level Vercel logs appeared after testing. |

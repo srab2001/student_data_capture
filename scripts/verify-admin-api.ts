@@ -1,19 +1,36 @@
 /**
- * Destructive-to-fixture admin API verification. Run only against a local
- * server backed by a disposable, synthetic database branch.
+ * Destructive-to-fixture admin API verification. Run against either a local
+ * server backed by a disposable, synthetic database branch or the explicitly
+ * allowlisted synthetic-data production pilot. Every created record is retired.
  *
  *   ADMIN_DISPOSABLE_TEST=yes BASE_URL=http://127.0.0.1:3101 \
+ *     npx tsx scripts/verify-admin-api.ts
+ *
+ *   ADMIN_SYNTHETIC_PRODUCTION_TEST=yes \
+ *     BASE_URL=https://iep-capture-pilot.vercel.app \
  *     npx tsx scripts/verify-admin-api.ts
  */
 
 import assert from "node:assert/strict";
 
 const baseUrl = process.env.BASE_URL ?? "http://127.0.0.1:3101";
-if (process.env.ADMIN_DISPOSABLE_TEST !== "yes") {
-  throw new Error("Refusing to run without ADMIN_DISPOSABLE_TEST=yes.");
+const target = new URL(baseUrl);
+const isLocal = ["127.0.0.1", "localhost"].includes(target.hostname);
+const isAllowlistedProduction =
+  target.protocol === "https:" && target.hostname === "iep-capture-pilot.vercel.app";
+if (isLocal && process.env.ADMIN_DISPOSABLE_TEST !== "yes") {
+  throw new Error("Refusing local run without ADMIN_DISPOSABLE_TEST=yes.");
 }
-if (!['127.0.0.1', 'localhost'].includes(new URL(baseUrl).hostname)) {
-  throw new Error("Refusing to run against a non-local application URL.");
+if (
+  isAllowlistedProduction &&
+  process.env.ADMIN_SYNTHETIC_PRODUCTION_TEST !== "yes"
+) {
+  throw new Error(
+    "Refusing production run without ADMIN_SYNTHETIC_PRODUCTION_TEST=yes."
+  );
+}
+if (!isLocal && !isAllowlistedProduction) {
+  throw new Error("Refusing to run against a non-allowlisted application URL.");
 }
 
 type ApiResult<T> = { status: number; body: T; headers: Headers };
@@ -77,15 +94,27 @@ async function main() {
   const isolationTeacher = publicStaff.body.staff.find(
     (user) => user.name === "Synthetic Isolation Teacher"
   );
-  assert.ok(teacher && aide && isolationTeacher);
+  assert.ok(teacher && aide);
+  if (isLocal) assert.ok(isolationTeacher);
 
   const teacherLogin = await login(teacher.id);
   const aideLogin = await login(aide.id);
-  const isolationLogin = await login(isolationTeacher.id);
+  const isolationLogin = isolationTeacher ? await login(isolationTeacher.id) : null;
   assert.equal(teacherLogin.status, 200);
   assert.equal(aideLogin.status, 200);
-  assert.equal(isolationLogin.status, 200);
-  assert.ok(teacherLogin.cookie && aideLogin.cookie && isolationLogin.cookie);
+  if (isolationLogin) assert.equal(isolationLogin.status, 200);
+  assert.ok(teacherLogin.cookie && aideLogin.cookie);
+  if (isolationLogin) assert.ok(isolationLogin.cookie);
+
+  const productionRoster = await request<{
+    students: Array<{ id: string; isSynthetic: boolean }>;
+  }>("/api/students", {}, teacherLogin.cookie);
+  assert.equal(productionRoster.status, 200);
+  assert.ok(productionRoster.body.students.length > 0);
+  assert.ok(
+    productionRoster.body.students.every((student) => student.isSynthetic),
+    "Refusing fixture writes because a non-synthetic student is present."
+  );
 
   assert.equal((await request("/api/admin/users", {}, teacherLogin.cookie)).status, 200);
   assert.equal((await request("/api/admin/users", {}, aideLogin.cookie)).status, 403);
@@ -265,16 +294,18 @@ async function main() {
   );
   assert.equal(aideColors.status, 200);
   assert.ok(aideColors.body.colors.some((color) => color.id === colorId));
-  assert.equal(
-    (
-      await request(
-        `/api/color-settings/${colorId}`,
-        { method: "PATCH", body: JSON.stringify({ hexValue: "#7C3AED" }) },
-        isolationLogin.cookie
-      )
-    ).status,
-    404
-  );
+  if (isolationLogin?.cookie) {
+    assert.equal(
+      (
+        await request(
+          `/api/color-settings/${colorId}`,
+          { method: "PATCH", body: JSON.stringify({ hexValue: "#7C3AED" }) },
+          isolationLogin.cookie
+        )
+      ).status,
+      404
+    );
+  }
   assert.equal(
     (
       await request(
@@ -293,20 +324,32 @@ async function main() {
     ).status,
     403
   );
-  assert.equal(
-    (
-      await request(
-        `/api/admin/users/${isolationTeacher.id}`,
-        { method: "PATCH", body: JSON.stringify({ accessEnabled: false }) },
-        teacherLogin.cookie
-      )
-    ).status,
-    404
-  );
+  if (isolationTeacher) {
+    assert.equal(
+      (
+        await request(
+          `/api/admin/users/${isolationTeacher.id}`,
+          { method: "PATCH", body: JSON.stringify({ accessEnabled: false }) },
+          teacherLogin.cookie
+        )
+      ).status,
+      404
+    );
+  }
 
   assert.equal((await request(`/api/goals/${goalId}`, { method: "DELETE" }, reactivatedLogin.cookie)).status, 200);
   assert.equal((await request(`/api/color-settings/${colorId}`, { method: "DELETE" }, reactivatedLogin.cookie)).status, 200);
   assert.equal((await request(`/api/admin/users/${adminId}`, { method: "DELETE" }, teacherLogin.cookie)).status, 200);
+  assert.equal(
+    (
+      await request(
+        `/api/students/${studentResponse.body.student.id}`,
+        { method: "DELETE" },
+        teacherLogin.cookie
+      )
+    ).status,
+    200
+  );
   assert.equal((await login(adminId)).status, 404);
 
   console.log(
@@ -314,10 +357,12 @@ async function main() {
       adminApi: "passed",
       disabledSessionRevoked: true,
       permissionDenials: 5,
-      crossClassroomDenials: 2,
+      crossClassroomDenials: isolationTeacher ? 2 : 0,
       userLifecycle: "create-disable-reactivate-retire",
       colorLifecycle: "create-read-retire",
       goalLifecycle: "create-edit-retire",
+      studentLifecycle: "create-retire",
+      syntheticRosterGuard: true,
     })
   );
 }

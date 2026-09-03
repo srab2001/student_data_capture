@@ -5,18 +5,18 @@
 > data integrity changes `data_points` from mutable per-session aggregates to
 > immutable observation events with `entry_kind` and an idempotent
 > `client_request_id`; deployed Phase 2 requires a structured measurement plan.
-> Deployed Phase 3 adds roster groups and per-staff classroom workflows. Local,
-> not-yet-deployed Phase 4 adds explicit quantitative targets, evidence context,
-> metric-appropriate charts, and teacher-owned intervention annotations. The
-> local classroom-admin increment adds permission-controlled student/goal
-> setup plus configurable named color meanings. The subsequent local student
+> Deployed Phase 3 adds roster groups and per-staff classroom workflows.
+> Deployed synthetic-pilot Phase 4 adds explicit quantitative targets, evidence
+> context, metric-appropriate charts, and teacher-owned intervention annotations. The
+> deployed classroom-admin increment adds permission-controlled student/goal
+> setup plus configurable named color meanings. The deployed student
 > data-plan increment adds `latency_seconds`, `rubric_score`, and
 > `abc_observation`, student-specific prompt/rubric configuration, and assigned
-> accommodations in migration `0008`; it is not deployed. Use
+> accommodations in consolidated migration `0007`.
 > The data-readiness increment then adds plan and historical-support repair
 > queues, due-first entry, actual behavior exposure, direction-aware recent
 > trends, temporal prompt/task views, and contextual accommodation reports in
-> migrations `0009`–`0010`; it is also not deployed. Use
+> the same consolidated migration; it is deployed for synthetic data. Use
 > `STRATEGY-application-improvement.md`
 > for the active roadmap. This document remains the detailed reference for
 > adding students, metric types, and icon sets.

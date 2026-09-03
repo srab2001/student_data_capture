@@ -1,7 +1,7 @@
 # Application improvement strategy
 
-Updated 2026-09-03 for deployed Phases 1–3 and locally implemented Phase 4,
-classroom administration, student data plans, and data-readiness analytics.
+Updated 2026-09-03 for deployed Phases 1–4, classroom administration, student
+data plans, and data-readiness analytics in the synthetic pilot.
 The product goal is:
 
 > A teacher or aide records a valid observation in under two seconds, with
@@ -19,9 +19,9 @@ recorded there.
 | 1 — Data integrity | Immutable observations, undo, resilient saving, accurate task/accommodation behavior, goal versioning | Deployed to the synthetic pilot; automated and read-only production smoke checks pass; full write/offline/assistive-technology matrix remains |
 | 2 — Measurement fidelity | Structured measurement plans, baseline/mastery criteria, setting, schedule, responsible collector, due/evidence guidance | Deployed to the synthetic pilot; migrations and plan-form/API smoke checks pass; populated-plan write/version scenarios remain |
 | 3 — Classroom workflow | Roster/focus/timer modes, grouping and staff preferences | Deployed to the synthetic pilot; migration, teacher/aide API flows, preference recovery, Chrome smoke, and runtime error scan pass; full timer/accessibility matrix remains |
-| 4 — Decision support | Aim lines, data sufficiency, frequency compliance, intervention annotations, appropriate categorical graphs | Code complete locally; upgrade/fresh migrations, credentialed API, true cross-classroom/audit, keyboard, chart, and reflow checks pass; production migration prepared but not applied; native zoom/screen reader remain manual |
-| 4A — Classroom administration | Classroom-scoped users/access, explicit permissions, student lifecycle/goal setup, safe audit oversight, and accessible configurable color meanings | Code complete locally; migration `0007`, prior API lifecycle/isolation, build, and keyboard-focus color checks pass; student retire/audit credentialed checks remain; not deployed |
-| 4B — Data readiness | Plan-completion/reconciliation queues, due-first collection, normalized behavior exposure, direction-aware recent trends, temporal prompt/task views, and contextual accommodation reporting | Code complete locally; migrations `0009`–`0010`, 79 tests, lint, types, webpack build, disposable schema rehearsal, and public browser smoke pass; authenticated preview/browser gates remain; not deployed |
+| 4 — Decision support | Aim lines, data sufficiency, frequency compliance, intervention annotations, appropriate categorical graphs | Deployed to the synthetic pilot in consolidated migration `0007`; local/disposable gates and live browser/API smoke pass; native zoom/screen reader remain manual |
+| 4A — Classroom administration | Classroom-scoped users/access, explicit permissions, student lifecycle/goal setup, safe audit oversight, and accessible configurable color meanings | Deployed and live-tested; guarded production lifecycle verified user, session, permission, student, goal, color, and audit behavior |
+| 4B — Data readiness | Plan-completion/reconciliation queues, due-first collection, normalized behavior exposure, direction-aware recent trends, temporal prompt/task views, and contextual accommodation reporting | Deployed and rendered against the production synthetic dataset; 81 tests, lint, types, builds, migration rehearsal, live API/browser smoke, and clean runtime scan pass |
 | 5 — District readiness | District SSO, governance, vendor/security/accessibility review, retention and incident procedures | Gated |
 
 ## Phase 1 delivered requirements
@@ -194,7 +194,7 @@ Before any broader pilot decision:
 4. Stress rapid preference changes and confirm the final selection on a second
    device/browser session.
 
-## Phase 4 delivered requirements (local, not deployed)
+## Phase 4 delivered requirements
 
 ### FR13 — Report evidence collection separately from student performance
 
@@ -241,31 +241,30 @@ inspection.
 
 ## Phase 4 release validation
 
-The local suite passes 58 unit tests, ESLint, strict TypeScript, webpack
-production compilation, migration metadata, whitespace, and the production
-dependency audit. On 2026-09-03, an upgrade rehearsal of `0006` on a disposable
+The current release suite passes 81 unit tests, ESLint, strict TypeScript,
+webpack and Vercel Turbopack production compilation, migration metadata, and
+whitespace checks. Earlier on 2026-09-03, an upgrade rehearsal of the then-local
+Phase 4 migration on a disposable
 clone of the 26-goal synthetic database passed. Credentialed teacher/aide API
 flows and a browser smoke test also passed, including target versioning,
 idempotent retry, collection/aim/evidence output, CSV/print context, intervention
 lifecycle, role denials, the accessible chart description, and direct aide page
-guarding. A second fresh database then ran migrations `0000`–`0006`, accepted
+guarding. A second fresh database then ran the pre-reconciliation migration set, accepted
 synthetic seed data, passed six true cross-classroom denials, and exposed the
 expected audit rows. Keyboard login and Timers start/stop/undo, quantitative and
 categorical chart activation, 1366×768 layout, and half-width reflow equivalent
-to 200% effective CSS pixels passed. Production was not changed. Before release:
+to 200% effective CSS pixels passed. The consolidated release was applied and
+live-tested on 2026-09-03. Remaining validation:
 
-1. Obtain the required explicit confirmation, apply the already-tested `0006`
-   and `0007` migrations in order to the synthetic production parent, and
-   remove disposable branches.
-2. Commit and push the verified source, confirm the Git-linked production build,
-   and run authenticated synthetic teacher/aide smoke checks plus an error scan.
-3. Complete a native 200%-zoom and real screen-reader session. The automated
+1. Complete a native 200%-zoom and real screen-reader session. The automated
    accessibility tree, keyboard paths, contrast checks, and equivalent reflow
    pass, but they are not substitutes for those human assistive-technology tests.
-4. Open an exported CSV in a desktop spreadsheet. Quoting, line breaks, formulas,
+2. Open an exported CSV in a desktop spreadsheet. Quoting, line breaks, formulas,
    dates, and intervention context already pass automated/API tests.
+3. Complete offline/reconnect and a second-device preference exercise on target
+   Chromebooks.
 
-## Classroom administration delivered requirements (local, not deployed)
+## Classroom administration delivered requirements
 
 ### FR17 — Configure least-privilege classroom access
 
@@ -302,23 +301,23 @@ on writes while retaining read access.
 
 ## Classroom administration validation
 
-Migration `0007` passed on the disposable `phase4_fresh` database. The local
-65-test suite, lint, strict TypeScript, webpack production build, Drizzle
-metadata, diff check, and dependency audit pass. The destructive-to-fixture
-API script passed user/access, permission, cross-classroom, color, student, and
-goal lifecycles. In-app Chromium verified the full console plus a named swatch
-whose tooltip appeared on keyboard focus. Production remains unchanged.
+Consolidated migration `0007_superb_tiger_shark.sql` passed two managed
+production-clone rehearsals and is applied to the synthetic production parent.
+The 81-test suite, lint, strict TypeScript, local webpack build, Vercel
+Turbopack build, Drizzle metadata, and diff checks pass. The guarded live API
+script passed user/access, permission, color, student, and goal lifecycles with
+cleanup. In-app Chromium verified the full console, readiness queues, and audit
+history. Disposable tests retain true cross-classroom coverage.
 
 ## Next phase
 
-First release Phase 4 and 4A together only after the existing explicit
-migration/deployment approval. Then complete native zoom, real screen-reader,
-offline/reconnect, and desktop-spreadsheet checks. Phase 5 remains gated on
+Complete native zoom, real screen-reader, offline/reconnect, and desktop-
+spreadsheet checks. Phase 5 remains gated on
 district SSO, named governance owners, vendor/security/accessibility approval,
 retention rules, incident procedures, and authorization to use real student
-data. Do not begin real-data onboarding merely because Phase 4 ships.
+data. Do not begin real-data onboarding merely because Phase 4 is deployed.
 
-## Student data-plan expansion delivered (local, not deployed)
+## Student data-plan expansion delivered
 
 The per-student editor now covers the measurement families normally needed for
 academic, behavioral/functional, independence, and access monitoring:
@@ -331,9 +330,9 @@ academic, behavioral/functional, independence, and access monitoring:
   usage/effectiveness logs; and
 - visible cadence choices from every session through quarterly reporting.
 
-Migration `0008` stores rubric/prompt definitions on the versioned goal, adds a
-discriminated details object to immutable rubric/ABC events, and adds the
-soft-deletable student-accommodation table. The 72-test suite, strict TypeScript,
-ESLint, webpack production build, dependency audit, and direct disposable-Neon
-round trip passed. Credentialed UI/API lifecycle and assistive-technology
-checks remain release gates; production remains unchanged.
+Production `0006_melted_nomad.sql` adds the initial soft-deletable student-
+accommodation table. Consolidated `0007_superb_tiger_shark.sql` stores rubric/
+prompt definitions on versioned goals, adds discriminated details to immutable
+rubric/ABC events, and adds setting/directions and contextual evidence fields.
+The complete 81-test/build/migration/live-smoke gate passes. Native assistive-
+technology exercises remain open.

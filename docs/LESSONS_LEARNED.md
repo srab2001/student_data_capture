@@ -1,5 +1,69 @@
 # Lessons learned
 
+## 2026-09-03 — Rebase migration numbering on the deployed journal, not a stale worktree
+
+- **Context:** The admin/data-readiness release began from a long-lived dirty
+  worktree while `origin/main` had advanced through PRs #10 and #11.
+- **Observed symptom:** Both lines contained a migration numbered `0006`, and
+  the local follow-on files assumed a production schema that no longer matched
+  the real six-column `student_accommodations` table.
+- **Root cause:** Migration numbers are repository-history coordinates, not
+  feature identifiers. The local series was generated before upstream's
+  `0006_melted_nomad.sql` became the deployed baseline.
+- **Resolution:** Committed a safety snapshot, merged current `origin/main`,
+  retained upstream `0006`, regenerated all pending schema changes as
+  `0007_superb_tiger_shark.sql`, and made new support-detail columns nullable
+  for legacy rows. New API writes still require confirmed setting and
+  directions. Two managed production-clone rehearsals verified row preservation
+  and the exact Drizzle journal hash before production application.
+- **Status:** Resolved. Always fetch and inspect both the production journal and
+  live table shape before generating or applying a release migration.
+
+## 2026-09-03 — Downloaded production environment files can contain intentional secret placeholders
+
+- **Context:** After a successful migration rehearsal, the journal-aware local
+  runner was selected to apply the production change.
+- **Observed symptom:** `.env.production.local` exposed `DATABASE_URL` as the
+  literal `[SENSITIVE]`; the Neon client rejected it as a URL before connecting.
+- **Root cause:** The Vercel/Neon integration supplies the real secret only to
+  the production runtime and intentionally redacts the locally pulled value.
+- **Resolution:** Confirmed the placeholder without printing any credential,
+  used the managed Neon migration workflow, and included the exact Drizzle
+  hash/timestamp insert in the rehearsed payload. The production journal moved
+  from seven to eight entries and matched the checked-in migration.
+- **Status:** Resolved without writing a production credential to disk.
+
+## 2026-09-03 — Production smoke fixtures must be a strict subset of disposable fixtures
+
+- **Context:** The guarded admin harness was extended from a disposable
+  two-classroom database to the allowlisted synthetic production pilot.
+- **Observed symptom:** Its first live run stopped before writes because it
+  required `Synthetic Isolation Teacher`, while production intentionally has
+  only `Synthetic Teacher` and `Synthetic Aide`.
+- **Root cause:** Cross-classroom denial fixtures are appropriate for disposable
+  integration tests but should not be a prerequisite for a minimal production
+  smoke dataset.
+- **Resolution:** The harness now requires the isolation account only on local
+  disposable runs, verifies every production student is synthetic before any
+  write, allowlists only the canonical HTTPS host, and retires every user,
+  student, goal, and color it creates. The second live run passed.
+- **Status:** Resolved; cross-classroom behavior remains covered by the
+  disposable suite.
+
+## 2026-09-03 — Local worker restrictions and test-runner flags are environment-specific gates
+
+- **Context:** Final verification after merging the admin release with current
+  main.
+- **Observed symptom:** Vitest rejected the Jest-only `--runInBand` flag, and
+  local Turbopack could not bind its internal CSS worker port even after the
+  normal host-permission retry.
+- **Resolution:** Ran the canonical `npm test` command (81 tests passed), used
+  Next's supported Webpack production builder locally, and required Vercel's
+  clean Turbopack preview and production builds to reach `READY`. Both builders
+  generated the complete 29-route application.
+- **Status:** Resolved; do not treat sandbox worker-port failures as application
+  regressions without an independent clean builder.
+
 ## 2026-09-03 — Initial admin audit loading should not synchronously set effect state
 
 - **Observed symptom:** ESLint reported `react-hooks/set-state-in-effect` when

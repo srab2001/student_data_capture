@@ -1,22 +1,19 @@
 # User guide
 
 This is the repository copy of the Phase 1–4 workflow and classroom-admin
-guide. The same guidance is presented in the application at `/help`. Phase 4
-and admin guidance apply to the local implementation until migrations `0006`
-and `0007` and the release gates pass.
+guide. The same guidance is presented in the application at `/help`. The full
+workflow is live only as a synthetic-data pilot; Track B approval is still
+required before any identifiable student data is entered.
 
 ## Prerequisites
 
 - Use synthetic students only. Real identifiable student data is prohibited
   until the approvals in `docs/compliance.md` are complete.
-- The environment must have migrations `0002_mighty_maggott.sql` through
-  `0007_striped_morlocks.sql` applied in order. Migrations `0002`–`0005` are
-  applied on the hosted synthetic pilot as of 2026-09-03; local and preview
-  databases need `npm run db:migrate` before Phase 4 use. Migration `0006`
-  passed both upgrade and fresh-database disposable rehearsals on 2026-09-03
-  but is not yet applied to production. Migration `0007_striped_morlocks.sql`
-  adds the admin role, explicit access permissions, and classroom color guide;
-  it passed an upgrade rehearsal but is also not applied to production.
+- Run `npm run db:migrate` so the environment has every checked-in migration
+  through `0007_superb_tiger_shark.sql`. The hosted synthetic pilot has all
+  eight journal entries as of 2026-09-03. `0006_melted_nomad.sql` introduces
+  per-student supports; consolidated `0007` adds decision support, admin access,
+  colors, structured metrics, readiness, exposure, and accommodation context.
 - Sign in at `/login` as a synthetic teacher, aide, or admin. The picker is not
   production authentication.
 
@@ -262,7 +259,7 @@ add or remove them. Aides also cannot add students or manage goals/groups.
   error message for support if it repeats.
 - **Entry, Summary, or Admin will not load:** confirm the account has the
   matching permission, then sign out and back in. If it persists, the database
-  may be unavailable or missing migrations `0002` through `0010`.
+  may be unavailable or missing migrations `0002` through `0007`.
 - **A disabled user still has a page open:** their next server request is
   rejected; ask them to refresh or sign out. Offline queued observations remain
   synthetic-only and should be reviewed before retiring access.

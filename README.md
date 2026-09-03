@@ -11,51 +11,39 @@ Full plan, compliance review, and phase-by-phase build instructions:
 [IEP Capture Pilot — artifact](https://claude.ai/code/artifact/f42a3d9c-ee1a-4b8d-860d-e8a4326da173)
 
 **Live synthetic-data pilot:** https://iep-capture-pilot.vercel.app — Phases
-1–3 were deployed and smoke tested on 2026-09-03. Migrations `0002`–`0005`
-are applied, the production roster remains synthetic-only, and authenticated
-teacher/aide group, preference, Focus, Timers-empty-state, and stale-group
-recovery checks are recorded in `docs/TEST_RESULTS.md`. The release also
-replaces the unsupported goal-versioning transaction primitive with the Neon
-HTTP driver's atomic batch API. Full offline, populated-goal versioning,
-cross-classroom, timer-fixture, zoom, keyboard, and screen-reader exercises
-remain follow-ups; see `docs/compliance.md` for the governance boundary and
-deployment history.
+1–4, classroom administration, expanded student data plans, and data-readiness
+analytics were deployed and verified on 2026-09-03. Production deployment
+`dpl_91TrcdW5EkVYRr5gaQq4vcSNvizL` was built from `main` commit `a44997f`.
+The production migration journal contains eight entries through
+`0007_superb_tiger_shark.sql`, and all eight active student records remain
+explicitly synthetic. The guarded live admin suite and rendered browser smoke
+passed; Vercel returned no error-level logs after testing. Native 200% zoom, a
+real screen-reader session, offline/reconnect, and broader district-governance
+review remain follow-ups.
 
-**Phase 4 status:** decision-support reporting is implemented and verified in
-the local workspace but is not deployed. It adds explicit quantitative aim
-lines, collection-plan compliance, evidence-depth labels, categorical charts,
-and teacher-owned intervention annotations. Migration `0006`, credentialed API
-flows, fresh-install migration, true cross-classroom isolation, direct audit
-inspection, keyboard Timers, metric-chart, and Chromebook reflow checks passed
-on disposable Neon infrastructure. The exact production migration is prepared
-but awaits explicit approval; native 200% zoom and a real screen-reader session
-remain manual follow-ups. Production therefore remains on Phase 3.
+**Phase 4 and administration status:** live for synthetic-data evaluation.
+Decision-support reporting includes explicit quantitative aim lines,
+collection-plan compliance, evidence-depth labels, metric-appropriate charts,
+and teacher-owned intervention annotations. `/admin` provides classroom-scoped
+user/access administration, six explicit permissions, synthetic student
+creation/rename/soft-retirement, goal management, data-readiness queues,
+historical accommodation reconciliation, audit history, and a configurable
+color guide whose explanations work on hover and keyboard focus.
 
-**Classroom administration status:** implemented and verified locally, not
-deployed. `/admin` now supports classroom-scoped user/access administration,
-six explicit permissions, synthetic student creation/rename/soft-retirement,
-goal management, a safe recent audit-history viewer, and a configurable color
-guide whose explanations work on hover and keyboard focus.
-Migration `0007` passed on disposable Neon infrastructure; user disable/session
-invalidation, permission and cross-classroom denial, color lifecycle, and
-student/goal lifecycle integration tests passed.
-
-**Student data-plan expansion:** implemented and verified locally, not deployed.
+**Student data-plan expansion:** deployed and verified for synthetic data.
 Administrators can configure accuracy, fluency, frequency, duration, latency,
 rubric-scored work samples, structured ABC observations, student-specific
 prompt hierarchies, task analyses, accommodations, and session-through-quarterly
-cadence from each student's data plan. Migration `0008` and structured rubric/
-ABC writes passed on disposable Neon infrastructure; production remains on
-Phase 3 until an explicitly approved migration-first release.
+cadence from each student's data plan.
 
-**Data-readiness and contextual analytics:** implemented and verified locally,
-not deployed. Admin now inventories incomplete measurement plans and historical
+**Data-readiness and contextual analytics:** deployed and verified for
+synthetic data. Admin inventories incomplete measurement plans and historical
 accommodations that require confirmation. Entry defaults to goals due today
 while keeping optional/off-schedule goals available. Reports use direction-aware
 recent-window comparisons with sample size and observed range, temporal prompt/
 task-analysis views, and per-support accommodation summaries. Actual behavior-
 observation exposure and optional accommodation session/goal/context fields are
-stored by migrations `0009`–`0010`.
+stored without rewriting legacy evidence.
 
 ## ⚠️ FERPA / student data notice
 
@@ -109,15 +97,14 @@ entry to immutable observation events while preserving prototype history;
 migration `0003` adds versioned measurement plans to goals; migration `0004`
 adds an explicit completed-observation event for valid zero-occurrence data;
 migration `0005` adds roster groups and staff entry preferences.
-Migration `0006` adds optional numeric progress targets and soft-deletable,
-audited intervention annotations. Existing goals receive no inferred target.
-Migration `0007` adds the `admin` role, access/permission columns, and
-classroom-scoped color meanings. Apply it only after `0006`.
-Migration `0008` adds structured rubric/ABC data and student accommodation
-assignments. Migrations `0009`–`0010` add observation-specific exposure,
-contextual accommodation links, supporting indexes, foreign keys, and range
-constraints. Reconcile historical accommodation names in Admin before asking
-staff to resume accommodation logging.
+Migration `0006_melted_nomad.sql` adds the initial per-student accommodation
+configuration table. Migration `0007_superb_tiger_shark.sql` is the consolidated
+post-`0006` release: it adds decision-support targets and interventions, the
+`admin` role and explicit permissions, classroom color meanings, structured
+rubric/ABC/latency support, prompt and rubric configuration, behavior exposure,
+and contextual accommodation links and constraints. Legacy support rows may
+temporarily lack setting/directions; reconcile them in Admin before staff log
+new use.
 
 ## Deploying
 
@@ -219,7 +206,7 @@ gates in `docs/compliance.md` are complete.
 - All modes reuse the same observation queue, timers, save states, undo, and
   measurement-plan calculations.
 
-## Phase 4 decision-support behavior (local, not deployed)
+## Phase 4 decision-support behavior
 
 - The summary calculates scheduled-versus-collected evidence from each goal's
   measurement plan and labels the number of distinct observation days. A
@@ -236,7 +223,7 @@ gates in `docs/compliance.md` are complete.
 - Summary filters are strictly validated and limited to 366 days. CSV and print
   output include collection, evidence-depth, aim, and intervention context.
 
-## Classroom administration behavior (local, not deployed)
+## Classroom administration behavior
 
 - A role selection applies a teacher, aide, or admin permission preset. Admins
   can then adjust user, student, goal, color, entry, and report capabilities

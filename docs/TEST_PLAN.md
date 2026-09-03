@@ -95,8 +95,8 @@ On a disposable Neon/Postgres development branch:
    `drizzle/0003_elite_bloodstrike.sql`, then
    `drizzle/0004_calm_red_ghost.sql`, then
    `drizzle/0005_colorful_clea.sql`, then
-   `drizzle/0006_aspiring_captain_stacy.sql`, then
-   `drizzle/0007_striped_morlocks.sql`.
+   `drizzle/0006_melted_nomad.sql`, then
+   `drizzle/0007_superb_tiger_shark.sql`.
 3. Confirm all existing `data_points.entry_kind` values are
    `legacy_snapshot` and existing task-analysis goals have five temporary
    backfill labels.
@@ -156,9 +156,10 @@ On a disposable Neon/Postgres development branch:
 31. Seed a fresh disposable database and assert at least one observation for
     latency, rubric, ABC, prompt, task analysis, frequency with exposure, and
     accommodation context. Exercise the matching API/report route for each.
-32. Apply migrations `0009` and `0010` to both an upgrade clone and a fresh
-    database. Verify nullable back-compatibility, positive exposure checks,
-    1–5 rating/fidelity checks, new foreign keys/indexes, and the full journal.
+32. Apply upstream `0006_melted_nomad.sql` followed by consolidated
+    `0007_superb_tiger_shark.sql` to both an upgrade clone and a fresh database.
+    Verify nullable back-compatibility, positive exposure checks, 1–5
+    rating/fidelity checks, new foreign keys/indexes, and the full journal.
 33. Rename and soft-retire a student as a student manager. Verify the active
     roster no longer returns the retired student while direct database checks
     retain the student, goals, observations, accommodation logs, and audit row.
@@ -257,6 +258,13 @@ Use ChromeOS or Chrome at 1366×768 and 100%/200% zoom:
 
 ## External gates
 
+- The 2026-09-03 admin/data-readiness production release passed its synthetic
+  data guard, two managed migration rehearsals, journal-aware production
+  migration, 81-test/lint/type/build gates, Git-linked Vercel build, guarded
+  live admin lifecycle, rendered teacher/admin smoke, and post-test runtime
+  error scan. Production is on commit `a44997f`, deployment
+  `dpl_91TrcdW5EkVYRr5gaQq4vcSNvizL`, with migrations through
+  `0007_superb_tiger_shark.sql`.
 - Production migrations `0002`–`0005`, authenticated API checks, teacher group
   create/update/retire, aide read/403 authorization, independent staff
   preferences, and a Chrome Phase 1–3 smoke test passed against the synthetic
@@ -277,24 +285,16 @@ Use ChromeOS or Chrome at 1366×768 and 100%/200% zoom:
 - The disposable seed guaranteed duration goals; keyboard Start/Stop/Undo passed.
   The unchanged production seed may still lack a duration goal, so production
   timer controls remain a post-deploy fixture-dependent check.
-- Phase 4 migration `0006`, credentialed API integration, and a teacher/aide
-  browser smoke test passed only on disposable infrastructure. A second prepared
-  migration clone also passes and awaits explicit production confirmation. The
-  native zoom/screen-reader matrix and production deployment are not run;
-  production remains on Phase 3.
-- Admin migration `0007` passed on the disposable fresh-test database. The
-  65-test suite, generated admin/color routes, the complete admin API lifecycle,
-  disabled-cookie invalidation, five permission denials, two cross-classroom
-  denials, and keyboard-focus color tooltip passed. It is not deployed.
-- Student data-plan migration `0008` schema statements passed on the retained
-  disposable Neon branch. The 72-test suite, TypeScript, ESLint, webpack production build,
-  dependency audit, and direct rubric/ABC/accommodation schema writes passed.
-  Browser and route-level lifecycle scenarios 23–29 remain the next release
-  gate; the full migrator and production were not changed.
-- Data-readiness migrations `0009`–`0010` and their constraints passed on the
-  retained disposable Neon branch. The 79-test suite, lint, strict types,
-  webpack build, migration metadata, and public-page browser smoke passed.
-  Authenticated browser and route-lifecycle scenarios 27–35 require a local
-  synthetic `DATABASE_URL` or preview environment; production was not changed.
+- Historical local migrations numbered `0006`–`0010` were never applied to
+  production and were superseded during upstream reconciliation. Upstream
+  `0006_melted_nomad.sql` remains the accommodation baseline; all Phase 4,
+  admin, structured-metric, readiness, exposure, and contextual-accommodation
+  changes ship together in `0007_superb_tiger_shark.sql`.
+- The live synthetic API covers single-classroom permission/lifecycle behavior.
+  True cross-classroom denials and direct isolation inspection remain evidenced
+  by the disposable two-classroom suite, not the one-classroom production seed.
+- Native 200% zoom, real screen-reader use, offline/reconnect, a second-device
+  preference check, and a duration-goal Timers fixture remain human or
+  fixture-dependent follow-ups.
 - HCPSS privacy, security, accessibility, and operational approval remains a
   Track B gate. These tests do not authorize real student data.

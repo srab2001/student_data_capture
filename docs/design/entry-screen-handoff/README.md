@@ -9,7 +9,7 @@
 > Roster/Focus/Timers workflows, shared roster groups, and saved staff
 > preferences around these original layouts. Phase 4 changes Summary rather
 > than these entry layouts, adding evidence/aim context and metric-appropriate
-> charts. The visual language now also covers a local, not-yet-deployed
+> charts. The visual language now also covers the deployed synthetic-pilot
 > `/admin` console and a navigation Color guide with named swatches and
 > hover/focus explanations. The visual references remain useful; do not reintroduce
 > the former one-row-per-goal PATCH model.

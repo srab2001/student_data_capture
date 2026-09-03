@@ -1,5 +1,30 @@
 # Test results
 
+## Admin and data-readiness production release — 2026-09-03
+
+Environment: local macOS workspace, Neon production branch
+`br-nameless-rice-av5hlkpe`, Vercel production, Next.js 16.3.3, and synthetic
+data only. This section supersedes the pre-release status in the historical
+increment sections below.
+
+| Check | Result | Evidence |
+|---|---|---|
+| Production data guard | PASS | Before migration, Neon reported 8 active students and 0 non-synthetic students. The same counts were verified after migration. |
+| Reconciled migration | PASS | Upstream `0006_melted_nomad.sql` was retained and all pending work was regenerated as `0007_superb_tiger_shark.sql`. The migration was rehearsed twice on temporary production clones: first for schema/data preservation, then with the exact Drizzle journal insert. Both temporary branches were deleted after their managed checks. |
+| Recovery point | PASS | Zero-compute Neon branch `br-flat-scene-av8rhgi3` (`pre-admin-production-20260903`) captures the production database immediately before migration. |
+| Production migration | PASS | Managed migration `573d2003-8bb7-4839-aa6c-538829e3858b` applied to the parent branch. Post-checks found 8 journal rows, the exact `0007` hash/timestamp, 2 new tables, 7 permission columns, 1 active teacher manager, 8 preserved students, and 0 non-synthetic students. |
+| Unit, lint, type, metadata, and diff gates | PASS | `npm test`: 10 files and 81 tests; `npm run lint`, `npx tsc --noEmit`, `DATABASE_URL=postgresql://user:password@localhost:5432/test npx drizzle-kit check`, and `git diff --check` all exited 0. |
+| Local production build | PASS with webpack | `npx next build --webpack` compiled, type-checked, generated 29 pages, and listed all admin/readiness routes. Local Turbopack was blocked by the managed host's worker-port restriction; Vercel independently completed its clean Turbopack build. |
+| Preview build | PASS | Preview `iep-capture-pilot-273hygkk2-stus-projects-458dd35a.vercel.app` reached `READY` from commit `a44997f`. Its data call correctly lacked the production-only Neon secret; build validity was unaffected. |
+| Production deployment | PASS | Git-linked `main` deployed commit `a44997f` as `dpl_91TrcdW5EkVYRr5gaQq4vcSNvizL`; Vercel reported `Ready` and assigned `https://iep-capture-pilot.vercel.app`. |
+| Guarded live admin API | PASS | The allowlisted synthetic-production harness verified the synthetic roster, user create/disable/reactivate/retire, immediate disabled-session revocation, 5 permission denials, student create/retire, goal create/edit/retire, and color create/read/retire. All temporary records were soft-retired. Cross-classroom denial remains covered by the disposable two-classroom suite because production has one classroom. |
+| Live browser smoke | PASS | In-app Chromium loaded production sign-in, authenticated as Synthetic Teacher, displayed the Admin navigation, and rendered Users, Students & goals, Data readiness, Colors, and Audit history. Observed counts were 26 active/incomplete goals, 3 default prompt ladders, and 33 support reconciliations; the audit table displayed the live lifecycle actions. |
+| Runtime errors | PASS | `vercel logs dpl_91TrcdW5EkVYRr5gaQq4vcSNvizL --level error --since 15m` returned no matching error entries after API and browser testing. |
+
+Open human gates remain native 200% zoom, a real screen-reader session,
+offline/reconnect, and broader district readiness. These results authorize only
+the synthetic pilot, not identifiable student data.
+
 ## Admin stewardship completion — 2026-09-03
 
 Environment: local macOS workspace, Next.js 16.3.3, synthetic data only.
