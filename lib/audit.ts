@@ -11,7 +11,12 @@ import { auditLog } from "@/lib/db/schema";
 export async function recordAudit(entry: {
   actorStaffId: string | null;
   action: "create" | "read" | "update" | "soft_delete";
-  tableName: "goals" | "data_points" | "accommodation_logs" | "students";
+  tableName:
+    | "goals"
+    | "data_points"
+    | "accommodation_logs"
+    | "students"
+    | "student_accommodations";
   recordId?: string;
   diff?: unknown;
 }) {

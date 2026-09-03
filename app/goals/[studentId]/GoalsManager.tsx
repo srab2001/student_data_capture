@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api-client";
-import type { Student, Goal } from "@/lib/db/types";
+import type { Student, Goal, StudentAccommodation } from "@/lib/db/types";
 import {
   goalDomainValues,
   metricTypeValues,
@@ -266,20 +267,260 @@ function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (
   );
 }
 
+function AccommodationRow({
+  accommodation,
+  onSaved,
+  onRetired,
+}: {
+  accommodation: StudentAccommodation;
+  onSaved: (a: StudentAccommodation) => void;
+  onRetired: (id: string) => void;
+}) {
+  const [name, setName] = useState(accommodation.name);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const dirty = name.trim().length > 0 && name.trim() !== accommodation.name;
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await apiFetch<{ accommodation: StudentAccommodation }>(
+        `/api/student-accommodations/${accommodation.id}`,
+        { method: "PATCH", body: JSON.stringify({ name: name.trim() }) }
+      );
+      onSaved(res.accommodation);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function retire() {
+    if (!confirm(`Retire "${accommodation.name}"? It will stop appearing on the entry screen.`)) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/student-accommodations/${accommodation.id}`, { method: "DELETE" });
+      onRetired(accommodation.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Retire failed.");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="text"
+        value={name}
+        disabled={saving}
+        onChange={(e) => setName(e.target.value)}
+        className="input"
+        style={{ flex: 1 }}
+      />
+      <button type="button" onClick={save} disabled={saving || !dirty} className="btn btn-secondary">
+        Save
+      </button>
+      <button
+        type="button"
+        onClick={retire}
+        disabled={saving}
+        className="btn btn-ghost"
+        style={{ color: "#b91c1c" }}
+      >
+        Retire
+      </button>
+      {error && (
+        <p className="text-sm" style={{ color: "#b91c1c" }}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function AccommodationsManager({
+  studentId,
+  accommodations,
+  setAccommodations,
+}: {
+  studentId: string;
+  accommodations: StudentAccommodation[];
+  setAccommodations: Dispatch<SetStateAction<StudentAccommodation[]>>;
+}) {
+  const [newName, setNewName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function create() {
+    if (!newName.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await apiFetch<{ accommodation: StudentAccommodation }>(
+        "/api/student-accommodations",
+        { method: "POST", body: JSON.stringify({ studentId, name: newName.trim() }) }
+      );
+      setAccommodations((prev) => [...prev, res.accommodation]);
+      setNewName("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Add failed.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="card mt-4">
+      <h5 style={{ marginBottom: 8 }}>Accommodations</h5>
+      <p className="text-muted text-xs" style={{ marginBottom: 12 }}>
+        The list a teacher or aide picks from when logging accommodation usage for this student
+        on the entry screen.
+      </p>
+      <div className="flex flex-col gap-2">
+        {accommodations.map((a) => (
+          <AccommodationRow
+            key={a.id}
+            accommodation={a}
+            onSaved={(updated) =>
+              setAccommodations((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))
+            }
+            onRetired={(id) => setAccommodations((prev) => prev.filter((x) => x.id !== id))}
+          />
+        ))}
+        {accommodations.length === 0 && (
+          <p className="text-muted text-sm">None configured yet.</p>
+        )}
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <input
+          type="text"
+          value={newName}
+          disabled={saving}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && create()}
+          placeholder="e.g. Extended time"
+          className="input"
+          style={{ flex: 1 }}
+        />
+        <button type="button" onClick={create} disabled={saving || !newName.trim()} className="btn btn-primary">
+          {saving ? "Adding…" : "Add"}
+        </button>
+      </div>
+      {error && (
+        <p className="mt-2 text-sm" style={{ color: "#b91c1c" }}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function StudentDetailsEditor({
+  student,
+  onRenamed,
+  onRetired,
+}: {
+  student: Student;
+  onRenamed: (s: Student) => void;
+  onRetired: () => void;
+}) {
+  const [name, setName] = useState(student.displayName);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const dirty = name.trim().length > 0 && name.trim() !== student.displayName;
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await apiFetch<{ student: Student }>(`/api/students/${student.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ displayName: name.trim() }),
+      });
+      onRenamed(res.student);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function retire() {
+    if (
+      !confirm(
+        `Retire ${student.displayName}? They'll be removed from the entry-screen roster — past goals and data points are kept.`
+      )
+    )
+      return;
+    setSaving(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/students/${student.id}`, { method: "DELETE" });
+      onRetired();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Retire failed.");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="card mt-4">
+      <label className="text-muted flex flex-col text-xs">
+        Student name
+        <input
+          type="text"
+          value={name}
+          disabled={saving}
+          onChange={(e) => setName(e.target.value)}
+          className="input mt-1"
+        />
+      </label>
+      {error && (
+        <p className="mt-2 text-sm" style={{ color: "#b91c1c" }}>
+          {error}
+        </p>
+      )}
+      <div className="mt-3 flex justify-between">
+        <button
+          type="button"
+          onClick={retire}
+          disabled={saving}
+          className="btn btn-ghost"
+          style={{ color: "#b91c1c" }}
+        >
+          Retire student
+        </button>
+        <button type="button" onClick={save} disabled={saving || !dirty} className="btn btn-primary">
+          {saving ? "Saving…" : "Save name"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function GoalsManager({ studentId }: { studentId: string }) {
+  const router = useRouter();
   const [student, setStudent] = useState<Student | null>(null);
   const [goals, setGoals] = useState<Goal[] | null>(null);
+  const [accommodations, setAccommodations] = useState<StudentAccommodation[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
       apiFetch<{ students: Student[] }>("/api/students"),
       apiFetch<{ goals: Goal[] }>(`/api/goals?studentId=${studentId}`),
+      apiFetch<{ accommodations: StudentAccommodation[] }>(
+        `/api/student-accommodations?studentId=${studentId}`
+      ),
     ])
-      .then(([studentsRes, goalsRes]) => {
+      .then(([studentsRes, goalsRes, accommodationsRes]) => {
         const found = studentsRes.students.find((s) => s.id === studentId) ?? null;
         setStudent(found);
         setGoals(goalsRes.goals);
+        setAccommodations(accommodationsRes.accommodations);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load."));
   }, [studentId]);
@@ -310,6 +551,17 @@ export function GoalsManager({ studentId }: { studentId: string }) {
           This student isn&apos;t in your classroom roster.
         </p>
       ) : (
+        <>
+          <StudentDetailsEditor
+            student={student!}
+            onRenamed={setStudent}
+            onRetired={() => router.push("/entry")}
+          />
+          <AccommodationsManager
+            studentId={studentId}
+            accommodations={accommodations}
+            setAccommodations={setAccommodations}
+          />
         <div className="mt-6 flex flex-col gap-4">
           {goals.map((goal) => (
             <GoalEditor
@@ -330,6 +582,7 @@ export function GoalsManager({ studentId }: { studentId: string }) {
             onCreated={(created) => setGoals((prev) => [...(prev ?? []), created])}
           />
         </div>
+        </>
       )}
     </main>
   );

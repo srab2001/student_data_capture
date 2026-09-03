@@ -210,6 +210,12 @@ export default function HelpPage() {
             from a plain tally to an icon-degree rating. Past data points logged under the old
             control type are kept as-is.
           </p>
+          <p>
+            The same <strong>Manage goals</strong> screen also has a field to rename the student
+            and a <strong>Retire student</strong> button — retiring removes them from the
+            entry-screen roster but keeps their past goals and data points, same as retiring a
+            single goal.
+          </p>
         </Section>
 
         <Section id="accommodations" title="Logging accommodations">
@@ -218,6 +224,12 @@ export default function HelpPage() {
             pick the accommodation, rate its effectiveness with the same star control used for
             icon-degree goals, and log it as used or not used. This is separate from goal data
             points — it tracks accommodation usage at the student level.
+          </p>
+          <p>
+            The accommodation list is per student, configured from their <strong>Manage
+            goals</strong> screen — add, rename, or retire accommodations there to match what&apos;s
+            actually on that student&apos;s IEP, rather than picking from every student&apos;s combined
+            list.
           </p>
         </Section>
 
