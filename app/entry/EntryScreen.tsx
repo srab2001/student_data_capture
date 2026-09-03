@@ -1,13 +1,8 @@
 "use client";
 
- claude/student-data-capture-plan-dgb389
-import { useEffect, useReducer, useRef, useState, useCallback } from "react";
-import { apiFetch } from "@/lib/api-client";
-import type { Student, Goal, Session, DataPoint, StudentAccommodation } from "@/lib/db/types";
-
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import type { Student, Goal, Session, DataPoint } from "@/lib/db/types";
+import type { Student, Goal, Session, DataPoint, StudentAccommodation } from "@/lib/db/types";
 import {
   aggregateObservationEvents,
   evidenceUnitCount,
@@ -15,7 +10,6 @@ import {
   type ObservationEntryKind,
 } from "@/lib/observations";
 import { measurementPlanStatus } from "@/lib/measurement-plans";
- main
 import { StudentCard } from "./StudentCard";
 import { GridView } from "./GridView";
 import { AccordionView } from "./AccordionView";
@@ -236,22 +230,19 @@ export function EntryScreen({
 
     async function load() {
       try {
- claude/student-data-capture-plan-dgb389
-        const [studentsRes, goalsRes, accommodationsRes, sessionRes] = await Promise.all([
-
         const sessionDate = localDateIso();
-        const [studentsRes, goalsRes, sessionRes, groupsRes, preferencesRes] = await Promise.all([
- main
-          apiFetch<{ students: Student[] }>("/api/students"),
-          apiFetch<{ goals: Goal[] }>("/api/goals"),
-          apiFetch<{ accommodations: StudentAccommodation[] }>("/api/student-accommodations"),
-          apiFetch<{ session: Session }>("/api/sessions", {
-            method: "POST",
-            body: JSON.stringify({ sessionDate, periodLabel: PERIOD_LABEL }),
-          }),
-          apiFetch<{ groups: RosterGroupSummary[] }>("/api/roster-groups"),
-          apiFetch<{ preferences: EntryPreferences }>("/api/entry-preferences"),
-        ]);
+        const [studentsRes, goalsRes, accommodationsRes, sessionRes, groupsRes, preferencesRes] =
+          await Promise.all([
+            apiFetch<{ students: Student[] }>("/api/students"),
+            apiFetch<{ goals: Goal[] }>("/api/goals"),
+            apiFetch<{ accommodations: StudentAccommodation[] }>("/api/student-accommodations"),
+            apiFetch<{ session: Session }>("/api/sessions", {
+              method: "POST",
+              body: JSON.stringify({ sessionDate, periodLabel: PERIOD_LABEL }),
+            }),
+            apiFetch<{ groups: RosterGroupSummary[] }>("/api/roster-groups"),
+            apiFetch<{ preferences: EntryPreferences }>("/api/entry-preferences"),
+          ]);
         if (cancelled) return;
 
         const byStudent = new Map<string, Goal[]>();
@@ -744,6 +735,7 @@ export function EntryScreen({
             <StudentCard
               student={focusedStudent}
               goals={goalsByStudent.get(focusedStudent.id) ?? []}
+              accommodations={accommodationsByStudent.get(focusedStudent.id) ?? []}
               actions={actions}
             />
           </div>
