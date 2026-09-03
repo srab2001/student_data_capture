@@ -7,13 +7,14 @@ import { Walkthrough, TourLauncher } from "@/components/Walkthrough";
 import { SUMMARY_TOUR_STEPS, SUMMARY_TOUR_KEY } from "@/lib/tour-steps";
 import { useTour } from "@/lib/use-tour";
 import type { ProgressSummaryResponse, ClientGoalSummary } from "./types";
+import { localDateIso } from "@/lib/observations";
 
 const DOMAINS = ["all", "academic", "behavioral", "independence", "accommodation"] as const;
 
 function isoDaysAgo(n: number) {
   const d = new Date();
   d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
+  return localDateIso(d);
 }
 
 export function SummaryView() {

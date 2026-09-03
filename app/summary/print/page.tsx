@@ -2,11 +2,12 @@ import { redirect } from "next/navigation";
 import { getCurrentStaff } from "@/lib/auth/session";
 import { getProgressSummary } from "@/lib/summary";
 import { PrintButton } from "./PrintButton";
+import { schoolDateIso } from "@/lib/observations";
 
 function defaultFrom() {
   const d = new Date();
   d.setDate(d.getDate() - 30);
-  return d.toISOString().slice(0, 10);
+  return schoolDateIso(d);
 }
 
 export default async function PrintSummaryPage({
@@ -20,7 +21,7 @@ export default async function PrintSummaryPage({
 
   const params = await searchParams;
   const from = params.from ?? defaultFrom();
-  const to = params.to ?? new Date().toISOString().slice(0, 10);
+  const to = params.to ?? schoolDateIso();
 
   const summary = await getProgressSummary(current.classroomId, {
     studentId: params.studentId,

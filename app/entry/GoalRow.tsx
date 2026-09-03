@@ -5,6 +5,7 @@ import type { Goal, DataPoint } from "@/lib/db/types";
 import { IconDegreePicker } from "@/components/IconDegreePicker";
 import { PROMPT_LEVELS } from "@/lib/icon-sets";
 import type { IconSetKey } from "@/lib/icon-sets";
+import type { MeasurementPlanStatus } from "@/lib/measurement-plans";
 
 const DOMAIN_LABEL: Record<Goal["domain"], string> = {
   academic: "Academic",
@@ -55,6 +56,7 @@ export function GoalRow({
   timerRunning,
   onTapAccuracy,
   onTapTally,
+  onCompleteObservation,
   onSetIconReading,
   onSetPromptLevel,
   onSetFluencyRate,
@@ -63,6 +65,10 @@ export function GoalRow({
   onStartTimer,
   onStopTimer,
   onNoteBlur,
+  canUndo,
+  onUndoLast,
+  saveStatus,
+  measurementStatus,
   disabled,
   showDomainAndText = true,
   showNote = true,
@@ -73,6 +79,7 @@ export function GoalRow({
   timerRunning: boolean;
   onTapAccuracy: (correct: boolean) => void;
   onTapTally: () => void;
+  onCompleteObservation: () => void;
   onSetIconReading: (value: string) => void;
   onSetPromptLevel: (value: string) => void;
   onSetFluencyRate: (value: number) => void;
@@ -81,6 +88,10 @@ export function GoalRow({
   onStartTimer: () => void;
   onStopTimer: () => void;
   onNoteBlur: (note: string) => void;
+  canUndo: boolean;
+  onUndoLast: () => void;
+  saveStatus: "idle" | "saving" | "saved" | "queued" | "failed";
+  measurementStatus: MeasurementPlanStatus;
   disabled?: boolean;
   /** Grid rows show the widget only — the goal text/domain live in their own columns. */
   showDomainAndText?: boolean;
@@ -101,6 +112,23 @@ export function GoalRow({
               {DOMAIN_LABEL[goal.domain]}
             </p>
             <p style={{ fontWeight: 600 }}>{goal.goalText}</p>
+            <p
+              role="status"
+              aria-live="polite"
+              className="mt-1 text-xs"
+              style={{
+                color:
+                  measurementStatus.kind === "due"
+                    ? "#9a3412"
+                    : measurementStatus.kind === "complete"
+                      ? "#166534"
+                      : "var(--color-neutral-600)",
+                fontWeight: measurementStatus.isDue ? 600 : 400,
+              }}
+            >
+              {measurementStatus.label}
+              {goal.measurementPlan ? ` · ${goal.measurementPlan.setting}` : ""}
+            </p>
           </div>
           {showNote && (
             <button
@@ -116,6 +144,56 @@ export function GoalRow({
         </div>
       )}
 
+      {!showDomainAndText && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="text-xs"
+          style={{
+            color:
+              measurementStatus.kind === "due"
+                ? "#9a3412"
+                : measurementStatus.kind === "complete"
+                  ? "#166534"
+                  : "var(--color-neutral-600)",
+            fontWeight: measurementStatus.isDue ? 600 : 400,
+          }}
+        >
+          {measurementStatus.label}
+        </p>
+      )}
+
+      {showDomainAndText && goal.measurementPlan && (
+        <details className="mt-2 text-xs">
+          <summary style={{ cursor: "pointer", fontWeight: 600 }}>
+            Collection directions
+          </summary>
+          <dl
+            className="mt-2 grid gap-2"
+            style={{ gridTemplateColumns: "max-content 1fr" }}
+          >
+            <dt className="text-muted">Count when</dt>
+            <dd>{goal.measurementPlan.observableDefinition}</dd>
+            <dt className="text-muted">Method</dt>
+            <dd>{goal.measurementPlan.measurementMethod}</dd>
+            <dt className="text-muted">Mastery</dt>
+            <dd>{goal.measurementPlan.masteryCriterion}</dd>
+            {goal.measurementPlan.opportunitiesRequired && (
+              <>
+                <dt className="text-muted">Opportunities</dt>
+                <dd>{goal.measurementPlan.opportunitiesRequired}</dd>
+              </>
+            )}
+            {goal.measurementPlan.observationWindowMinutes && (
+              <>
+                <dt className="text-muted">Window</dt>
+                <dd>{goal.measurementPlan.observationWindowMinutes} minutes</dd>
+              </>
+            )}
+          </dl>
+        </details>
+      )}
+
       <div className="mt-2">
         {goal.metricType === "accuracy_pct" && (
           <div data-tour="accuracy-counter" className="flex items-center gap-2">
@@ -124,7 +202,7 @@ export function GoalRow({
               disabled={disabled}
               onClick={() => onTapAccuracy(true)}
               className="btn btn-secondary iconbtn"
-              aria-label="Correct trial"
+              aria-label={`Correct trial for ${goal.goalText}`}
             >
               <CheckIcon />
             </button>
@@ -133,7 +211,7 @@ export function GoalRow({
               disabled={disabled}
               onClick={() => onTapAccuracy(false)}
               className="btn btn-secondary iconbtn"
-              aria-label="Incorrect trial"
+              aria-label={`Incorrect trial for ${goal.goalText}`}
             >
               <XIcon />
             </button>
@@ -158,6 +236,7 @@ export function GoalRow({
               }}
               className="input"
               style={{ width: 96 }}
+              aria-label={`Correct words per minute for ${goal.goalText}`}
             />
           </div>
         )}
@@ -169,9 +248,18 @@ export function GoalRow({
               disabled={disabled}
               onClick={onTapTally}
               className="btn btn-secondary"
-              aria-label="Tally occurrence"
+              aria-label={`Tally occurrence for ${goal.goalText}`}
             >
               Tally: {dataPoint?.valueNumeric ?? 0}
+            </button>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onCompleteObservation}
+              className="btn btn-ghost"
+              aria-label={`Mark observation window complete for ${goal.goalText}`}
+            >
+              Window complete
             </button>
           </div>
         )}
@@ -195,19 +283,47 @@ export function GoalRow({
               {String(timerSeconds % 60).padStart(2, "0")}
             </span>
             {timerRunning ? (
-              <button type="button" disabled={disabled} onClick={onStopTimer} className="btn btn-secondary">
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={onStopTimer}
+                className="btn btn-secondary"
+                aria-label={`Stop timer for ${goal.goalText}`}
+              >
                 Stop
               </button>
             ) : (
-              <button type="button" disabled={disabled} onClick={onStartTimer} className="btn btn-secondary">
-                Start
-              </button>
+              <>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={onStartTimer}
+                  className="btn btn-secondary"
+                  aria-label={`Start timer for ${goal.goalText}`}
+                >
+                  Start
+                </button>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={onCompleteObservation}
+                  className="btn btn-ghost"
+                  aria-label={`Record no occurrence for ${goal.goalText}`}
+                >
+                  No occurrence
+                </button>
+              </>
             )}
           </div>
         )}
 
         {goal.metricType === "prompt_level" && (
-          <div data-tour="prompt-chips" className="flex flex-wrap gap-2" role="group" aria-label="Prompt level">
+          <div
+            data-tour="prompt-chips"
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-label={`${goal.goalText} prompt level`}
+          >
             {PROMPT_LEVELS.map((level) => (
               <button
                 key={level.value}
@@ -224,8 +340,20 @@ export function GoalRow({
         )}
 
         {goal.metricType === "task_analysis_step" && (
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Task analysis step">
-            {[1, 2, 3, 4, 5].map((step) => (
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-label={`${goal.goalText} task analysis step`}
+          >
+            {(goal.taskAnalysisSteps ?? [
+              "Step 1",
+              "Step 2",
+              "Step 3",
+              "Step 4",
+              "Step 5",
+            ]).map((label, index) => {
+              const step = index + 1;
+              return (
               <button
                 key={step}
                 type="button"
@@ -234,9 +362,10 @@ export function GoalRow({
                 onClick={() => onSetTaskStep(step)}
                 className={dataPoint?.valueNumeric === step ? "chip chip-on" : "chip"}
               >
-                {step}
+                {step}. {label}
               </button>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -246,6 +375,7 @@ export function GoalRow({
               type="button"
               disabled={disabled}
               aria-pressed={dataPoint?.valueEnum === "used"}
+              aria-label={`Accommodation used for ${goal.goalText}`}
               onClick={() => onSetAccommodationUsed(true)}
               className={dataPoint?.valueEnum === "used" ? "chip chip-on" : "chip"}
             >
@@ -255,6 +385,7 @@ export function GoalRow({
               type="button"
               disabled={disabled}
               aria-pressed={dataPoint?.valueEnum === "not_used"}
+              aria-label={`Accommodation not used for ${goal.goalText}`}
               onClick={() => onSetAccommodationUsed(false)}
               className={dataPoint?.valueEnum === "not_used" ? "chip chip-on" : "chip"}
             >
@@ -264,12 +395,37 @@ export function GoalRow({
         )}
       </div>
 
+      <div className="mt-2 flex min-h-11 items-center justify-between gap-2">
+        <span
+          role="status"
+          aria-live="polite"
+          className="text-muted text-xs"
+          style={saveStatus === "failed" ? { color: "#b91c1c" } : undefined}
+        >
+          {saveStatus === "saving" && "Saving observation…"}
+          {saveStatus === "saved" && "Observation saved"}
+          {saveStatus === "queued" && "Queued — will retry when connected"}
+          {saveStatus === "failed" && "Save failed — undo and record again"}
+        </span>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          disabled={disabled || !canUndo}
+          onClick={onUndoLast}
+          aria-label={`Undo last observation for ${goal.goalText}`}
+        >
+          Undo last
+        </button>
+      </div>
+
       {showNote && noteOpen && (
         <textarea
+          key={dataPoint?.note ?? "empty-note"}
           defaultValue={dataPoint?.note ?? ""}
           onBlur={(e) => onNoteBlur(e.target.value)}
           disabled={disabled}
           placeholder="Optional note…"
+          aria-label={`Observation note for ${goal.goalText}`}
           rows={2}
           className="input mt-2"
           style={{ width: "100%" }}

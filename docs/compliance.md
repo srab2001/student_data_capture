@@ -34,6 +34,20 @@ https://claude.ai/code/artifact/f42a3d9c-ee1a-4b8d-860d-e8a4326da173
 - Task analysis checklist steps (`task_analysis_step`)
 - Accommodation-usage logs, including an effectiveness rating (rendered
   with the same icon-degree control as behavior goals)
+- Per-observation event type and timestamp so multiple readings in one session
+  remain distinct; client-generated random request IDs prevent duplicate
+  records during offline retries
+- Explicit observation-window completion markers so zero behavior occurrences
+  or zero-duration observations remain valid evidence without manufacturing a
+  numeric value
+- Goal-version relationships and goal-specific task-analysis step labels so
+  historical readings retain the measurement definition used when collected
+- Versioned goal measurement plans: baseline description, observable behavior,
+  measurement method, mastery criterion, scheduled collection days,
+  minimum observations per scheduled day, setting/activity, opportunities or
+  observation duration when applicable, responsible collector role, and
+  effective start/end dates. These fields describe how an IEP goal is measured;
+  they do not expand the student-identifying data collected.
 
 No other fields should be added without updating this document first —
 see "Data minimization" in the full compliance review.
@@ -135,15 +149,13 @@ Built 2026-08-28, on synthetic data only, no Policy 3060 sign-off (Track A):
 | **Entry screen & summary view** | ✅ Built | `/entry` (roster sweep) and `/summary` (PLAAFP-prep rollup, CSV export, print view) — see `app/entry/` and `app/summary/`. |
 | **Accessibility pass** | ✅ Done, human check recommended | Touch/click targets ≥44px, `aria-label`/`aria-pressed` on custom controls, native keyboard-navigable elements throughout, no color-only state indicators. Color contrast has not been measured with an automated tool — flagged for a human check before this leaves the prototype phase. |
 
-**Known limitation — not yet tested end-to-end.** This build environment's
-network policy blocks direct outbound calls to Neon's data API host, so the
-schema was applied through Neon's own tooling rather than `npm run
-db:migrate`, and the seed script and the running app itself have not been
-exercised against live data from inside this environment. `next build` and
-`next lint` pass, and the schema is confirmed live on the dev branch. Before
-treating this as a working prototype, run `npm install && npm run db:seed
-&& npm run dev` from a machine with normal network access and click through
-Phase 6's dry-run.
+**Historical limitation — resolved for read-only production use.** The
+original build environment could not exercise the Neon-backed app. On
+2026-09-03, the production migration ran within Vercel, and authenticated API
+and browser smoke tests loaded the synthetic roster and goals successfully.
+The write/offline/assistive-technology matrix remains open in
+`docs/TEST_PLAN.md`; this resolution does not change the synthetic-data-only
+restriction.
 
 ## Entry-screen redesign log
 
@@ -167,3 +179,44 @@ Built 2026-08-31, on synthetic data only, no Policy 3060 sign-off (Track A):
 | **Create a student** | ✅ Built | The design handoff's dashed "+ Add student to roster" card was previously a static placeholder with no API behind it — `POST /api/students` (`lib/validation.ts`'s `createStudentSchema`) now backs it. `classroomId` is always taken from the signed-in staff member's own classroom, never client-supplied, and `isSynthetic` is hard-coded `true` server-side — the endpoint has no way to create a non-synthetic student, matching the Track A guardrail above rather than just documenting it. New goals are added afterward from the student's existing "Manage goals" screen. |
 
 This log will be updated as each piece moves from prototype to reviewed.
+
+## Phase 1 data-integrity release log
+
+Implemented 2026-09-02 and deployed 2026-09-03, on synthetic data only, no
+Policy 3060 sign-off:
+
+| Piece | Status | Notes |
+|---|---|---|
+| **Immutable observations** | ✅ Code complete | New trials, tallies, timer segments, ratings, task steps, goal-level accommodation readings, and note changes are appended as separate `data_points` events. Existing aggregate rows remain readable as `legacy_snapshot`. |
+| **Idempotent offline retry** | ✅ Code complete | Each event receives a random `client_request_id` before submission. A unique database index makes reconnect retries idempotent. Pending observations are isolated by signed-in staff ID in browser storage and retry on reconnect/interval. This browser storage is still synthetic-only. |
+| **Correction flow** | ✅ Code complete | `Undo last` soft-deletes the signed-in staff member's latest non-legacy event. New events cannot be patched; a correction is an audited removal followed by a replacement observation. |
+| **Goal definition integrity** | ✅ Code complete | Editing goal text, metric type, icon set, or task-analysis steps after observations exist creates a linked replacement version and retires the prior definition. Historical versions remain available to summaries. |
+| **Task analysis and accommodations** | ✅ Code complete | Task-analysis labels are goal-specific. Accommodation effectiveness can be omitted; no default rating is manufactured. |
+| **Migration `0002`** | ✅ Applied to synthetic production | Applied after the migrator verified and journaled the manually created legacy baseline. Do not apply this system to real-student data because Track B remains blocked. |
+| **Verification** | ✅ Release smoke passed; full matrix open | Unit tests, ESLint, TypeScript, webpack and Vercel builds, schema metadata, dependency audit, authenticated production API reads, and Chrome UI smoke passed. Write/offline/assistive-technology scenarios remain in `docs/TEST_PLAN.md`. |
+
+## Phase 2 measurement-fidelity release log
+
+Implemented and deployed 2026-09-03, on synthetic data only, no Policy 3060
+sign-off:
+
+| Piece | Status | Notes |
+|---|---|---|
+| **Structured measurement plans** | ✅ Code complete | New goals require a bounded, validated JSON measurement plan containing baseline, observable definition, method, mastery, schedule, minimum evidence, setting, opportunities/window, collector role, and effective dates. |
+| **Historical integrity** | ✅ Code complete | Measurement-plan edits are part of goal versioning. Existing goal rows remain null after migration so the app never fabricates baseline or mastery content. |
+| **Due/evidence guidance** | ✅ Code complete | The entry screen evaluates local weekday/date, effective range, and signed-in role, then shows the non-note observation count against the plan minimum. |
+| **Migration `0003`** | ✅ Applied to synthetic production | Added nullable `goals.measurement_plan` after `0002`; existing goals remain null rather than receiving fabricated plan content. |
+| **Migration `0004`** | ✅ Applied to synthetic production | Added the `observation_complete` event kind after `0003`. |
+| **Verification** | ✅ Release smoke passed; full matrix open | Measurement-plan and due/evidence unit tests passed. Production API reads exposed the migrated field, and Chrome showed legacy-plan warnings, due summaries, accessible controls, layout switching, and the complete plan editor without changing student records. |
+
+## Phase 1–2 production deployment log
+
+Released 2026-09-03 to the existing synthetic-data Vercel/Neon pilot:
+
+| Piece | Status | Notes |
+|---|---|---|
+| **Preflight data check** | ✅ Synthetic only | Prototype staff contained only Synthetic Teacher and Synthetic Aide. The authenticated roster contained eight students, all marked synthetic. |
+| **First migration-first deploy** | ❌ Stopped safely | Deployment `dpl_GKP6QhUSyaCjm6AyiJGyXuAusd23` found an empty Drizzle journal beside the manually applied legacy schema and failed before alias promotion. The prior production deployment remained live. |
+| **Legacy migration reconciliation** | ✅ Guarded | `scripts/migrate.ts` leaves a genuinely empty database for normal migration, and records baseline migrations `0000`–`0001` only when the journal is empty and all eight expected tables plus the append-only audit trigger are present; a partial baseline causes a hard failure. |
+| **Production deployment** | ✅ Live | Deployment `dpl_6DWUEXX1wJw1spUgAb6sSY4oPXiA` applied migrations `0002`–`0004`, completed the Next.js build, reached `READY`, and received the `iep-capture-pilot.vercel.app` alias. |
+| **Production verification** | ✅ Read-only smoke passed | Public pages, prototype teacher login, scoped roster/goals APIs, Card/Grid layouts, accessible control names, legacy plan warnings, and the measurement-plan editor passed. Runtime-log inspection was blocked by the managed approval service; full write/offline/assistive-technology testing remains open. |

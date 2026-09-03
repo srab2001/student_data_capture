@@ -10,6 +10,11 @@ import {
   iconSetValues,
   targetFrequencyValues,
 } from "@/lib/validation";
+import {
+  COLLECTION_DAY_LABEL,
+  collectionDayValues,
+  type MeasurementPlan,
+} from "@/lib/measurement-plans";
 
 const METRIC_LABEL: Record<(typeof metricTypeValues)[number], string> = {
   accuracy_pct: "Accuracy trials (✓ / ✗)",
@@ -27,7 +32,9 @@ type DraftGoal = {
   goalText: string;
   metricType: (typeof metricTypeValues)[number];
   iconSet: (typeof iconSetValues)[number];
+  taskAnalysisSteps: string[];
   targetFrequency: (typeof targetFrequencyValues)[number];
+  measurementPlan: MeasurementPlan;
 };
 
 const BLANK_DRAFT: DraftGoal = {
@@ -35,8 +42,41 @@ const BLANK_DRAFT: DraftGoal = {
   goalText: "",
   metricType: "accuracy_pct",
   iconSet: "smiley_5",
+  taskAnalysisSteps: ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5"],
   targetFrequency: "daily",
+  measurementPlan: {
+    baseline: "",
+    observableDefinition: "",
+    measurementMethod: "",
+    masteryCriterion: "",
+    collectionDays: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+    observationsRequired: 1,
+    setting: "",
+    opportunitiesRequired: 1,
+    observationWindowMinutes: null,
+    responsibleRole: "either",
+    effectiveFrom: "",
+    effectiveTo: null,
+  },
 };
+
+function isDraftValid(draft: DraftGoal): boolean {
+  const plan = draft.measurementPlan;
+  return (
+    !!draft.goalText.trim() &&
+    (draft.metricType !== "task_analysis_step" || draft.taskAnalysisSteps.length > 0) &&
+    !!plan.baseline.trim() &&
+    !!plan.observableDefinition.trim() &&
+    !!plan.measurementMethod.trim() &&
+    !!plan.masteryCriterion.trim() &&
+    plan.collectionDays.length > 0 &&
+    plan.observationsRequired > 0 &&
+    !!plan.setting.trim() &&
+    (plan.opportunitiesRequired !== null || plan.observationWindowMinutes !== null) &&
+    !!plan.effectiveFrom &&
+    (!plan.effectiveTo || plan.effectiveTo >= plan.effectiveFrom)
+  );
+}
 
 function GoalFields({
   draft,
@@ -130,6 +170,283 @@ function GoalFields({
           </select>
         </label>
       )}
+
+      {draft.metricType === "task_analysis_step" && (
+        <label className="text-muted flex flex-col text-xs sm:col-span-2">
+          Task-analysis steps (one per line)
+          <textarea
+            value={draft.taskAnalysisSteps.join("\n")}
+            disabled={disabled}
+            onChange={(e) =>
+              onChange({
+                ...draft,
+                taskAnalysisSteps: e.target.value
+                  .split("\n")
+                  .map((step) => step.trim())
+                  .filter(Boolean),
+              })
+            }
+            rows={5}
+            className="input mt-1"
+            placeholder={"Open materials\nComplete first step\nCheck work"}
+          />
+        </label>
+      )}
+
+      <fieldset
+        className="sm:col-span-2"
+        style={{
+          border: "1px solid var(--color-neutral-300)",
+          borderRadius: "var(--radius-sm)",
+          padding: "var(--space-3)",
+        }}
+      >
+        <legend style={{ fontWeight: 600, padding: "0 6px" }}>Measurement plan</legend>
+        <p className="text-muted mb-3 text-xs">
+          Define exactly what staff should observe and when enough evidence has been collected.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="text-muted flex flex-col text-xs sm:col-span-2">
+            Baseline
+            <input
+              value={draft.measurementPlan.baseline}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange({
+                  ...draft,
+                  measurementPlan: { ...draft.measurementPlan, baseline: e.target.value },
+                })
+              }
+              className="input mt-1"
+              placeholder="e.g. 3 of 10 independent opportunities as of 2026-09-01"
+            />
+          </label>
+
+          <label className="text-muted flex flex-col text-xs sm:col-span-2">
+            Observable definition
+            <textarea
+              value={draft.measurementPlan.observableDefinition}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange({
+                  ...draft,
+                  measurementPlan: {
+                    ...draft.measurementPlan,
+                    observableDefinition: e.target.value,
+                  },
+                })
+              }
+              rows={2}
+              className="input mt-1"
+              placeholder="Describe what counts and what does not count."
+            />
+          </label>
+
+          <label className="text-muted flex flex-col text-xs sm:col-span-2">
+            Measurement method
+            <textarea
+              value={draft.measurementPlan.measurementMethod}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange({
+                  ...draft,
+                  measurementPlan: {
+                    ...draft.measurementPlan,
+                    measurementMethod: e.target.value,
+                  },
+                })
+              }
+              rows={2}
+              className="input mt-1"
+              placeholder="e.g. Present 10 trials and tap correct or incorrect after each response."
+            />
+          </label>
+
+          <label className="text-muted flex flex-col text-xs sm:col-span-2">
+            Mastery criterion
+            <input
+              value={draft.measurementPlan.masteryCriterion}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange({
+                  ...draft,
+                  measurementPlan: {
+                    ...draft.measurementPlan,
+                    masteryCriterion: e.target.value,
+                  },
+                })
+              }
+              className="input mt-1"
+              placeholder="e.g. 80% or better across 3 consecutive weekly probes"
+            />
+          </label>
+
+          <label className="text-muted flex flex-col text-xs">
+            Setting or activity
+            <input
+              value={draft.measurementPlan.setting}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange({
+                  ...draft,
+                  measurementPlan: { ...draft.measurementPlan, setting: e.target.value },
+                })
+              }
+              className="input mt-1"
+              placeholder="e.g. Small-group reading"
+            />
+          </label>
+
+          <label className="text-muted flex flex-col text-xs">
+            Responsible collector
+            <select
+              value={draft.measurementPlan.responsibleRole}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange({
+                  ...draft,
+                  measurementPlan: {
+                    ...draft.measurementPlan,
+                    responsibleRole: e.target.value as MeasurementPlan["responsibleRole"],
+                  },
+                })
+              }
+              className="input mt-1"
+            >
+              <option value="either">Teacher or aide</option>
+              <option value="teacher">Teacher</option>
+              <option value="aide">Aide</option>
+            </select>
+          </label>
+
+          <fieldset className="sm:col-span-2">
+            <legend className="text-muted text-xs">Scheduled collection days</legend>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {collectionDayValues.map((day) => (
+                <label key={day} className="chip" style={{ cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={draft.measurementPlan.collectionDays.includes(day)}
+                    disabled={disabled}
+                    onChange={(e) => {
+                      const days = e.target.checked
+                        ? [...draft.measurementPlan.collectionDays, day]
+                        : draft.measurementPlan.collectionDays.filter((value) => value !== day);
+                      onChange({
+                        ...draft,
+                        measurementPlan: { ...draft.measurementPlan, collectionDays: days },
+                      });
+                    }}
+                  />
+                  {COLLECTION_DAY_LABEL[day]}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <label className="text-muted flex flex-col text-xs">
+            Minimum observations each scheduled day
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={draft.measurementPlan.observationsRequired}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange({
+                  ...draft,
+                  measurementPlan: {
+                    ...draft.measurementPlan,
+                    observationsRequired: Number(e.target.value),
+                  },
+                })
+              }
+              className="input mt-1"
+            />
+          </label>
+
+          <label className="text-muted flex flex-col text-xs">
+            Opportunities per observation (choose opportunities or a window)
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={draft.measurementPlan.opportunitiesRequired ?? ""}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange({
+                  ...draft,
+                  measurementPlan: {
+                    ...draft.measurementPlan,
+                    opportunitiesRequired: e.target.value ? Number(e.target.value) : null,
+                  },
+                })
+              }
+              className="input mt-1"
+            />
+          </label>
+
+          <label className="text-muted flex flex-col text-xs">
+            Observation window in minutes (choose opportunities or a window)
+            <input
+              type="number"
+              min={1}
+              max={480}
+              value={draft.measurementPlan.observationWindowMinutes ?? ""}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange({
+                  ...draft,
+                  measurementPlan: {
+                    ...draft.measurementPlan,
+                    observationWindowMinutes: e.target.value ? Number(e.target.value) : null,
+                  },
+                })
+              }
+              className="input mt-1"
+            />
+          </label>
+
+          <div className="grid grid-cols-2 gap-2">
+            <label className="text-muted flex flex-col text-xs">
+              Effective from
+              <input
+                type="date"
+                value={draft.measurementPlan.effectiveFrom}
+                disabled={disabled}
+                onChange={(e) =>
+                  onChange({
+                    ...draft,
+                    measurementPlan: {
+                      ...draft.measurementPlan,
+                      effectiveFrom: e.target.value,
+                    },
+                  })
+                }
+                className="input mt-1"
+              />
+            </label>
+            <label className="text-muted flex flex-col text-xs">
+              End date (optional)
+              <input
+                type="date"
+                value={draft.measurementPlan.effectiveTo ?? ""}
+                disabled={disabled}
+                onChange={(e) =>
+                  onChange({
+                    ...draft,
+                    measurementPlan: {
+                      ...draft.measurementPlan,
+                      effectiveTo: e.target.value || null,
+                    },
+                  })
+                }
+                className="input mt-1"
+              />
+            </label>
+          </div>
+        </div>
+      </fieldset>
     </div>
   );
 }
@@ -140,15 +457,32 @@ function goalToDraft(goal: Goal): DraftGoal {
     goalText: goal.goalText,
     metricType: goal.metricType,
     iconSet: goal.iconSet ?? "smiley_5",
+    taskAnalysisSteps: goal.taskAnalysisSteps ?? [
+      "Step 1",
+      "Step 2",
+      "Step 3",
+      "Step 4",
+      "Step 5",
+    ],
     targetFrequency: goal.targetFrequency,
+    measurementPlan: goal.measurementPlan ?? BLANK_DRAFT.measurementPlan,
   };
 }
 
-function GoalEditor({ goal, onSaved, onRetired }: { goal: Goal; onSaved: (g: Goal) => void; onRetired: (id: string) => void }) {
+function GoalEditor({
+  goal,
+  onSaved,
+  onRetired,
+}: {
+  goal: Goal;
+  onSaved: (g: Goal, replacedGoalId?: string) => void;
+  onRetired: (id: string) => void;
+}) {
   const [draft, setDraft] = useState<DraftGoal>(goalToDraft(goal));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dirty = JSON.stringify(draft) !== JSON.stringify(goalToDraft(goal));
+  const valid = isDraftValid(draft);
 
   async function save() {
     setSaving(true);
@@ -160,12 +494,15 @@ function GoalEditor({ goal, onSaved, onRetired }: { goal: Goal; onSaved: (g: Goa
         metricType: draft.metricType,
         targetFrequency: draft.targetFrequency,
         iconSet: draft.metricType === "icon_scale" ? draft.iconSet : null,
+        taskAnalysisSteps:
+          draft.metricType === "task_analysis_step" ? draft.taskAnalysisSteps : null,
+        measurementPlan: draft.measurementPlan,
       };
-      const res = await apiFetch<{ goal: Goal }>(`/api/goals/${goal.id}`, {
+      const res = await apiFetch<{ goal: Goal; replacedGoalId?: string }>(`/api/goals/${goal.id}`, {
         method: "PATCH",
         body: JSON.stringify(body),
       });
-      onSaved(res.goal);
+      onSaved(res.goal, res.replacedGoalId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed.");
     } finally {
@@ -188,6 +525,15 @@ function GoalEditor({ goal, onSaved, onRetired }: { goal: Goal; onSaved: (g: Goa
 
   return (
     <div className="card">
+      {!goal.measurementPlan && (
+        <p
+          role="status"
+          className="mb-3 text-sm"
+          style={{ color: "#9a3412", fontWeight: 600 }}
+        >
+          Measurement plan incomplete. Complete the fields below before saving changes.
+        </p>
+      )}
       <GoalFields draft={draft} onChange={setDraft} disabled={saving} />
       {error && (
         <p className="mt-2 text-sm" style={{ color: "#b91c1c" }}>
@@ -201,7 +547,7 @@ function GoalEditor({ goal, onSaved, onRetired }: { goal: Goal; onSaved: (g: Goa
         <button
           type="button"
           onClick={save}
-          disabled={saving || !dirty || !draft.goalText.trim()}
+          disabled={saving || !dirty || !valid}
           className="btn btn-primary"
         >
           {saving ? "Saving…" : "Save changes"}
@@ -215,6 +561,7 @@ function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (
   const [draft, setDraft] = useState<DraftGoal>(BLANK_DRAFT);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const valid = isDraftValid(draft);
 
   async function create() {
     setSaving(true);
@@ -226,7 +573,11 @@ function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (
         goalText: draft.goalText,
         metricType: draft.metricType,
         targetFrequency: draft.targetFrequency,
+        measurementPlan: draft.measurementPlan,
         ...(draft.metricType === "icon_scale" ? { iconSet: draft.iconSet } : {}),
+        ...(draft.metricType === "task_analysis_step"
+          ? { taskAnalysisSteps: draft.taskAnalysisSteps }
+          : {}),
       };
       const res = await apiFetch<{ goal: Goal }>("/api/goals", {
         method: "POST",
@@ -247,6 +598,12 @@ function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (
       <div className="mt-3">
         <GoalFields draft={draft} onChange={setDraft} disabled={saving} />
       </div>
+      {!valid && (
+        <p className="text-muted mt-2 text-xs">
+          Complete the goal text and all measurement-plan fields except the optional end date.
+          Enter opportunities, an observation window, or both.
+        </p>
+      )}
       {error && (
         <p className="mt-2 text-sm" style={{ color: "#b91c1c" }}>
           {error}
@@ -256,7 +613,7 @@ function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (
         <button
           type="button"
           onClick={create}
-          disabled={saving || !draft.goalText.trim()}
+          disabled={saving || !valid}
           className="btn btn-primary"
         >
           {saving ? "Adding…" : "Add goal"}
@@ -315,8 +672,12 @@ export function GoalsManager({ studentId }: { studentId: string }) {
             <GoalEditor
               key={goal.id}
               goal={goal}
-              onSaved={(updated) =>
-                setGoals((prev) => prev!.map((g) => (g.id === updated.id ? updated : g)))
+              onSaved={(updated, replacedGoalId) =>
+                setGoals((prev) =>
+                  prev!.map((g) =>
+                    g.id === (replacedGoalId ?? updated.id) ? updated : g
+                  )
+                )
               }
               onRetired={(id) => setGoals((prev) => prev!.filter((g) => g.id !== id))}
             />

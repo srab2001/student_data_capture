@@ -9,7 +9,11 @@ import {
   date,
   jsonb,
   smallint,
+  index,
+  uniqueIndex,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
+import type { MeasurementPlan } from "@/lib/measurement-plans";
 
 // See docs/compliance.md — this file is the source of truth for what data
 // this app stores. Do not add a field here without updating that document
@@ -57,6 +61,23 @@ export const promptLevelEnum = pgEnum("prompt_level", [
   "independent",
 ]);
 
+// New data_points are immutable observation events. Existing aggregate rows
+// are migrated as legacy_snapshot so historical synthetic data remains
+// readable while every new tap can be preserved independently.
+export const observationEntryKindEnum = pgEnum("observation_entry_kind", [
+  "legacy_snapshot",
+  "correct_trial",
+  "incorrect_trial",
+  "tally",
+  "duration",
+  "rating",
+  "numeric",
+  "task_step",
+  "accommodation",
+  "observation_complete",
+  "note",
+]);
+
 const identity = {
   id: uuid("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
 };
@@ -100,20 +121,35 @@ export const students = pgTable("students", {
   ...timestamps,
 });
 
-export const goals = pgTable("goals", {
-  ...identity,
-  studentId: uuid("student_id")
-    .notNull()
-    .references(() => students.id),
-  domain: goalDomainEnum("domain").notNull(),
-  goalText: text("goal_text").notNull(),
-  metricType: metricTypeEnum("metric_type").notNull(),
-  // Only meaningful when metricType = 'icon_scale'. Decided once at goal
-  // setup, not chosen per entry (see Phase 3 UI).
-  iconSet: iconSetEnum("icon_set"),
-  targetFrequency: targetFrequencyEnum("target_frequency").notNull(),
-  ...timestamps,
-});
+export const goals = pgTable(
+  "goals",
+  {
+    ...identity,
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id),
+    domain: goalDomainEnum("domain").notNull(),
+    goalText: text("goal_text").notNull(),
+    metricType: metricTypeEnum("metric_type").notNull(),
+    // Only meaningful when metricType = 'icon_scale'. Decided once at goal
+    // setup, not chosen per entry (see Phase 3 UI).
+    iconSet: iconSetEnum("icon_set"),
+    // Goal-specific labels replace the former hard-coded 1-5 task analysis.
+    taskAnalysisSteps: jsonb("task_analysis_steps").$type<string[]>(),
+    // Versioned, structured directions for collecting defensible evidence.
+    // Nullable only so pre-Phase-2 goals can be upgraded deliberately rather
+    // than receiving fabricated baselines or mastery criteria in a migration.
+    measurementPlan: jsonb("measurement_plan").$type<MeasurementPlan>(),
+    // A measurement-definition edit creates a new goal version and retires
+    // the previous row instead of reinterpreting historical observations.
+    supersedesGoalId: uuid("supersedes_goal_id").references(
+      (): AnyPgColumn => goals.id
+    ),
+    targetFrequency: targetFrequencyEnum("target_frequency").notNull(),
+    ...timestamps,
+  },
+  (table) => [index("goals_supersedes_goal_id_idx").on(table.supersedesGoalId)]
+);
 
 export const sessions = pgTable("sessions", {
   ...identity,
@@ -125,28 +161,45 @@ export const sessions = pgTable("sessions", {
   ...timestamps,
 });
 
-export const dataPoints = pgTable("data_points", {
-  ...identity,
-  goalId: uuid("goal_id")
-    .notNull()
-    .references(() => goals.id),
-  sessionId: uuid("session_id")
-    .notNull()
-    .references(() => sessions.id),
-  enteredByStaffId: uuid("entered_by_staff_id")
-    .notNull()
-    .references(() => staff.id),
-  entryAt: timestamp("entry_at", { withTimezone: true }).notNull().defaultNow(),
-  valueNumeric: integer("value_numeric"),
-  // Prompt-level readings, task-analysis step labels, and icon_scale
-  // readings (e.g. "3_of_5") all live here rather than in separate
-  // columns per metric type.
-  valueEnum: text("value_enum"),
-  trialsTotal: integer("trials_total"),
-  trialsCorrect: integer("trials_correct"),
-  note: text("note"),
-  ...timestamps,
-});
+export const dataPoints = pgTable(
+  "data_points",
+  {
+    ...identity,
+    goalId: uuid("goal_id")
+      .notNull()
+      .references(() => goals.id),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => sessions.id),
+    enteredByStaffId: uuid("entered_by_staff_id")
+      .notNull()
+      .references(() => staff.id),
+    entryAt: timestamp("entry_at", { withTimezone: true }).notNull().defaultNow(),
+    entryKind: observationEntryKindEnum("entry_kind")
+      .notNull()
+      .default("legacy_snapshot"),
+    // Generated on the Chromebook before a write is queued. The unique
+    // value makes offline retries idempotent.
+    clientRequestId: uuid("client_request_id"),
+    valueNumeric: integer("value_numeric"),
+    // Prompt-level readings, task-analysis step labels, and icon_scale
+    // readings (e.g. "3_of_5") all live here rather than in separate
+    // columns per metric type.
+    valueEnum: text("value_enum"),
+    trialsTotal: integer("trials_total"),
+    trialsCorrect: integer("trials_correct"),
+    note: text("note"),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("data_points_client_request_id_unique").on(table.clientRequestId),
+    index("data_points_goal_session_entry_at_idx").on(
+      table.goalId,
+      table.sessionId,
+      table.entryAt
+    ),
+  ]
+);
 
 export const accommodationLogs = pgTable("accommodation_logs", {
   ...identity,

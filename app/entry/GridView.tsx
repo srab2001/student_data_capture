@@ -52,6 +52,7 @@ export function GridView({
                   timerRunning={actions.timerRunningForGoal(goal.id)}
                   onTapAccuracy={(correct) => actions.onTapAccuracy(goal.id, correct)}
                   onTapTally={() => actions.onTapTally(goal.id)}
+                  onCompleteObservation={() => actions.onCompleteObservation(goal.id)}
                   onSetIconReading={(value) => actions.onSetIconReading(goal.id, value)}
                   onSetPromptLevel={(value) => actions.onSetPromptLevel(goal.id, value)}
                   onSetFluencyRate={(value) => actions.onSetFluencyRate(goal.id, value)}
@@ -60,6 +61,10 @@ export function GridView({
                   onStartTimer={() => actions.onStartTimer(goal.id)}
                   onStopTimer={() => actions.onStopTimer(goal.id)}
                   onNoteBlur={(note) => actions.onNoteBlur(goal.id, note)}
+                  canUndo={actions.canUndoForGoal(goal.id)}
+                  onUndoLast={() => actions.onUndoLast(goal.id)}
+                  saveStatus={actions.saveStatusForGoal(goal.id)}
+                  measurementStatus={actions.measurementStatusForGoal(goal.id)}
                   disabled={actions.disabled}
                   showDomainAndText={false}
                   showNote={false}

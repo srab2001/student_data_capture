@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { goals, students } from "@/lib/db/schema";
+import { dataPoints, goals, students } from "@/lib/db/schema";
 import { getCurrentStaff } from "@/lib/auth/session";
 import { requireStaff } from "@/lib/auth/authz";
-import { updateGoalSchema } from "@/lib/validation";
+import { createGoalSchema, updateGoalSchema } from "@/lib/validation";
 import { recordAudit } from "@/lib/audit";
 import { handleRoute, assertWriteRateLimit, jsonError } from "@/lib/api-helpers";
 
@@ -55,9 +55,80 @@ export async function PATCH(
     const existing = await loadScopedGoal(id, current.classroomId!);
     if (!existing) return jsonError("Goal not found.", 404);
 
+    const nextDefinition = createGoalSchema.parse({
+      studentId: existing.studentId,
+      domain: body.domain ?? existing.domain,
+      goalText: body.goalText ?? existing.goalText,
+      metricType: body.metricType ?? existing.metricType,
+      iconSet:
+        (body.metricType ?? existing.metricType) === "icon_scale"
+          ? (body.iconSet ?? existing.iconSet ?? undefined)
+          : undefined,
+      taskAnalysisSteps:
+        (body.metricType ?? existing.metricType) === "task_analysis_step"
+          ? (body.taskAnalysisSteps ?? existing.taskAnalysisSteps ?? undefined)
+          : undefined,
+      measurementPlan: body.measurementPlan ?? existing.measurementPlan ?? undefined,
+      targetFrequency: body.targetFrequency ?? existing.targetFrequency,
+    });
+
+    const changesMeasurementDefinition =
+      nextDefinition.goalText !== existing.goalText ||
+      nextDefinition.metricType !== existing.metricType ||
+      (nextDefinition.iconSet ?? null) !== existing.iconSet ||
+      JSON.stringify(nextDefinition.taskAnalysisSteps ?? null) !==
+        JSON.stringify(existing.taskAnalysisSteps ?? null) ||
+      JSON.stringify(nextDefinition.measurementPlan) !==
+        JSON.stringify(existing.measurementPlan);
+
+    if (changesMeasurementDefinition) {
+      const [existingObservation] = await db
+        .select({ id: dataPoints.id })
+        .from(dataPoints)
+        .where(and(eq(dataPoints.goalId, id), isNull(dataPoints.deletedAt)))
+        .limit(1);
+
+      if (existingObservation) {
+        const replacement = await db.transaction(async (tx) => {
+          const [created] = await tx
+            .insert(goals)
+            .values({ ...nextDefinition, supersedesGoalId: existing.id })
+            .returning();
+          await tx
+            .update(goals)
+            .set({ deletedAt: new Date(), updatedAt: new Date() })
+            .where(eq(goals.id, existing.id));
+          return created;
+        });
+
+        await recordAudit({
+          actorStaffId: current.id,
+          action: "create",
+          tableName: "goals",
+          recordId: replacement.id,
+          diff: { supersedesGoalId: existing.id, ...nextDefinition },
+        });
+        await recordAudit({
+          actorStaffId: current.id,
+          action: "soft_delete",
+          tableName: "goals",
+          recordId: existing.id,
+          diff: { replacedByGoalId: replacement.id },
+        });
+
+        return NextResponse.json({ goal: replacement, replacedGoalId: existing.id });
+      }
+    }
+
     const [updated] = await db
       .update(goals)
-      .set({ ...body, updatedAt: new Date() })
+      .set({
+        ...body,
+        iconSet: nextDefinition.iconSet ?? null,
+        taskAnalysisSteps: nextDefinition.taskAnalysisSteps ?? null,
+        measurementPlan: nextDefinition.measurementPlan,
+        updatedAt: new Date(),
+      })
       .where(eq(goals.id, id))
       .returning();
 

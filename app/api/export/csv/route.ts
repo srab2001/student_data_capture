@@ -4,11 +4,12 @@ import { requireStaff } from "@/lib/auth/authz";
 import { getProgressSummary } from "@/lib/summary";
 import { recordAudit } from "@/lib/audit";
 import { handleRoute, jsonError } from "@/lib/api-helpers";
+import { schoolDateIso } from "@/lib/observations";
 
 function defaultFrom() {
   const d = new Date();
   d.setDate(d.getDate() - 30);
-  return d.toISOString().slice(0, 10);
+  return schoolDateIso(d);
 }
 
 function csvEscape(value: string): string {
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     const params = request.nextUrl.searchParams;
     const studentId = params.get("studentId") ?? undefined;
     const from = params.get("from") ?? defaultFrom();
-    const to = params.get("to") ?? new Date().toISOString().slice(0, 10);
+    const to = params.get("to") ?? schoolDateIso();
 
     const summary = await getProgressSummary(current.classroomId, { studentId, from, to });
 

@@ -6,5 +6,11 @@ export default async function EntryPage() {
   const current = await getCurrentStaff();
   if (!current) redirect("/login");
 
-  return <EntryScreen currentStaffName={current.name} />;
+  return (
+    <EntryScreen
+      currentStaffId={current.id}
+      currentStaffName={current.name}
+      currentStaffRole={current.role}
+    />
+  );
 }

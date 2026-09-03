@@ -1,0 +1,1 @@
+ALTER TYPE "public"."observation_entry_kind" ADD VALUE 'observation_complete' BEFORE 'note';

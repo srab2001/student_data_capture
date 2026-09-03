@@ -11,12 +11,12 @@ export const SUMMARY_TOUR_KEY = "iep_pilot_tour_summary_v1";
 export const ENTRY_TOUR_STEPS: TourStep[] = [
   {
     title: "Welcome to the roster sweep",
-    body: "This is the screen you and your aide use during class to log IEP progress — one card per student, everything tap-based. A full sweep of the caseload should take under 3 minutes. Every tap saves immediately, so nothing is lost if the Chromebook closes mid-period.",
+    body: "This is the screen you and your aide use during class to log IEP progress — one card per student, everything tap-based. Each goal shows whether it is due and how many observations are required. Every tap is preserved, and Undo last corrects a mistaken tap.",
   },
   {
     target: '[data-tour="student-card"]',
     title: "One card per student",
-    body: "Each student gets their own card, listing only the goals assigned to them. Scroll down to see the rest of your roster.",
+    body: "Each student gets their own card, listing only the goals assigned to them. The header counts today's due goals, and each goal shows evidence collected versus required. Scroll down to see the rest of your roster.",
   },
   {
     target: '[data-tour="accuracy-counter"]',
@@ -26,22 +26,22 @@ export const ENTRY_TOUR_STEPS: TourStep[] = [
   {
     target: '[data-tour="tally-counter"]',
     title: "Behavior tally",
-    body: "For frequency-count goals: tap once per occurrence. The count shown is this session's total so far.",
+    body: "For frequency-count goals: tap once per occurrence. When the planned window ends, select Window complete — including for zero occurrences — so the app records a complete observation rather than treating an occurrence as the window.",
   },
   {
     target: '[data-tour="icon-picker"]',
     title: "Icon-degree rating",
-    body: "An alternative to a plain tally — tap one icon to record a single reading (not a running count). The icon set (smiley, stars, thumbs, or Zones of Regulation) is set per goal, not chosen in the moment.",
+    body: "An alternative to a plain tally — each tap records a separate reading, so multiple observations in one session are preserved. The icon set (smiley, stars, thumbs, or Zones of Regulation) is set per goal.",
   },
   {
     target: '[data-tour="timer"]',
     title: "Duration / latency timer",
-    body: "Start the timer when the behavior or task begins, Stop when it ends. The elapsed time is saved as this session's reading — you can restart it to keep adding time.",
+    body: "Start the timer when the behavior or task begins, Stop when it ends. You can restart it to keep adding time. If the planned observation ends with no occurrence, select No occurrence so that valid zero is still counted as evidence.",
   },
   {
     target: '[data-tour="prompt-chips"]',
     title: "Prompt-level chips",
-    body: "For independence-tracking goals: tap the level of support the student needed — Full Physical through Independent. One tap sets it, no typing.",
+    body: "For independence-tracking goals: tap the level of support the student needed — Full Physical through Independent. Each tap is a separate observation, so change across the session is retained.",
   },
   {
     target: '[data-tour="note-toggle"]',

@@ -1,5 +1,14 @@
 # Handoff: IEP Capture Pilot — Entry Screen Redesign
 
+> Historical design reference. The Phase 1–2 releases supersede
+> the state-management notes below: the production entry screen now records
+> immutable observation events, derives session aggregates, keeps idempotent
+> pending writes in a staff-specific browser queue, and exposes per-goal
+> save/undo status. Phase 2 also replaces "logged today" with plan-aware
+> due/evidence status and adds collapsed collection directions. The visual
+> references remain useful; do not reintroduce
+> the former one-row-per-goal PATCH model.
+
 ## Overview
 Three layout directions for the "roster sweep" daily-logging screen of the HCPSS IEP Capture Pilot (`srab2001/student_data_capture`), unified into one switchable interface: **Card stack**, **Grid** (spreadsheet-style), and **Accordion** (collapsed roster, expand per student). All three render the same underlying goal data — teachers/aides can pick whichever density suits them, per session.
 
@@ -26,7 +35,7 @@ Single screen, `/entry`, with a layout switcher. All three views share one nav b
 
 **1. Card stack**
 - One `.card.elev-sm` per student, `flex-direction: column`, `gap: var(--space-4)` between cards.
-- Card header: kicker line ("All goals logged today" / "N/M logged today"), student name as `.card-title`, "Manage goals" ghost button top-right.
+- Card header: plan-aware kicker line ("All due evidence collected" / "N/M due goals complete" / "No goals assigned today"), student name as `.card-title`, "Manage goals" ghost button top-right.
 - Below: one goal block per goal, separated by a 1px `--color-neutral-200` top border. Each block: domain label (11px uppercase, `.text-muted`), goal text (600 weight), a per-metric-type widget (see Interactions), and a "+ Note" / "Hide note" ghost button top-right that reveals a `.input` textarea.
 - Footer: "+ Log accommodation" ghost button revealing a native `<select>` of accommodation names + "Log as used" / "Log as not used" buttons.
 - Dashed `.card` at the bottom: "+ Add student to roster".
@@ -48,9 +57,9 @@ Six metric-type widgets, each driven by `goal.metricType` (matches the real `met
 | `accuracy_pct` | Two icon buttons (check / x, Lucide-style, stroke-width 2.75) + running "correct/total (pct%)" label | Each tap increments total, and correct if check tapped |
 | `duration_seconds` | Monospace `mm:ss` readout + Start/Stop button | Start records a start timestamp; Stop adds elapsed seconds to a running total; while running, the readout ticks once per second |
 | `frequency_count` | Single button labeled "Tally: N" | Tap increments N |
-| `prompt_level` | Row of 5 chips (Indep/Verbal/Gestural/Model/Physical) | Single-select; selected chip gets accent fill (`chip-on`) |
-| `icon_scale` | Row of 5 chips (Great/Good/Okay/Low/Rough) | Single-select, same chip pattern (production app uses icon glyphs from `lib/icon-sets.ts` per icon set — this reference uses text labels; keep icon glyphs if adopting Organic, styled as Lucide icons at stroke-width 2.75 rather than emoji, per the design system's icon guidance) |
-| `task_analysis_step` | Row of 5 numbered chips (1–5) | Single-select |
+| `prompt_level` | Row of 5 chips (Indep/Verbal/Gestural/Model/Physical) | Each selection is preserved as an observation; the latest selection is highlighted |
+| `icon_scale` | Row of 5 chips (Great/Good/Okay/Low/Rough) | Each selection is preserved as an observation; production uses icon glyphs from `lib/icon-sets.ts` |
+| `task_analysis_step` | Row of goal-specific, named step chips | Each selection is preserved as an observation; labels come from the goal definition |
 
 - Switching the segmented control (Cards/Grid/Accordion) re-renders the layout only — all logged data (taps, timer state, notes, chip selections) persists across the switch, since it's the same underlying state.
 - Notes: per-goal, toggled open/closed, saved on blur (matches existing `onNoteBlur` pattern in `GoalRow.tsx`).
@@ -63,7 +72,9 @@ Reference implementation keeps this local (React state) per goal ID:
 - `expanded[studentId]` (accordion), `accOpen[studentId]`
 - `view`: `'cards' | 'grid' | 'accordion'`
 
-In the real app this maps directly onto the existing autosave pattern in `EntryScreen.tsx` (`dpByGoalRef`, `queueRef`, `upsertDataPoint` — one independent PATCH/POST per tap, never batched) — the reference's local state should be replaced by that existing data flow, not duplicated.
+In the real app this maps onto `EntryScreen.tsx`'s event queue and derived
+session aggregates. Each tap is an independent idempotent POST. Corrections
+soft-delete the last event; new events are never edited in place.
 
 ## Design Tokens (Organic system)
 - Ground: `#f5ead8` · Surface: `#ebddc5` · Text: `#201e1d`
@@ -81,7 +92,8 @@ No image assets. Two inline SVG icons (check, x) at 14×14, `stroke-width: 2.75`
 
 ## Target codebase mapping
 Real repo: `srab2001/student_data_capture` (Next.js App Router + TypeScript, Drizzle/Neon, Tailwind). Existing entry-screen files to modify:
-- `app/entry/EntryScreen.tsx` — add `view` state + the segmented control; keep existing data-loading/autosave logic as-is.
+- `app/entry/EntryScreen.tsx` — owns view state, immutable observation events,
+  offline retry, derived aggregates, per-goal save status, and undo.
 - `app/entry/StudentCard.tsx` — becomes the Card-stack student card; the accordion view's collapsed/expanded student row is a variant of this component.
 - `app/entry/GoalRow.tsx` — already has a switch over `goal.metricType`; only the check/x icons (swap emoji for the SVGs above) and chip styling need updating to match this design, if the Organic tokens are adopted.
 - New: a Grid-view component (table layout) and an Accordion-view wrapper around `StudentCard`, both reusing `GoalRow` for the actual widgets.

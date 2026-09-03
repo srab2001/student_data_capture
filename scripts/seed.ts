@@ -11,6 +11,7 @@ config({ path: ".env.local" });
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "../lib/db/schema";
+import type { MeasurementPlan } from "../lib/measurement-plans";
 
 const FIRST_NAMES = [
   "Maya", "Deshawn", "Priya", "Owen", "Sofia", "Malik", "Ava", "Noah", "Ines", "Elijah",
@@ -83,6 +84,50 @@ const ACCOMMODATIONS = [
   "Noise-cancelling headphones",
   "Chunked assignments",
 ];
+
+const METHOD_BY_METRIC: Record<
+  (typeof schema.metricTypeEnum.enumValues)[number],
+  string
+> = {
+  accuracy_pct: "Present 10 discrete opportunities and record each as correct or incorrect.",
+  fluency_rate: "Complete one one-minute probe and enter the correct responses per minute.",
+  frequency_count: "Tally each occurrence during the defined observation window.",
+  duration_seconds: "Start the timer when the behavior begins and stop it when the behavior ends.",
+  prompt_level: "Record the least intrusive prompt needed to complete the routine.",
+  task_analysis_step: "Record the highest task-analysis step completed independently.",
+  icon_scale: "Select one rating immediately after the scheduled activity.",
+  accommodation_used: "Record whether the planned accommodation was delivered.",
+};
+
+function syntheticMeasurementPlan(
+  goal: (typeof GOAL_LIBRARY)[number]
+): MeasurementPlan {
+  const weekly = goal.targetFrequency === "weekly";
+  return {
+    baseline: "Synthetic baseline — replace with the IEP baseline before real use.",
+    observableDefinition: `Synthetic operational definition for: ${goal.goalText}`,
+    measurementMethod: METHOD_BY_METRIC[goal.metricType],
+    masteryCriterion: "Synthetic mastery criterion — replace with the criterion in the IEP.",
+    collectionDays: weekly
+      ? ["wednesday"]
+      : ["monday", "tuesday", "wednesday", "thursday", "friday"],
+    observationsRequired: 1,
+    setting: "Synthetic pilot classroom activity",
+    opportunitiesRequired:
+      goal.metricType === "frequency_count" || goal.metricType === "duration_seconds"
+        ? null
+        : goal.metricType === "accuracy_pct"
+          ? 10
+          : 1,
+    observationWindowMinutes:
+      goal.metricType === "frequency_count" || goal.metricType === "duration_seconds"
+        ? 15
+        : null,
+    responsibleRole: "either",
+    effectiveFrom: "2026-01-01",
+    effectiveTo: null,
+  };
+}
 
 function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -167,6 +212,7 @@ async function main() {
           metricType: g.metricType,
           iconSet: g.iconSet,
           targetFrequency: g.targetFrequency,
+          measurementPlan: syntheticMeasurementPlan(g),
         }))
       )
       .returning();

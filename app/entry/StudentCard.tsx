@@ -30,6 +30,8 @@ function isLogged(goal: Goal, actions: EntryActions): boolean {
       return !!dp?.valueEnum;
     case "task_analysis_step":
       return dp?.valueNumeric != null;
+    case "fluency_rate":
+      return dp?.valueNumeric != null;
     default:
       return false;
   }
@@ -48,16 +50,21 @@ export function StudentCard({
   const [accommodationName, setAccommodationName] = useState(ACCOMMODATIONS[0]);
   const [effectiveness, setEffectiveness] = useState<number | null>(null);
 
-  const loggedCount = goals.filter((g) => isLogged(g, actions)).length;
+  const dueStatuses = goals
+    .map((goal) => actions.measurementStatusForGoal(goal.id))
+    .filter((status) => status.isDue);
+  const completedDueCount = dueStatuses.filter((status) => status.isComplete).length;
 
   return (
     <section aria-label={student.displayName} data-tour="student-card" className="card elev-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="card-kicker">
-            {goals.length > 0 && loggedCount === goals.length
-              ? "All goals logged today"
-              : `${loggedCount}/${goals.length} logged today`}
+            {dueStatuses.length === 0
+              ? "No goals assigned today"
+              : completedDueCount === dueStatuses.length
+                ? "All due evidence collected"
+                : `${completedDueCount}/${dueStatuses.length} due goals complete`}
           </div>
           <div className="card-title">{student.displayName}</div>
         </div>
@@ -76,6 +83,7 @@ export function StudentCard({
             timerRunning={actions.timerRunningForGoal(goal.id)}
             onTapAccuracy={(correct) => actions.onTapAccuracy(goal.id, correct)}
             onTapTally={() => actions.onTapTally(goal.id)}
+            onCompleteObservation={() => actions.onCompleteObservation(goal.id)}
             onSetIconReading={(value) => actions.onSetIconReading(goal.id, value)}
             onSetPromptLevel={(value) => actions.onSetPromptLevel(goal.id, value)}
             onSetFluencyRate={(value) => actions.onSetFluencyRate(goal.id, value)}
@@ -84,6 +92,10 @@ export function StudentCard({
             onStartTimer={() => actions.onStartTimer(goal.id)}
             onStopTimer={() => actions.onStopTimer(goal.id)}
             onNoteBlur={(note) => actions.onNoteBlur(goal.id, note)}
+            canUndo={actions.canUndoForGoal(goal.id)}
+            onUndoLast={() => actions.onUndoLast(goal.id)}
+            saveStatus={actions.saveStatusForGoal(goal.id)}
+            measurementStatus={actions.measurementStatusForGoal(goal.id)}
             disabled={actions.disabled}
           />
         ))}
@@ -125,7 +137,7 @@ export function StudentCard({
                 type="button"
                 disabled={actions.disabled}
                 onClick={() => {
-                  actions.onLogAccommodation(student.id, accommodationName, true, effectiveness ?? 3);
+                  actions.onLogAccommodation(student.id, accommodationName, true, effectiveness);
                   setAccommodationOpen(false);
                   setEffectiveness(null);
                 }}
@@ -137,7 +149,7 @@ export function StudentCard({
                 type="button"
                 disabled={actions.disabled}
                 onClick={() => {
-                  actions.onLogAccommodation(student.id, accommodationName, false, effectiveness ?? 3);
+                  actions.onLogAccommodation(student.id, accommodationName, false, effectiveness);
                   setAccommodationOpen(false);
                   setEffectiveness(null);
                 }}

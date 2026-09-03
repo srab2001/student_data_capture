@@ -1,5 +1,14 @@
 # Strategy: adding students, evaluation metrics, and icons
 
+> **Status update — 2026-09-03:** The goals manager and add-student flow
+> described as missing below are now merged on `main`. The local Phase 1
+> data-integrity release also changes `data_points` from mutable per-session
+> aggregates to immutable observation events with `entry_kind` and an
+> idempotent `client_request_id`. The local Phase 2 release also requires a
+> structured measurement plan for new goals. Use `STRATEGY-application-improvement.md`
+> for the active roadmap. This document remains the detailed reference for
+> adding students, metric types, and icon sets.
+
 Prepared 2026-08-30 against `srab2001/student_data_capture`, branch `main`
 (HEAD `92755eb`) with reference to the unmerged branch
 `claude/student-data-capture-plan-dgb389` (HEAD `cc01887`). This document
@@ -8,7 +17,7 @@ evaluation metrics, and change icons. It's written to sit alongside
 `docs/compliance.md`, which stays the compliance source of truth — this
 doc is the *how to build it* companion.
 
-## Correction before anything else: the goals-management screen isn't on `main`
+## Resolved historical blocker: goals management
 
 While reviewing the codebase for this strategy, I found that
 `/goals/[studentId]` (the per-student goal editor — create, edit, retire a
@@ -19,13 +28,8 @@ note said this screen was live; that was wrong — it was written by reading
 the branch's commit log without checking which commits had actually
 reached `main`.
 
-This matters directly for all three asks below: today, on `main` (and
-therefore on whatever Vercel is serving), there is no in-app way to create
-or edit a goal at all — goals only exist because `scripts/seed.ts` inserts
-them. **Step zero for all three initiatives is opening a PR for
-`cc01887` and merging it**, since "add a new evaluation metric" and
-"change icons" both mean *something a teacher does in the goal editor*,
-and that editor doesn't exist in production yet.
+This was resolved by PR #9 (merge commit `c24a848`). The in-app goal editor
+is now on `main`; the commands below are retained only as historical context.
 
 ```
 git fetch origin
@@ -34,7 +38,7 @@ gh pr create --base main --title "Add per-student goal management screen" \
   --body "Merges the /goals/[studentId] screen (commit cc01887) that's been sitting unmerged. See STRATEGY-students-metrics-icons.md."
 ```
 
-Everything below assumes this merge happens first.
+Everything below may assume the goal editor is present.
 
 ## How the app is built, in the parts that matter here
 
@@ -155,10 +159,10 @@ about a 10x difference in effort:
 If what's meant is "Maya needs a new IEP goal tracking something new" and
 that new thing can be measured with one of the 8 existing metric types
 (a tally, an accuracy percentage, an icon-degree rating, etc.), **this
-needs zero code changes.** Once `cc01887` is merged, a teacher creates it
-directly in `/goals/[studentId]` — domain, goal text, metric type, icon
-set if applicable, target frequency — through the existing, already-built
-`POST /api/goals` route. This is the common case and is worth stating
+needs zero code changes.** A teacher creates it directly in
+`/goals/[studentId]` — domain, goal text, metric type, icon set if applicable,
+and the structured measurement plan — through the existing `POST /api/goals`
+route. This is the common case and is worth stating
 plainly to whoever is asking for this, since it may already be exactly
 what they want without any engineering work at all.
 
@@ -175,7 +179,7 @@ together:
 |---|---|---|
 | 1 | `lib/db/schema.ts` | New value added to `metricTypeEnum` |
 | 2 | Drizzle migration | `drizzle-kit generate` emits `ALTER TYPE "metric_type" ADD VALUE '...'` |
-| 3 | `lib/validation.ts` | New value added to `metricTypeValues`; if the new metric needs new fields on `data_points` (unlikely — `valueNumeric`/`valueEnum`/`trialsTotal`/`trialsCorrect` cover most shapes), `createDataPointSchema`/`updateDataPointSchema` need updating too |
+| 3 | `lib/validation.ts` | New value added to `metricTypeValues`; define and validate an immutable `entryKind` payload in `createDataPointSchema` rather than adding a mutable aggregate PATCH path |
 | 4 | `app/goals/[studentId]/GoalsManager.tsx` | Add a key to `METRIC_LABEL` — TypeScript will refuse to compile without this, since it's typed as `Record<(typeof metricTypeValues)[number], string>`. That's a real safety net here, not busywork. |
 | 5 | `app/entry/GoalRow.tsx` | New `{goal.metricType === "..." && (...)}` block — the actual input widget a teacher taps during a session |
 | 6 | `app/entry/EntryScreen.tsx` | A new `onSet...` handler wired to `upsertDataPoint`, passed down to the new `GoalRow` case |
@@ -277,9 +281,8 @@ style), which needs the migration-and-checklist above.
 
 ## Suggested sequencing
 
-1. **Merge `cc01887`** (goals management screen) — blocks all three.
-2. **Add students** (§1) — small, isolated, no enum risk, immediately
-   useful on its own.
+1. **Goals management** — ✅ merged in PR #9.
+2. **Add students** (§1) — ✅ implemented on `main`.
 3. **Icon changes** (§3) — do 3a now if that's what's wanted; treat 3b as
    a normal small feature once actually requested with a specific new
    icon set in mind, rather than speculatively.

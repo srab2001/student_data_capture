@@ -1,3 +1,13 @@
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 /** Thin fetch wrapper for client components talking to the Phase 2 API. */
 export async function apiFetch<T>(
   input: string,
@@ -9,7 +19,7 @@ export async function apiFetch<T>(
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(body?.error ?? `Request failed (${res.status})`);
+    throw new ApiError(body?.error ?? `Request failed (${res.status})`, res.status);
   }
   return body as T;
 }
