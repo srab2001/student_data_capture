@@ -8,6 +8,7 @@ import {
   accommodationLogs,
 } from "@/lib/db/schema";
 import type { Student, Goal, DataPoint, AccommodationLog } from "@/lib/db/types";
+import { aggregateObservationEvents } from "@/lib/observations";
 
 export type GoalSummary = {
   goal: Goal;
@@ -39,11 +40,33 @@ function formatIconReading(value: string | null): string {
   return value.replace(/_/g, " ");
 }
 
-function summarizeGoal(
+export function summarizeGoal(
   goal: Goal,
   rows: (DataPoint & { sessionDate: string })[]
 ): GoalSummary {
-  const sorted = [...rows].sort((a, b) => a.sessionDate.localeCompare(b.sessionDate));
+  const bySession = new Map<string, (DataPoint & { sessionDate: string })[]>();
+  for (const row of rows) {
+    const list = bySession.get(row.sessionId) ?? [];
+    list.push(row);
+    bySession.set(row.sessionId, list);
+  }
+
+  const sorted = [...bySession.values()]
+    .map((events) => {
+      const latest = [...events].sort(
+        (a, b) => new Date(a.entryAt).getTime() - new Date(b.entryAt).getTime()
+      ).at(-1)!;
+      const aggregate = aggregateObservationEvents(goal.metricType, events);
+      return {
+        ...latest,
+        valueNumeric: aggregate.valueNumeric,
+        valueEnum: aggregate.valueEnum,
+        trialsTotal: aggregate.trialsTotal,
+        trialsCorrect: aggregate.trialsCorrect,
+        note: aggregate.note,
+      };
+    })
+    .sort((a, b) => a.sessionDate.localeCompare(b.sessionDate));
   const latest = sorted.at(-1);
   const first = sorted[0];
 
@@ -109,7 +132,7 @@ export async function getProgressSummary(
     const goalRows = await db
       .select()
       .from(goals)
-      .where(and(eq(goals.studentId, student.id), isNull(goals.deletedAt)));
+      .where(eq(goals.studentId, student.id));
 
     const goalSummaries: GoalSummary[] = [];
     for (const goal of goalRows) {
@@ -127,12 +150,12 @@ export async function getProgressSummary(
         )
         .orderBy(asc(sessions.sessionDate));
 
-      goalSummaries.push(
-        summarizeGoal(
-          goal,
-          rows.map((r) => ({ ...r.dataPoint, sessionDate: r.sessionDate }))
-        )
-      );
+      const observations = rows.map((r) => ({
+        ...r.dataPoint,
+        sessionDate: r.sessionDate,
+      }));
+      if (goal.deletedAt && observations.length === 0) continue;
+      goalSummaries.push(summarizeGoal(goal, observations));
     }
 
     const accommodationRows = await db

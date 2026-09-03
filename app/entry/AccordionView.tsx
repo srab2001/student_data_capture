@@ -4,7 +4,6 @@ import { useState } from "react";
 import type { Student, Goal } from "@/lib/db/types";
 import type { EntryActions } from "./types";
 import { GoalRow } from "./GoalRow";
-import { isLogged } from "./StudentCard";
 
 /** Collapsed roster by default; expanding a student reveals the same goal blocks as Card stack, minus the note/manage-goals affordances, per the design handoff. */
 export function AccordionView({
@@ -22,7 +21,10 @@ export function AccordionView({
     <div className="flex flex-col gap-3">
       {students.map((student) => {
         const goals = goalsByStudent.get(student.id) ?? [];
-        const loggedCount = goals.filter((g) => isLogged(g, actions)).length;
+        const dueStatuses = goals
+          .map((goal) => actions.measurementStatusForGoal(goal.id))
+          .filter((status) => status.isDue);
+        const completedDueCount = dueStatuses.filter((status) => status.isComplete).length;
         const isExpanded = !!expanded[student.id];
 
         return (
@@ -38,9 +40,11 @@ export function AccordionView({
                 {isExpanded ? "▾" : "▸"} {student.displayName}
               </span>
               <span className="text-muted text-xs">
-                {goals.length > 0 && loggedCount === goals.length
-                  ? "All goals logged today"
-                  : `${loggedCount}/${goals.length} logged today`}
+                {dueStatuses.length === 0
+                  ? "No goals assigned today"
+                  : completedDueCount === dueStatuses.length
+                    ? "All due evidence collected"
+                    : `${completedDueCount}/${dueStatuses.length} due goals complete`}
               </span>
             </button>
 
@@ -58,6 +62,7 @@ export function AccordionView({
                     timerRunning={actions.timerRunningForGoal(goal.id)}
                     onTapAccuracy={(correct) => actions.onTapAccuracy(goal.id, correct)}
                     onTapTally={() => actions.onTapTally(goal.id)}
+                    onCompleteObservation={() => actions.onCompleteObservation(goal.id)}
                     onSetIconReading={(value) => actions.onSetIconReading(goal.id, value)}
                     onSetPromptLevel={(value) => actions.onSetPromptLevel(goal.id, value)}
                     onSetFluencyRate={(value) => actions.onSetFluencyRate(goal.id, value)}
@@ -66,6 +71,10 @@ export function AccordionView({
                     onStartTimer={() => actions.onStartTimer(goal.id)}
                     onStopTimer={() => actions.onStopTimer(goal.id)}
                     onNoteBlur={(note) => actions.onNoteBlur(goal.id, note)}
+                    canUndo={actions.canUndoForGoal(goal.id)}
+                    onUndoLast={() => actions.onUndoLast(goal.id)}
+                    saveStatus={actions.saveStatusForGoal(goal.id)}
+                    measurementStatus={actions.measurementStatusForGoal(goal.id)}
                     disabled={actions.disabled}
                     showNote={false}
                   />

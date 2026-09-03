@@ -55,6 +55,12 @@ export async function PATCH(
     const existing = await loadScopedDataPoint(id, current.classroomId!);
     if (!existing) return jsonError("Data point not found.", 404);
     assertCanModifyEntry(current, existing.enteredByStaffId);
+    if (existing.entryKind !== "legacy_snapshot") {
+      return jsonError(
+        "Observation events are immutable. Undo the event and record a corrected observation.",
+        409
+      );
+    }
 
     const [updated] = await db
       .update(dataPoints)

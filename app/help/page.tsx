@@ -115,9 +115,15 @@ export default function HelpPage() {
             every control is a single tap — no drill-down, no typing unless you want to add a note.
           </p>
           <p>
-            The pill switcher at the top of the screen — <strong>Card stack</strong>,{" "}
-            <strong>Grid</strong>, or <strong>Accordion</strong> — changes how dense that view is,
-            not what data is behind it:
+            Choose the workflow that matches the classroom moment. <strong>Roster</strong> shows
+            the selected roster group, <strong>Focus</strong> keeps one student on screen with
+            Previous and Next controls, and <strong>Timers</strong> gathers the selected
+            students&apos; duration goals into large start/stop controls. Focus mode does not save
+            which student you were viewing.
+          </p>
+          <p>
+            In Roster mode, the layout switcher — <strong>Card stack</strong>, <strong>Grid</strong>,
+            or <strong>Accordion</strong> — changes how dense that view is, not what data is behind it:
           </p>
           <ul className="list-disc space-y-2 pl-5">
             <li>
@@ -136,11 +142,27 @@ export default function HelpPage() {
           </ul>
           <p>
             All three read and write the same underlying data — switching layouts mid-sweep never
-            loses or duplicates a tap.
+            loses or duplicates a tap. Your workflow mode, roster layout, and selected group are
+            saved to your staff account for the next Chromebook session.
           </p>
           <p>
-            <strong>Every tap saves immediately</strong> as its own write to the server. Nothing
-            is batched client-side, so closing the Chromebook mid-period doesn&apos;t lose data.
+            The roster-group menu narrows any workflow without changing classroom enrollment.
+            Teachers can open <strong>Manage groups</strong> to create, edit, or retire shared
+            instructional groups. Aides can select those groups but cannot change them. Retiring
+            a group does not remove students or their observations.
+          </p>
+          <p>
+            <strong>Every tap is preserved as its own observation.</strong> The value updates
+            immediately while the goal reports Saving, Saved, Queued, or Failed. If the network
+            drops, unsaved observations stay in a staff-specific queue on that Chromebook and
+            retry when the connection returns. Use <strong>Undo last</strong> to correct the most
+            recent observation you entered.
+          </p>
+          <p>
+            Each goal also reports whether it is scheduled for the signed-in staff member today
+            and shows observations collected versus required. Student headers summarize only due
+            goals. In Card stack and Accordion, open <strong>Collection directions</strong> to
+            confirm what counts, the method, mastery criterion, and opportunities or timed window.
           </p>
           <p>
             The dashed <strong>+ Add student to roster</strong> card at the bottom of Card stack and
@@ -158,7 +180,9 @@ export default function HelpPage() {
             </li>
             <li>
               <strong>Behavior tally:</strong> one tap per occurrence of a behavior. The number
-              shown is this session&apos;s running count.
+              shown is this session&apos;s running count. Select <strong>Window complete</strong>
+              when the planned observation ends, including when the count is zero; occurrence
+              taps alone do not claim that a full window was observed.
             </li>
             <li>
               <strong>Icon-degree rating:</strong> tap one icon to record a single reading — it
@@ -178,15 +202,16 @@ export default function HelpPage() {
             <li>
               <strong>Duration / latency timer:</strong> Start when the behavior or task begins,
               Stop when it ends. Restarting adds to the same session&apos;s total rather than
-              resetting it.
+              resetting it. Select <strong>No occurrence</strong> if the planned observation ends
+              without the behavior occurring, so the zero is retained as evidence.
             </li>
             <li>
               <strong>Prompt-level chips:</strong> one tap sets how much support the student
               needed — Full Physical, Partial Physical, Gestural, Verbal, or Independent.
             </li>
             <li>
-              <strong>Task-analysis steps:</strong> tap the step number the student reached in a
-              multi-step task.
+              <strong>Task-analysis steps:</strong> tap the named step the student reached in a
+              multi-step task. The step labels are configured for that specific goal.
             </li>
             <li>
               <strong>Notes:</strong> every goal has an optional, collapsed-by-default note field —
@@ -200,15 +225,23 @@ export default function HelpPage() {
           <p>
             Click <strong>Manage goals</strong> at the top of a student&apos;s card on{" "}
             <span className="font-mono text-xs">/entry</span> to add a new goal, edit an
-            existing one (domain, goal text, which control it uses, target frequency, icon
-            set), or retire one. Retiring a goal removes it from the entry screen but keeps
-            its past data points — nothing is deleted.
+            existing one (domain, goal text, entry control, icon set, task steps, and measurement
+            plan), or retire one. Retiring a goal removes it from the entry screen but keeps its
+            past data points — nothing is deleted.
           </p>
           <p>
-            Changing a goal&apos;s entry control (its metric type) changes which tap control
-            shows up for it going forward on the entry screen — for example switching a goal
-            from a plain tally to an icon-degree rating. Past data points logged under the old
-            control type are kept as-is.
+            A new goal requires the IEP baseline, an observable definition, measurement method,
+            mastery criterion, setting/activity, collection days, minimum observations,
+            responsible role, effective dates, and either opportunities or a timed observation
+            window. Use the approved IEP and local procedures; do not guess these values.
+          </p>
+          <p>
+            Changing a goal&apos;s wording, entry control, icon set, task-analysis steps, or
+            measurement plan after observations exist creates a new goal version. The previous
+            version is retired but remains in historical summaries, so older observations are
+            never reinterpreted using the new definition. Older goals without a plan remain
+            usable but are visibly marked <strong>Measurement plan incomplete</strong> until a
+            teacher updates them.
           </p>
           <p>
             The same <strong>Manage goals</strong> screen also has a field to rename the student
@@ -221,9 +254,10 @@ export default function HelpPage() {
         <Section id="accommodations" title="Logging accommodations">
           <p>
             Under each student&apos;s goals, &quot;+ Log accommodation&quot; opens a small form:
-            pick the accommodation, rate its effectiveness with the same star control used for
-            icon-degree goals, and log it as used or not used. This is separate from goal data
-            points — it tracks accommodation usage at the student level.
+            pick the accommodation, optionally rate its effectiveness with the same star control
+            used for icon-degree goals, and log it as used or not used. Leaving the rating blank
+            stores no rating; the app does not substitute a default. This is separate from goal
+            observations and currently requires a network connection.
           </p>
           <p>
             The accommodation list is per student, configured from their <strong>Manage
@@ -262,7 +296,8 @@ export default function HelpPage() {
             </li>
             <li>
               An aide can create entries but cannot edit or delete another staff member&apos;s
-              past entries; a teacher has full access within their own classroom only.
+              past entries or manage roster groups; a teacher has full access within their own
+              classroom only.
             </li>
             <li>
               Real, identifiable student data is not permitted in this system until HCPSS
@@ -283,6 +318,28 @@ export default function HelpPage() {
             <li>
               <strong>An entry screen action shows an error banner:</strong> it&apos;s usually a
               session issue — try signing out and back in from the header.
+            </li>
+            <li>
+              <strong>An observation says Queued:</strong> leave the tab open if practical. The
+              app retries every 15 seconds and whenever the Chromebook comes back online. A
+              Failed observation was rejected by the server; use Undo last and record it again.
+            </li>
+            <li>
+              <strong>A goal says Measurement plan incomplete:</strong> a teacher should open
+              Manage goals and enter every required plan field. Existing goals are not given
+              invented baseline or mastery values during migration.
+            </li>
+            <li>
+              <strong>A goal is missing from today&apos;s due count:</strong> check its effective
+              dates, scheduled weekday, and responsible collector role in Manage goals.
+            </li>
+            <li>
+              <strong>A student is missing from the entry screen:</strong> choose All students
+              in the roster-group menu. The selected group is saved per staff member.
+            </li>
+            <li>
+              <strong>Timers says there are no duration goals:</strong> choose All students or
+              another roster group, or return to Focus or Roster for non-duration goals.
             </li>
             <li>
               <strong>You want to see the tour again:</strong> the{" "}

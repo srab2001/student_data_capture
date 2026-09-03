@@ -2,8 +2,8 @@ import { db } from "@/lib/db";
 import { auditLog } from "@/lib/db/schema";
 
 /**
- * Structured audit logging for every read and write to goals,
- * data_points, and accommodation_logs (docs/compliance.md "Access
+ * Structured audit logging for every read and write to student data and
+ * classroom workflow configuration (docs/compliance.md "Access
  * control"). audit_log is append-only at the database level — see the
  * no-delete trigger in drizzle/0001_audit_log_no_delete.sql — so this is
  * the only way rows are ever added, never removed.
@@ -16,7 +16,12 @@ export async function recordAudit(entry: {
     | "data_points"
     | "accommodation_logs"
     | "students"
+ claude/student-data-capture-plan-dgb389
     | "student_accommodations";
+
+    | "roster_groups"
+    | "staff_entry_preferences";
+ main
   recordId?: string;
   diff?: unknown;
 }) {
