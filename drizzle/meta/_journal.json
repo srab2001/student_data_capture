@@ -19,10 +19,6 @@
     {
       "idx": 2,
       "version": "7",
- claude/student-data-capture-plan-dgb389
-      "when": 1788456128039,
-      "tag": "0002_sparkling_sharon_carter",
-
       "when": 1788394056191,
       "tag": "0002_mighty_maggott",
       "breakpoints": true
@@ -46,7 +42,13 @@
       "version": "7",
       "when": 1788448255156,
       "tag": "0005_colorful_clea",
- main
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788459499905,
+      "tag": "0006_melted_nomad",
       "breakpoints": true
     }
   ]

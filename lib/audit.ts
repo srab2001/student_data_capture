@@ -16,12 +16,9 @@ export async function recordAudit(entry: {
     | "data_points"
     | "accommodation_logs"
     | "students"
- claude/student-data-capture-plan-dgb389
-    | "student_accommodations";
-
+    | "student_accommodations"
     | "roster_groups"
     | "staff_entry_preferences";
- main
   recordId?: string;
   diff?: unknown;
 }) {

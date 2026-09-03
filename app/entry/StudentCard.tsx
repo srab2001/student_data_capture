@@ -136,13 +136,12 @@ export function StudentCard({
                 <EffectivenessRatingPicker value={effectiveness} onChange={setEffectiveness} />
               </div>
 
- claude/student-data-capture-plan-dgb389
               <div className="flex gap-2">
                 <button
                   type="button"
                   disabled={actions.disabled}
                   onClick={() => {
-                    actions.onLogAccommodation(student.id, selectedAccommodation, true, effectiveness ?? 3);
+                    actions.onLogAccommodation(student.id, selectedAccommodation, true, effectiveness);
                     setAccommodationOpen(false);
                     setEffectiveness(null);
                   }}
@@ -154,7 +153,7 @@ export function StudentCard({
                   type="button"
                   disabled={actions.disabled}
                   onClick={() => {
-                    actions.onLogAccommodation(student.id, selectedAccommodation, false, effectiveness ?? 3);
+                    actions.onLogAccommodation(student.id, selectedAccommodation, false, effectiveness);
                     setAccommodationOpen(false);
                     setEffectiveness(null);
                   }}
@@ -163,33 +162,6 @@ export function StudentCard({
                   Log as not used
                 </button>
               </div>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={actions.disabled}
-                onClick={() => {
-                  actions.onLogAccommodation(student.id, accommodationName, true, effectiveness);
-                  setAccommodationOpen(false);
-                  setEffectiveness(null);
-                }}
-                className="btn btn-secondary"
-              >
-                Log as used
-              </button>
-              <button
-                type="button"
-                disabled={actions.disabled}
-                onClick={() => {
-                  actions.onLogAccommodation(student.id, accommodationName, false, effectiveness);
-                  setAccommodationOpen(false);
-                  setEffectiveness(null);
-                }}
-                className="btn btn-ghost"
-              >
-                Log as not used
-              </button>
- main
             </div>
           )
         )}
