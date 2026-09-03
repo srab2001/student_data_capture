@@ -4,12 +4,16 @@ import { GoalsManager } from "./GoalsManager";
 
 export default async function GoalsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ studentId: string }>;
+  searchParams: Promise<{ goalId?: string }>;
 }) {
   const current = await getCurrentStaff();
   if (!current) redirect("/login");
+  if (!current.canManageGoals) redirect("/");
 
   const { studentId } = await params;
-  return <GoalsManager studentId={studentId} />;
+  const { goalId } = await searchParams;
+  return <GoalsManager studentId={studentId} initialGoalId={goalId} />;
 }

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { rosterGroups, rosterGroupStudents, students } from "@/lib/db/schema";
 import { getCurrentStaff } from "@/lib/auth/session";
-import { assertClassroomScope, assertTeacher, requireStaff } from "@/lib/auth/authz";
+import { assertClassroomScope, assertPermission, requireStaff } from "@/lib/auth/authz";
 import { rosterGroupSchema } from "@/lib/validation";
 import { recordAudit } from "@/lib/audit";
 import {
@@ -36,7 +36,7 @@ export async function PUT(
 ) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
-    assertTeacher(current);
+    assertPermission(current, "canManageStudents", "You cannot manage roster groups.");
     assertWriteRateLimit(current.id, "roster-groups:put");
     const { id } = await params;
     const group = await activeGroup(id, current.classroomId!);
@@ -111,7 +111,7 @@ export async function DELETE(
 ) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
-    assertTeacher(current);
+    assertPermission(current, "canManageStudents", "You cannot manage roster groups.");
     assertWriteRateLimit(current.id, "roster-groups:delete");
     const { id } = await params;
     const group = await activeGroup(id, current.classroomId!);

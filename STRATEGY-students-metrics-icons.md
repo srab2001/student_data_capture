@@ -5,7 +5,18 @@
 > data integrity changes `data_points` from mutable per-session aggregates to
 > immutable observation events with `entry_kind` and an idempotent
 > `client_request_id`; deployed Phase 2 requires a structured measurement plan.
-> Deployed Phase 3 adds roster groups and per-staff classroom workflows. Use
+> Deployed Phase 3 adds roster groups and per-staff classroom workflows. Local,
+> not-yet-deployed Phase 4 adds explicit quantitative targets, evidence context,
+> metric-appropriate charts, and teacher-owned intervention annotations. The
+> local classroom-admin increment adds permission-controlled student/goal
+> setup plus configurable named color meanings. The subsequent local student
+> data-plan increment adds `latency_seconds`, `rubric_score`, and
+> `abc_observation`, student-specific prompt/rubric configuration, and assigned
+> accommodations in migration `0008`; it is not deployed. Use
+> The data-readiness increment then adds plan and historical-support repair
+> queues, due-first entry, actual behavior exposure, direction-aware recent
+> trends, temporal prompt/task views, and contextual accommodation reports in
+> migrations `0009`–`0010`; it is also not deployed. Use
 > `STRATEGY-application-improvement.md`
 > for the active roadmap. This document remains the detailed reference for
 > adding students, metric types, and icon sets.
@@ -45,7 +56,7 @@ Everything below may assume the goal editor is present.
 
 Three enums in `lib/db/schema.ts` are the spine of this analysis:
 
-- `metric_type` — the 8 kinds of measurement a goal can use (`accuracy_pct`, `fluency_rate`, `frequency_count`, `duration_seconds`, `prompt_level`, `task_analysis_step`, `icon_scale`, `accommodation_used`).
+- `metric_type` — the 11 kinds of measurement a goal can use (`accuracy_pct`, `fluency_rate`, `frequency_count`, `duration_seconds`, `latency_seconds`, `rubric_score`, `abc_observation`, `prompt_level`, `task_analysis_step`, `icon_scale`, `accommodation_used`).
 - `icon_set` — the 4 icon palettes an `icon_scale` goal can render (`smiley_5`, `stars_5`, `thumbs_3`, `zones_4`).
 - Each is a real **Postgres enum**, mirrored as a `const` array in `lib/validation.ts` for Zod validation, and consumed directly by the UI.
 
@@ -185,7 +196,7 @@ together:
 | 5 | `app/entry/GoalRow.tsx` | New `{goal.metricType === "..." && (...)}` block — the actual input widget a teacher taps during a session |
 | 6 | `app/entry/EntryScreen.tsx` | A new `onSet...` handler wired to `upsertDataPoint`, passed down to the new `GoalRow` case |
 | 7 | `lib/summary.ts` | New `case` in the `switch (goal.metricType)` that rolls data points up for the PLAAFP-prep summary |
-| 8 | `app/summary/SummaryView.tsx` | Only if the new metric needs summary-view-specific formatting beyond what the generic rollup gives it (the existing `accuracy_pct` special-case there is the precedent to check against) |
+| 8 | `app/summary/ProgressChart.tsx` | Classify the new metric as quantitative or categorical and add the appropriate, non-misleading visual treatment. Do not assign numeric spacing to categories merely to reuse a line chart. |
 | 9 | `docs/compliance.md` | **Required, not optional** — the file's own header says "No other fields should be added without updating this document first." Add the new measurement to "Data captured." |
 
 Two things worth flagging to whoever owns this decision, before writing
@@ -199,10 +210,9 @@ any code:
   as a one-way door — worth a short design conversation (what does the
   UI widget look like, what does it roll up to in the summary) before
   it's built, not iterated on after.
-- The CSV export (`app/api/export/csv/route.ts`) has **no metric-type
-  branching** — it exports raw columns generically. That's one place a
-  new metric type doesn't need touching, which is worth knowing so the
-  checklist above doesn't get padded unnecessarily.
+- The CSV export consumes the server summary generically, but acceptance tests
+  must still verify that the new metric's current value, evidence context, aim
+  status (when quantitative), and intervention text are meaningful.
 
 ### Ready-to-paste prompt for 2b, once the specific new metric is defined
 

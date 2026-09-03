@@ -15,7 +15,13 @@ export async function POST(request: NextRequest) {
     const [row] = await db
       .select({ id: staff.id })
       .from(staff)
-      .where(and(eq(staff.id, body.staffId), isNull(staff.deletedAt)))
+      .where(
+        and(
+          eq(staff.id, body.staffId),
+          eq(staff.accessEnabled, true),
+          isNull(staff.deletedAt)
+        )
+      )
       .limit(1);
 
     if (!row) {

@@ -11,6 +11,7 @@ const goal = {
 function actions(valueNumeric: number | null): EntryActions {
   return {
     dataPointForGoal: () => ({ valueNumeric } as DataPoint),
+    accommodationsForStudent: () => [],
     measurementStatusForGoal: () => ({
       kind: "due",
       isDue: true,
@@ -25,6 +26,8 @@ function actions(valueNumeric: number | null): EntryActions {
     onSetIconReading: () => undefined,
     onSetPromptLevel: () => undefined,
     onSetFluencyRate: () => undefined,
+    onLogRubric: () => undefined,
+    onLogAbc: () => undefined,
     onSetTaskStep: () => undefined,
     onSetAccommodationUsed: () => undefined,
     onStartTimer: () => undefined,

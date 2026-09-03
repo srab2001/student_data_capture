@@ -3,7 +3,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dataPoints, goals, students, sessions } from "@/lib/db/schema";
 import { getCurrentStaff } from "@/lib/auth/session";
-import { requireStaff, assertClassroomScope } from "@/lib/auth/authz";
+import { requireStaff, assertClassroomScope, assertPermission, assertStudentDataAccess } from "@/lib/auth/authz";
 import { createDataPointSchema } from "@/lib/validation";
 import { recordAudit } from "@/lib/audit";
 import { handleRoute, assertWriteRateLimit, jsonError } from "@/lib/api-helpers";
@@ -14,6 +14,7 @@ import { ICON_SETS, PROMPT_LEVELS, type IconSetKey } from "@/lib/icon-sets";
 export async function GET(request: NextRequest) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertStudentDataAccess(current);
     const goalId = request.nextUrl.searchParams.get("goalId");
     const sessionId = request.nextUrl.searchParams.get("sessionId");
 
@@ -41,6 +42,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertPermission(current, "canRecordData", "You cannot record observations.");
     assertWriteRateLimit(current.id, "data-points:post");
     const body = createDataPointSchema.parse(await request.json());
 
@@ -64,6 +66,8 @@ export async function POST(request: NextRequest) {
         metricType: goals.metricType,
         iconSet: goals.iconSet,
         taskAnalysisSteps: goals.taskAnalysisSteps,
+        promptHierarchy: goals.promptHierarchy,
+        rubricConfig: goals.rubricConfig,
         studentClassroomId: students.classroomId,
       })
       .from(goals)
@@ -80,8 +84,21 @@ export async function POST(request: NextRequest) {
       );
     }
     if (
+      goalRow.metricType === "frequency_count" &&
+      body.entryKind === "observation_complete" &&
+      body.opportunitiesObserved === undefined &&
+      body.observationDurationSeconds === undefined
+    ) {
+      return jsonError(
+        "Enter the actual observation duration or number of opportunities before completing the frequency window.",
+        400
+      );
+    }
+    if (
       goalRow.metricType === "prompt_level" &&
-      !PROMPT_LEVELS.some((level) => level.value === body.valueEnum)
+      !(goalRow.promptHierarchy?.length
+        ? goalRow.promptHierarchy.includes(body.valueEnum ?? "")
+        : PROMPT_LEVELS.some((level) => level.value === body.valueEnum))
     ) {
       return jsonError("Unknown prompt-level value.", 400);
     }
@@ -104,6 +121,21 @@ export async function POST(request: NextRequest) {
       body.valueNumeric > (goalRow.taskAnalysisSteps?.length ?? 0)
     ) {
       return jsonError("Task-analysis step is outside this goal's configured steps.", 400);
+    }
+    if (
+      goalRow.metricType === "rubric_score" &&
+      body.valueNumeric !== undefined &&
+      body.valueNumeric > (goalRow.rubricConfig?.maxScore ?? 0)
+    ) {
+      return jsonError("Rubric score exceeds this goal's configured maximum.", 400);
+    }
+    if (
+      goalRow.metricType === "rubric_score" &&
+      body.observationDetails?.kind === "rubric" &&
+      body.observationDetails.criterion !== null &&
+      !goalRow.rubricConfig?.criteria.includes(body.observationDetails.criterion)
+    ) {
+      return jsonError("Unknown rubric criterion.", 400);
     }
 
     const [sessionRow] = await db

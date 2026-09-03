@@ -93,7 +93,7 @@ h5 { font-size: 16px; line-height: 1.4; }
 h6 { font-size: 13px; line-height: 1.4; text-transform: uppercase; letter-spacing: 0.05em; }
 
 .text-muted {
-  color: var(--color-neutral-600);
+  color: var(--color-neutral-700);
 }
 
 .page {
@@ -153,13 +153,13 @@ h6 { font-size: 13px; line-height: 1.4; text-transform: uppercase; letter-spacin
   cursor: not-allowed;
 }
 .btn-primary {
-  background: var(--color-accent-600);
+  background: var(--color-accent-700);
   color: #fff;
-  border-color: var(--color-accent-600);
+  border-color: var(--color-accent-700);
 }
 .btn-primary:hover:not(:disabled) {
-  background: var(--color-accent-700);
-  border-color: var(--color-accent-700);
+  background: var(--color-accent-800);
+  border-color: var(--color-accent-800);
 }
 .btn-secondary {
   background: var(--color-bg);
@@ -190,6 +190,84 @@ h6 { font-size: 13px; line-height: 1.4; text-transform: uppercase; letter-spacin
   justify-content: center;
   min-width: 44px;
   min-height: 44px;
+}
+
+/* Classroom color meanings: text accompanies every color, and the same
+   explanation appears for mouse hover and keyboard focus. */
+.color-guide {
+  position: relative;
+  font-size: 14px;
+}
+.color-guide > summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.color-guide-panel {
+  position: absolute;
+  z-index: 40;
+  right: 0;
+  top: calc(100% + 6px);
+  width: min(340px, calc(100vw - 32px));
+  padding: var(--space-3);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-sm);
+}
+.color-meaning {
+  position: relative;
+  display: inline-flex;
+}
+.color-meaning-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-neutral-300);
+  border-radius: 999px;
+  background: var(--color-bg);
+  font-size: 13px;
+}
+.color-meaning-trigger:focus-visible {
+  outline: 3px solid var(--color-accent-300);
+  outline-offset: 2px;
+}
+.color-swatch {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border: 1px solid var(--color-neutral-700);
+  border-radius: 50%;
+}
+.color-tooltip {
+  position: absolute;
+  z-index: 50;
+  left: 0;
+  top: calc(100% + 6px);
+  width: 240px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-neutral-900);
+  color: white;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.color-tooltip strong,
+.color-tooltip span {
+  display: block;
+}
+.color-meaning:hover .color-tooltip,
+.color-meaning:focus-within .color-tooltip {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Tags */
@@ -227,7 +305,7 @@ h6 { font-size: 13px; line-height: 1.4; text-transform: uppercase; letter-spacin
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-neutral-600);
+  color: var(--color-neutral-700);
 }
 .card-title {
   font-family: var(--font-heading);

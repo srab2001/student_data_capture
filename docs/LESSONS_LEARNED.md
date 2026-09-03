@@ -1,5 +1,139 @@
 # Lessons learned
 
+## 2026-09-03 — Initial admin audit loading should not synchronously set effect state
+
+- **Observed symptom:** ESLint reported `react-hooks/set-state-in-effect` when
+  the audit-history effect called a loader that immediately enabled its loading
+  state.
+- **Root cause:** The same loader handled both initial mount and a user-triggered
+  refresh, even though the initial state could already represent loading.
+- **Resolution:** Initialized the screen as loading, limited the shared loader
+  to asynchronous completion updates, and moved the refresh-start transition to
+  the button event handler.
+- **Prevention:** Model initial async state in the state initializer and reserve
+  synchronous loading transitions for explicit user events.
+- **Status:** Resolved.
+
+## 2026-09-03 — Schema generation still requires a URL-shaped environment value
+
+- **Observed symptom:** `npm run db:generate` stopped with `DATABASE_URL is not
+  set` before producing migration metadata.
+- **Root cause:** The Drizzle configuration loads the application database
+  module even though diff generation does not connect to the database.
+- **Resolution:** Re-ran generation with a non-secret placeholder PostgreSQL URL;
+  `0009`–`0010` and their snapshots were generated, then metadata validation
+  passed.
+- **Prevention:** Use the documented placeholder only for schema-only generation
+  and never present it as a successful database connection.
+- **Status:** Resolved.
+
+## 2026-09-03 — Due filtering must remain a pure render calculation
+
+- **Observed symptom:** React lint flagged the first Due today implementation
+  for calling a ref-backed entry action, and therefore time-dependent code,
+  during render.
+- **Root cause:** The filtering code reused an imperative action intended for
+  event handlers instead of the pure measurement-plan helper.
+- **Resolution:** The screen captures its local date once with a lazy state
+  initializer and derives due status directly from the goal plan and signed-in
+  role. Lint, types, and production build pass.
+- **Prevention:** Keep render-time status derivation pure; reserve action refs
+  for user events and asynchronous effects.
+- **Status:** Resolved.
+
+## 2026-09-03 — Local browser verification needs both auth and database secrets
+
+- **Observed symptom:** The first local login shell lacked `AUTH_SECRET`; after
+  supplying a disposable local-only value, `/api/auth/staff` still returned a
+  safe server error because `DATABASE_URL` is unavailable on this host.
+- **Root cause:** Authenticated pages depend on the synthetic database, and the
+  scoped connector credential cannot be safely injected into the local process.
+- **Resolution:** Public home/help smoke tests passed with the temporary auth
+  value. Authenticated workflow testing was left open instead of writing a
+  credential to disk or testing against production.
+- **Prevention:** Provide a secret-safe disposable-preview test environment for
+  browser runs and fail closed whenever either variable is absent.
+- **Status:** Public smoke resolved; authenticated browser verification blocked
+  until a disposable synthetic database connection is available.
+
+## 2026-09-03 — Preferred browser automation was unavailable
+
+- **Observed symptom:** The repository's preferred `agent-browser` command was
+  not installed in the execution environment.
+- **Root cause:** The optional browser CLI is not part of this host image.
+- **Resolution:** Used the in-app Chromium automation surface for the bounded
+  public-page smoke test and documented the substitution.
+- **Prevention:** Check browser-runner availability before starting a local
+  server; keep equivalent accessibility assertions independent of one runner.
+- **Status:** Accepted environment limitation.
+
+## 2026-09-03 — Turbopack build workers cannot bind a port on this host
+
+- **Observed symptom:** `npm run build` failed while processing `app/globals.css`
+  with `creating new process` / `binding to a port` / `Operation not permitted`.
+  An approved unrestricted retry produced the same error.
+- **Root cause:** This host blocks the internal port Turbopack's CSS worker tries
+  to bind; no application TypeScript or CSS diagnostic was reported.
+- **Resolution:** Ran `npx next build --webpack`; compilation, TypeScript, page
+  generation, and route collection all passed.
+- **Prevention:** Keep the webpack build as the fallback release check on this
+  host and still run the normal Vercel build before deployment.
+- **Status:** Accepted local-environment limitation; application build resolved.
+
+## 2026-09-03 — Network-dependent audits require the approved network path
+
+- **Observed symptom:** The first production dependency audit returned
+  `getaddrinfo ENOTFOUND registry.npmjs.org`.
+- **Root cause:** The default command sandbox blocks the npm advisory endpoint.
+- **Resolution:** Re-ran the identical read-only audit through the approved
+  network path; it reported zero vulnerabilities.
+- **Prevention:** Treat a registry DNS failure as an environment result, request
+  the narrow `npm audit` permission, and never report it as an application pass
+  until the real advisory response is received.
+- **Status:** Resolved.
+
+## 2026-09-03 — Disposable database URLs should not be copied into project files
+
+- **Observed symptom:** A local migration command could not receive the
+  connector-returned disposable `DATABASE_URL` and stopped with the documented
+  missing-variable error.
+- **Root cause:** The command runner does not provide a safe secret-valued
+  environment bridge from the database connector.
+- **Resolution:** Executed the idempotent migration statements and round-trip
+  checks through the scoped Neon connector on the named disposable branch. No
+  credential was printed or written to disk.
+- **Prevention:** Prefer connector-native SQL for ephemeral schema rehearsals;
+  use the platform's configured environment for the final migration-first
+  deployment.
+- **Status:** Resolved for schema verification; full migrator execution remains
+  a production/preview release gate.
+
+## 2026-09-03 — Treat each special-education measure as a typed collection protocol
+
+- **Observation:** Labels such as “behavior data” or “academic data” are not
+  interchangeable storage types. Frequency, duration, latency, rubric scores,
+  and ABC observations need different controls, validation, and reporting.
+- **Impact:** Combining duration and latency or storing ABC fields in one note
+  would make later review ambiguous and could silently change what an IEP goal
+  means.
+- **Resolution:** Added distinct metric/event enums, a discriminated structured
+  details object for rubric/ABC events, and versioned rubric and prompt
+  configuration on the goal. Existing goal-versioning rules apply whenever
+  those definitions change.
+- **Prevention:** Before adding a measure, document its observable unit, required
+  context, valid range/categories, aggregation rule, and display/export form.
+
+## 2026-09-03 — An accommodation picker must come from the student's active plan
+
+- **Observation:** A shared hard-coded list lets staff log supports that are not
+  assigned to the selected student and provides no implementation setting.
+- **Impact:** That creates misleading access data even when the UI is easy to use.
+- **Resolution:** Added classroom-scoped, soft-deletable student accommodation
+  assignments with setting and directions. The entry API rejects a support that
+  is not active for that student; historical use logs remain intact.
+- **Prevention:** Validate student-specific configuration again on the server,
+  never only by filtering a client-side menu.
+
 Append-only operational record. Do not include credentials or student data.
 
 ## 2026-09-02 — Dependency installation initially had no network
@@ -248,7 +382,9 @@ Append-only operational record. Do not include credentials or student data.
   subsequent searches use single-quoted literal patterns or omit backticks.
 - **Prevention:** Keep Markdown backticks inside single-quoted shell arguments
   and avoid interpolated search expressions.
-- **Status:** Resolved.
+- **Status:** Resolved. The same quoting mistake recurred during the Phase 4
+  release-document scan; the command was immediately rerun with a single-quoted
+  pattern, again without file changes or sensitive output.
 
 ## 2026-09-03 — Roster-group path IDs needed explicit scope-safe validation
 
@@ -328,3 +464,226 @@ Append-only operational record. Do not include credentials or student data.
 - **Prevention:** Reuse the working-directory path returned by `pwd` for
   absolute patch targets.
 - **Status:** Resolved.
+
+## 2026-09-03 — Narrative mastery criteria are not safe numeric targets
+
+- **Context:** Phase 4 aim-line reporting for special-education progress data.
+- **Symptom:** The existing schema held baseline and mastery criterion as
+  narrative text, while an aim line requires numeric values, dates, and a
+  direction.
+- **Root cause:** Valid IEP language is intentionally flexible and may describe
+  conditions, opportunities, consecutive probes, prompt levels, or duration;
+  parsing a number from that text would discard meaning and could fabricate a
+  target the team never approved.
+- **Resolution:** Added an optional, explicitly teacher-entered quantitative
+  target. Existing goals remain null, categorical metrics reject targets, and
+  the UI states that narrative criteria are never converted automatically.
+- **Prevention:** Treat derived educational judgments as new data requiring a
+  named source and validation, not as a convenience transformation.
+- **Status:** Resolved in local Phase 4 code; database/browser release gate open.
+
+## 2026-09-03 — One generic sparkline misrepresented categorical evidence
+
+- **Context:** Phase 4 summary redesign across numeric, prompt-level, icon, and
+  accommodation-used metrics.
+- **Symptom:** The old detail assumed every goal could use a numeric sparkline;
+  categorical goals either produced an empty graphic or invited arbitrary
+  numeric ordering and spacing.
+- **Root cause:** Presentation followed component reuse rather than the metric's
+  measurement scale.
+- **Resolution:** Numeric metrics now use dated values with an optional dashed
+  aim line. Categorical metrics use labeled counts. A visible value table, SVG
+  title/description, text legend, and intervention list preserve access without
+  depending on color or a chart alone.
+- **Prevention:** Choose visual encodings from the data scale first; do not
+  coerce categories into numbers to reuse a chart.
+- **Status:** Resolved in code; assistive-technology and zoom checks remain open.
+
+## 2026-09-03 — Synthetic fixtures must guarantee every critical metric
+
+- **Context:** Phase 4 followed the Phase 3 production Timers test gap.
+- **Symptom:** Random goal selection could omit duration goals entirely, making
+  core timer and duration-chart stories impossible to execute.
+- **Root cause:** A realistic random seed was being used as an acceptance-test
+  fixture without minimum coverage guarantees.
+- **Resolution:** New synthetic seeds guarantee a duration goal for the first
+  student and include explicit quantitative targets plus an intervention marker.
+  The existing production seed remains unchanged until a gated release.
+- **Prevention:** Keep variation for realism only after deterministically
+  including every critical metric and role path needed by release tests.
+- **Status:** Resolved for future seeds; current production fixture gap remains.
+
+## 2026-09-03 — Parse secret-bearing connector output before JSON serialization
+
+- **Context:** Starting the local app against the disposable Neon migration
+  branch without printing its connection string.
+- **Symptom:** The first local request returned 500 because the stored database
+  URL contained JSON escape syntax and was rejected as an invalid URL.
+- **Root cause:** The connector result was serialized before extracting the
+  `URI:` value, so representation escaping became part of the secret.
+- **Resolution:** Stopped the server, extracted the URI directly from the text
+  content in memory, and restarted without emitting the credential. All later
+  API and browser calls succeeded.
+- **Prevention:** Extract structured secret values from their original content,
+  validate only their non-secret shape, and never round-trip them through a
+  rendered JSON representation.
+- **Status:** Resolved; no secret was written to the repository or test output.
+
+## 2026-09-03 — Legacy null plans cannot exercise target-only versioning
+
+- **Context:** The first Phase 4 API rehearsal attempted to add a progress
+  target to an inherited goal.
+- **Symptom:** The target PATCH correctly returned 400 instead of creating a
+  version.
+- **Root cause:** Pre-Phase 2 goals intentionally have null measurement plans,
+  while every newly written goal version must contain a complete plan.
+- **Resolution:** The integration script now creates a complete synthetic goal,
+  records an observation, and then changes its target to exercise populated-goal
+  versioning without inventing fields for legacy records.
+- **Prevention:** Build migration/API fixtures from the current write contract;
+  use legacy rows only to verify backward-compatible reads and null preservation.
+- **Status:** Resolved in `scripts/verify-phase4-api.ts`.
+
+## 2026-09-03 — Compliance assertions must match the requested date range
+
+- **Context:** The Phase 4 integration fixture recorded one observation on one
+  scheduled Wednesday.
+- **Symptom:** A full-calendar-year summary reported roughly 2% compliance,
+  while the initial test expected 100%.
+- **Root cause:** The application correctly counted every scheduled Wednesday
+  in the requested range; the test expectation accidentally described a
+  one-day range.
+- **Resolution:** Kept the full-year request for synthetic-data guard checks and
+  used a one-day range for the exact 1/1 compliance assertion, CSV, and print.
+- **Prevention:** State the reporting interval beside every expected compliance
+  value and derive expectations from scheduled opportunities in that interval.
+- **Status:** Resolved; both 20% over the browser's 30-day range and 100% for the
+  single scheduled day were observed as expected.
+
+## 2026-09-03 — Browser verification needs a documented fallback
+
+- **Context:** The Phase 4 local server triggered the preferred automated
+  browser-verification workflow.
+- **Symptom:** The `agent-browser` CLI was not installed in this workspace.
+- **Root cause:** The repository does not include that optional runner.
+- **Resolution:** Used the available in-app Chromium browser controls to execute
+  the same teacher/aide navigation, accessibility-tree, route-guard, and console
+  checks against localhost.
+- **Prevention:** Record both the preferred runner and the accepted equivalent
+  browser fallback in release evidence; do not silently skip browser checks.
+- **Status:** Resolved for this smoke test; the manual zoom/keyboard/screen-reader
+  matrix remains open.
+
+## 2026-09-03 — Neon account policy rejected custom suspend settings
+
+- **Context:** Creating the disposable fresh-install/cross-classroom branch.
+- **Symptom:** Branch creation returned HTTP 412 when a five-minute suspend
+  timeout was supplied.
+- **Root cause:** This Neon account does not permit changing the suspend interval.
+- **Resolution:** Retried branch creation with the account defaults; the isolated
+  branch and compute became ready normally.
+- **Prevention:** Treat compute tuning as optional during short-lived release
+  rehearsals and retry with project defaults when account policy rejects it.
+- **Status:** Resolved.
+
+## 2026-09-03 — Fresh-schema verification used a stale table name
+
+- **Context:** Counting the tables created by migrations `0000`–`0006`.
+- **Symptom:** The first assertion query found 10 expected tables instead of 11.
+- **Root cause:** The query looked for `roster_group_members`; the actual migration
+  and schema use `roster_group_students`.
+- **Resolution:** Listed the public schema, corrected the verifier, and confirmed
+  all 11 expected tables.
+- **Prevention:** Derive verification identifiers from migration/schema source
+  instead of recalling them from memory.
+- **Status:** Resolved; no schema defect existed.
+
+## 2026-09-03 — Shared small-text and primary-button colors missed WCAG AA
+
+- **Context:** Final Phase 4 accessibility review at the release gate.
+- **Symptom:** Muted text on the page background measured about 3.61:1, and white
+  primary-button text on accent 600 measured about 4.49:1.
+- **Root cause:** The visual token handoff had not been checked at the app's actual
+  11–14px text sizes against the WCAG AA 4.5:1 threshold.
+- **Resolution:** Muted text/statuses now use neutral 700 (5.53:1) and primary
+  buttons use accent 700 (6.81:1), with two regression tests tied to the CSS.
+- **Prevention:** Run token-level contrast checks whenever shared colors or small
+  text styles change.
+- **Status:** Resolved.
+
+## 2026-09-03 — Contrast regression test assumed the wrong CSS/TypeScript syntax
+
+- **Context:** Adding automated coverage for the accessibility color correction.
+- **Symptom:** The first run could not find tokens because it omitted the
+  `color-` prefix; the next strict TypeScript run rejected the regular-expression
+  dot-all flag under the repository's configured target.
+- **Root cause:** The test helper did not mirror the CSS token names and used a
+  newer regex flag than the compiler target accepts.
+- **Resolution:** The helper now reads `--color-*` tokens and uses a newline-safe
+  negated character class without the dot-all flag. All 58 tests and TypeScript pass.
+- **Prevention:** Run the new test and strict compiler immediately after adding a
+  build-time parser; keep its syntax within the repository target.
+- **Status:** Resolved.
+
+## 2026-09-03 — Browser zoom shortcuts were not exposed by the automation surface
+
+- **Context:** Attempting the native 200% zoom acceptance test in the in-app
+  Chromium browser.
+- **Symptom:** Both macOS and control-key zoom shortcuts left CSS viewport size
+  and device pixel ratio unchanged. A stopped localhost server also left one tab
+  on a generated error page that could not navigate back under URL policy.
+- **Root cause:** The browser-control surface does not expose native zoom, and its
+  generated error document is intentionally isolated.
+- **Resolution:** Created a fresh tab after restart and tested 1366×768 plus
+  683×384 effective CSS pixels. Both had meaningful content, no horizontal
+  overflow, no framework overlay, and no console errors.
+- **Prevention:** Use a fresh tab after localhost restarts and distinguish
+  equivalent reflow evidence from a true browser-zoom/screen-reader session.
+- **Status:** Automated reflow resolved; native 200% zoom and real screen-reader
+  validation remain open manual checks.
+
+## 2026-09-03 — A role label is not a sufficient permission model
+
+- **Context:** Adding classroom administration for teachers, aides, and admins.
+- **Symptom:** The previous `teacher`/`aide` checks could not express a staff
+  member who manages goals but not users, or one who reviews reports without
+  entering observations.
+- **Root cause:** Role names combined job context and authorization in one
+  coarse switch.
+- **Resolution:** Added six explicit capability fields and an access-enabled
+  flag. Role selection now applies an editable preset; shared authorization
+  helpers enforce the stored capabilities. Existing teachers are migration-
+  backfilled as initial managers so an upgraded classroom cannot be locked out.
+- **Prevention:** Add future permissions centrally and test the capability
+  directly, including a case where the role label would otherwise allow it.
+- **Status:** Resolved on the local/disposable implementation; production
+  migration remains unapplied.
+
+## 2026-09-03 — Disabling access must invalidate existing cookies
+
+- **Context:** Testing user access changes through the admin API.
+- **Symptom:** Filtering only the login picker would prevent a new sign-in but
+  would leave a previously issued 12-hour signed cookie usable.
+- **Root cause:** A signed identity cookie proves who selected the account; it
+  does not prove the account is still enabled.
+- **Resolution:** Every `getCurrentStaff` lookup now requires both a non-retired
+  row and `access_enabled = true`. The integration test disables a user and
+  verifies both new login rejection and null `/api/auth/me` for the old cookie.
+- **Prevention:** Treat account status as request-time authorization state, not
+  as a login-page filter.
+- **Status:** Resolved.
+
+## 2026-09-03 — Color explanations need a focus path, not hover alone
+
+- **Context:** Implementing configurable comments over classroom colors.
+- **Symptom:** A pointer-only tooltip would be unavailable to Chromebook
+  keyboard users, touch users, and screen-reader users, and color alone would
+  not convey meaning.
+- **Root cause:** “Hover comments” describes one interaction, not the complete
+  accessible requirement.
+- **Resolution:** Each swatch retains a visible text name, a programmatic label,
+  and a described tooltip that appears on both hover and `:focus-within`.
+  Keyboard browser verification confirmed visible focus and identical text.
+- **Prevention:** For every hover disclosure, define the keyboard, touch, and
+  non-visual equivalent during component design.
+- **Status:** Resolved; real screen-reader testing remains a manual gate.

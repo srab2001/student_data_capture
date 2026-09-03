@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api-client";
 
-type StaffOption = { id: string; name: string; role: "teacher" | "aide" };
+type StaffOption = { id: string; name: string; role: "teacher" | "aide" | "admin" };
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,7 +26,7 @@ export default function LoginPage() {
         method: "POST",
         body: JSON.stringify({ staffId }),
       });
-      router.push("/entry");
+      router.push("/");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign-in failed.");

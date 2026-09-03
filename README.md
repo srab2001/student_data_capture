@@ -21,6 +21,42 @@ cross-classroom, timer-fixture, zoom, keyboard, and screen-reader exercises
 remain follow-ups; see `docs/compliance.md` for the governance boundary and
 deployment history.
 
+**Phase 4 status:** decision-support reporting is implemented and verified in
+the local workspace but is not deployed. It adds explicit quantitative aim
+lines, collection-plan compliance, evidence-depth labels, categorical charts,
+and teacher-owned intervention annotations. Migration `0006`, credentialed API
+flows, fresh-install migration, true cross-classroom isolation, direct audit
+inspection, keyboard Timers, metric-chart, and Chromebook reflow checks passed
+on disposable Neon infrastructure. The exact production migration is prepared
+but awaits explicit approval; native 200% zoom and a real screen-reader session
+remain manual follow-ups. Production therefore remains on Phase 3.
+
+**Classroom administration status:** implemented and verified locally, not
+deployed. `/admin` now supports classroom-scoped user/access administration,
+six explicit permissions, synthetic student creation/rename/soft-retirement,
+goal management, a safe recent audit-history viewer, and a configurable color
+guide whose explanations work on hover and keyboard focus.
+Migration `0007` passed on disposable Neon infrastructure; user disable/session
+invalidation, permission and cross-classroom denial, color lifecycle, and
+student/goal lifecycle integration tests passed.
+
+**Student data-plan expansion:** implemented and verified locally, not deployed.
+Administrators can configure accuracy, fluency, frequency, duration, latency,
+rubric-scored work samples, structured ABC observations, student-specific
+prompt hierarchies, task analyses, accommodations, and session-through-quarterly
+cadence from each student's data plan. Migration `0008` and structured rubric/
+ABC writes passed on disposable Neon infrastructure; production remains on
+Phase 3 until an explicitly approved migration-first release.
+
+**Data-readiness and contextual analytics:** implemented and verified locally,
+not deployed. Admin now inventories incomplete measurement plans and historical
+accommodations that require confirmation. Entry defaults to goals due today
+while keeping optional/off-schedule goals available. Reports use direction-aware
+recent-window comparisons with sample size and observed range, temporal prompt/
+task-analysis views, and per-support accommodation summaries. Actual behavior-
+observation exposure and optional accommodation session/goal/context fields are
+stored by migrations `0009`–`0010`.
+
 ## ⚠️ FERPA / student data notice
 
 This repo is designed to eventually hold data protected by FERPA and IDEA
@@ -73,6 +109,15 @@ entry to immutable observation events while preserving prototype history;
 migration `0003` adds versioned measurement plans to goals; migration `0004`
 adds an explicit completed-observation event for valid zero-occurrence data;
 migration `0005` adds roster groups and staff entry preferences.
+Migration `0006` adds optional numeric progress targets and soft-deletable,
+audited intervention annotations. Existing goals receive no inferred target.
+Migration `0007` adds the `admin` role, access/permission columns, and
+classroom-scoped color meanings. Apply it only after `0006`.
+Migration `0008` adds structured rubric/ABC data and student accommodation
+assignments. Migrations `0009`–`0010` add observation-specific exposure,
+contextual accommodation links, supporting indexes, foreign keys, and range
+constraints. Reconcile historical accommodation names in Admin before asking
+staff to resume accommodation logging.
 
 ## Deploying
 
@@ -109,9 +154,13 @@ deploys ever regress and this history is useful context again.
   and Accordion roster layouts, all sharing one event-based autosave/offline queue
   (see `app/entry/types.ts`'s `EntryActions`)
 - `app/goals/[studentId]` — add/edit/retire a student's goals
-- `app/summary` — the PLAAFP-prep progress view, CSV export, print view (Phase 3/4)
+- `app/admin` — configure classroom users, access, permissions, students,
+  goals, and the accessible color guide
+- `app/summary` — evidence-aware PLAAFP-prep reporting, metric-appropriate
+  charts, intervention annotations, CSV export, and print view
 - `app/help` — the user guide; `components/Walkthrough.tsx` + `lib/tour-steps.ts` — the guided in-app tour
-- `app/api` — Route Handlers, all scoped through `lib/auth/authz.ts`
+- `app/api` — Route Handlers, including user/color administration, all scoped
+  through `lib/auth/authz.ts`
 - `lib/db/schema.ts` — the schema; check against `docs/compliance.md` before adding a field
 - `lib/auth/session.ts` — **prototype-only** sign-in, replaced by SSO in Phase 5
 
@@ -169,3 +218,34 @@ gates in `docs/compliance.md` are complete.
   The currently focused student is deliberately not persisted.
 - All modes reuse the same observation queue, timers, save states, undo, and
   measurement-plan calculations.
+
+## Phase 4 decision-support behavior (local, not deployed)
+
+- The summary calculates scheduled-versus-collected evidence from each goal's
+  measurement plan and labels the number of distinct observation days. A
+  descriptive trend requires at least three days; this label does not declare
+  mastery or statistical significance.
+- Quantitative metrics use dated numeric plots. Teachers can explicitly add a
+  baseline, target, dates, and direction to show an aim line. Existing narrative
+  criteria remain untouched and display `Aim line not configured`.
+- Prompt levels, icon ratings, and accommodation-used goals display category
+  counts instead of a misleading numeric line.
+- Staff with goal-management permission can add or soft-retire dated
+  intervention annotations. Configuration and entry/report access are now
+  controlled by explicit classroom-scoped permissions rather than role alone.
+- Summary filters are strictly validated and limited to 366 days. CSV and print
+  output include collection, evidence-depth, aim, and intervention context.
+
+## Classroom administration behavior (local, not deployed)
+
+- A role selection applies a teacher, aide, or admin permission preset. Admins
+  can then adjust user, student, goal, color, entry, and report capabilities
+  individually.
+- Disabled and retired users cannot sign in; existing prototype cookies stop
+  resolving on the next request. Self-retirement, self-removal of user-manager
+  access, and removal of the final active user manager are blocked.
+- Admins can add synthetic students and use the existing complete, version-safe
+  goal editor to add, edit, or retire goals.
+- Named classroom colors can be added, edited, ordered, and retired. Their
+  explanation is available on pointer hover, keyboard focus, and to assistive
+  technology, with a visible text label so meaning never depends on color.

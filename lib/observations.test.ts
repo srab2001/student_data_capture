@@ -42,7 +42,10 @@ function event(
     valueEnum: null,
     trialsTotal: null,
     trialsCorrect: null,
+    opportunitiesObserved: null,
+    observationDurationSeconds: null,
     note: null,
+    observationDetails: null,
     createdAt: at,
     updatedAt: at,
     deletedAt: null,
@@ -73,6 +76,18 @@ describe("aggregateObservationEvents", () => {
     expect(result.valueNumeric).toBe(6);
   });
 
+  it("preserves the actual exposure from a completed observation window", () => {
+    const result = aggregateObservationEvents("frequency_count", [
+      event("tally", { valueNumeric: 1 }),
+      event("observation_complete", {
+        opportunitiesObserved: 12,
+        observationDurationSeconds: 900,
+      }, 1),
+    ]);
+    expect(result.opportunitiesObserved).toBe(12);
+    expect(result.observationDurationSeconds).toBe(900);
+  });
+
   it("keeps categorical observations and notes in chronological order", () => {
     const result = aggregateObservationEvents("prompt_level", [
       event("rating", { valueEnum: "verbal" }),
@@ -94,6 +109,33 @@ describe("aggregateObservationEvents", () => {
 
     expect(result.valueNumeric).toBe(87);
     expect(result.observationCount).toBe(1);
+  });
+
+  it("tracks rubric scores and structured ABC observations as distinct evidence", () => {
+    const rubric = aggregateObservationEvents("rubric_score", [
+      event("rubric_score", {
+        valueNumeric: 3,
+        observationDetails: {
+          kind: "rubric",
+          workSample: "Synthetic paragraph",
+          criterion: "Organization",
+        },
+      }),
+    ]);
+    const abc = aggregateObservationEvents("abc_observation", [
+      event("abc_observation", {
+        observationDetails: {
+          kind: "abc",
+          antecedent: "Task presented",
+          behavior: "Student asked for a break",
+          consequence: "Break card was honored",
+        },
+      }),
+    ]);
+
+    expect(rubric.valueNumeric).toBe(3);
+    expect(rubric.observationCount).toBe(1);
+    expect(abc.observationCount).toBe(1);
   });
 });
 

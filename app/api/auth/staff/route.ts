@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { staff } from "@/lib/db/schema";
 import { handleRoute } from "@/lib/api-helpers";
@@ -15,7 +15,7 @@ export async function GET() {
     const rows = await db
       .select({ id: staff.id, name: staff.name, role: staff.role })
       .from(staff)
-      .where(isNull(staff.deletedAt));
+      .where(and(eq(staff.accessEnabled, true), isNull(staff.deletedAt)));
     return NextResponse.json({ staff: rows });
   });
 }

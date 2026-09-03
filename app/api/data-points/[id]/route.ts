@@ -3,7 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dataPoints, goals, students } from "@/lib/db/schema";
 import { getCurrentStaff } from "@/lib/auth/session";
-import { requireStaff, assertCanModifyEntry } from "@/lib/auth/authz";
+import { requireStaff, assertCanModifyEntry, assertPermission, assertStudentDataAccess } from "@/lib/auth/authz";
 import { updateDataPointSchema } from "@/lib/validation";
 import { recordAudit } from "@/lib/audit";
 import { handleRoute, assertWriteRateLimit, jsonError } from "@/lib/api-helpers";
@@ -27,6 +27,7 @@ export async function GET(
 ) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertStudentDataAccess(current);
     const { id } = await params;
     const dataPoint = await loadScopedDataPoint(id, current.classroomId!);
     if (!dataPoint) return jsonError("Data point not found.", 404);
@@ -48,6 +49,7 @@ export async function PATCH(
 ) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertPermission(current, "canRecordData", "You cannot correct observations.");
     assertWriteRateLimit(current.id, "data-points:patch");
     const { id } = await params;
     const body = updateDataPointSchema.parse(await request.json());
@@ -86,6 +88,7 @@ export async function DELETE(
 ) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertPermission(current, "canRecordData", "You cannot correct observations.");
     assertWriteRateLimit(current.id, "data-points:delete");
     const { id } = await params;
 

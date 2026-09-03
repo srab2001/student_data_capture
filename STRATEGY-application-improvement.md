@@ -1,6 +1,8 @@
 # Application improvement strategy
 
-Updated 2026-09-03 for deployed Phases 1–3. The product goal is:
+Updated 2026-09-03 for deployed Phases 1–3 and locally implemented Phase 4,
+classroom administration, student data plans, and data-readiness analytics.
+The product goal is:
 
 > A teacher or aide records a valid observation in under two seconds, with
 > minimal attention diverted from instruction, and can later turn those
@@ -17,7 +19,9 @@ recorded there.
 | 1 — Data integrity | Immutable observations, undo, resilient saving, accurate task/accommodation behavior, goal versioning | Deployed to the synthetic pilot; automated and read-only production smoke checks pass; full write/offline/assistive-technology matrix remains |
 | 2 — Measurement fidelity | Structured measurement plans, baseline/mastery criteria, setting, schedule, responsible collector, due/evidence guidance | Deployed to the synthetic pilot; migrations and plan-form/API smoke checks pass; populated-plan write/version scenarios remain |
 | 3 — Classroom workflow | Roster/focus/timer modes, grouping and staff preferences | Deployed to the synthetic pilot; migration, teacher/aide API flows, preference recovery, Chrome smoke, and runtime error scan pass; full timer/accessibility matrix remains |
-| 4 — Decision support | Aim lines, data sufficiency, frequency compliance, intervention annotations, appropriate categorical graphs | Planned |
+| 4 — Decision support | Aim lines, data sufficiency, frequency compliance, intervention annotations, appropriate categorical graphs | Code complete locally; upgrade/fresh migrations, credentialed API, true cross-classroom/audit, keyboard, chart, and reflow checks pass; production migration prepared but not applied; native zoom/screen reader remain manual |
+| 4A — Classroom administration | Classroom-scoped users/access, explicit permissions, student lifecycle/goal setup, safe audit oversight, and accessible configurable color meanings | Code complete locally; migration `0007`, prior API lifecycle/isolation, build, and keyboard-focus color checks pass; student retire/audit credentialed checks remain; not deployed |
+| 4B — Data readiness | Plan-completion/reconciliation queues, due-first collection, normalized behavior exposure, direction-aware recent trends, temporal prompt/task views, and contextual accommodation reporting | Code complete locally; migrations `0009`–`0010`, 79 tests, lint, types, webpack build, disposable schema rehearsal, and public browser smoke pass; authenticated preview/browser gates remain; not deployed |
 | 5 — District readiness | District SSO, governance, vendor/security/accessibility review, retention and incident procedures | Gated |
 
 ## Phase 1 delivered requirements
@@ -190,10 +194,146 @@ Before any broader pilot decision:
 4. Stress rapid preference changes and confirm the final selection on a second
    device/browser session.
 
+## Phase 4 delivered requirements (local, not deployed)
+
+### FR13 — Report evidence collection separately from student performance
+
+For each reporting range, Summary intersects scheduled weekdays with the
+measurement plan's effective dates, counts metric-aware evidence on those days,
+and caps each day's contribution at its planned requirement. A separate label
+reports zero, one/two, or three-plus distinct observation days.
+
+Acceptance: extra trials cannot raise compliance above 100%; one high score on
+one day remains labeled limited evidence and never becomes a mastery decision.
+
+### FR14 — Use only explicit, versioned quantitative targets
+
+Quantitative goals may add baseline value/date, target value/date, and desired
+direction. The app interpolates an aim value between those dates and clamps it
+outside the interval. Existing narrative mastery criteria are not parsed, and
+categorical goals reject numeric targets. Target edits use the existing goal-
+version replacement path when observations exist.
+
+Acceptance: increasing and decreasing targets produce direction-aware status;
+an existing goal with no target says `Aim line not configured` without warning
+or fabricated content.
+
+### FR15 — Match the graph to the measurement scale
+
+Accuracy, fluency, frequency, duration, and task-step metrics use dated numeric
+plots. Prompt, icon, and accommodation-used metrics use labeled category
+counts. Charts retain an exact-value table and text/line-style legend, and do
+not depend on color alone.
+
+Acceptance: no numeric position or slope is assigned to a prompt/icon category,
+and every displayed value is recoverable without reading the visual chart.
+
+### FR16 — Preserve intervention context without automating decisions
+
+Teachers can add and soft-retire short dated intervention annotations within
+their classroom. Aides can review but not manage them. Markers appear in
+numeric charts and in CSV/print output; writes are validated, rate-limited, and
+audited.
+
+Acceptance: teacher write/read/retire and aide read/403 paths pass on a
+disposable synthetic database, including cross-classroom denial and audit-row
+inspection.
+
+## Phase 4 release validation
+
+The local suite passes 58 unit tests, ESLint, strict TypeScript, webpack
+production compilation, migration metadata, whitespace, and the production
+dependency audit. On 2026-09-03, an upgrade rehearsal of `0006` on a disposable
+clone of the 26-goal synthetic database passed. Credentialed teacher/aide API
+flows and a browser smoke test also passed, including target versioning,
+idempotent retry, collection/aim/evidence output, CSV/print context, intervention
+lifecycle, role denials, the accessible chart description, and direct aide page
+guarding. A second fresh database then ran migrations `0000`–`0006`, accepted
+synthetic seed data, passed six true cross-classroom denials, and exposed the
+expected audit rows. Keyboard login and Timers start/stop/undo, quantitative and
+categorical chart activation, 1366×768 layout, and half-width reflow equivalent
+to 200% effective CSS pixels passed. Production was not changed. Before release:
+
+1. Obtain the required explicit confirmation, apply the already-tested `0006`
+   and `0007` migrations in order to the synthetic production parent, and
+   remove disposable branches.
+2. Commit and push the verified source, confirm the Git-linked production build,
+   and run authenticated synthetic teacher/aide smoke checks plus an error scan.
+3. Complete a native 200%-zoom and real screen-reader session. The automated
+   accessibility tree, keyboard paths, contrast checks, and equivalent reflow
+   pass, but they are not substitutes for those human assistive-technology tests.
+4. Open an exported CSV in a desktop spreadsheet. Quoting, line breaks, formulas,
+   dates, and intervention context already pass automated/API tests.
+
+## Classroom administration delivered requirements (local, not deployed)
+
+### FR17 — Configure least-privilege classroom access
+
+An authorized classroom user manager can create, edit, disable/reactivate, and
+soft-retire staff. Teacher, aide, and admin roles supply starting presets; six
+stored capabilities control user, student, goal, color, observation, and report
+access independently. Existing sessions re-check access status on every server
+request.
+
+Acceptance: disabling a user rejects both a new login and an already-issued
+cookie; a role label does not bypass a denied capability; a classroom cannot
+lose its final active user manager.
+
+### FR18 — Centralize student and goal setup
+
+The admin console lists the signed-in classroom roster, supports synthetic
+student creation, and links each student to the complete goal editor. Goal
+creation, version-safe editing, and soft retirement retain all measurement-plan
+and historical-evidence rules.
+
+Acceptance: an admin can add a student and create/edit/retire a valid goal;
+another classroom cannot mutate either resource.
+
+### FR19 — Explain classroom colors accessibly
+
+Admins can create, edit, order, and retire named classroom color meanings with
+a bounded explanation. Every signed-in classroom member can open the shared
+guide. The explanation appears on both pointer hover and keyboard focus, and
+the visible name/programmatic description means color is never the only cue.
+
+Acceptance: a created color appears after reload; Tab focus reveals the exact
+configured explanation; users without color-management permission receive 403
+on writes while retaining read access.
+
+## Classroom administration validation
+
+Migration `0007` passed on the disposable `phase4_fresh` database. The local
+65-test suite, lint, strict TypeScript, webpack production build, Drizzle
+metadata, diff check, and dependency audit pass. The destructive-to-fixture
+API script passed user/access, permission, cross-classroom, color, student, and
+goal lifecycles. In-app Chromium verified the full console plus a named swatch
+whose tooltip appeared on keyboard focus. Production remains unchanged.
+
 ## Next phase
 
-Phase 4 should add decision support: aim lines, data-sufficiency warnings,
-collection-frequency compliance, intervention annotations, and graphs whose
-form matches the metric. It should consume the existing immutable events,
-versioned plans, groups, and staff preferences rather than adding parallel
-sources of truth.
+First release Phase 4 and 4A together only after the existing explicit
+migration/deployment approval. Then complete native zoom, real screen-reader,
+offline/reconnect, and desktop-spreadsheet checks. Phase 5 remains gated on
+district SSO, named governance owners, vendor/security/accessibility approval,
+retention rules, incident procedures, and authorization to use real student
+data. Do not begin real-data onboarding merely because Phase 4 ships.
+
+## Student data-plan expansion delivered (local, not deployed)
+
+The per-student editor now covers the measurement families normally needed for
+academic, behavioral/functional, independence, and access monitoring:
+
+- separate accuracy, fluency, frequency, duration, and latency controls;
+- named work samples scored against an admin-configured rubric;
+- structured antecedent-behavior-consequence observations;
+- goal-specific prompt hierarchies and task-analysis steps;
+- student-specific accommodation assignments with setting/directions and
+  usage/effectiveness logs; and
+- visible cadence choices from every session through quarterly reporting.
+
+Migration `0008` stores rubric/prompt definitions on the versioned goal, adds a
+discriminated details object to immutable rubric/ABC events, and adds the
+soft-deletable student-accommodation table. The 72-test suite, strict TypeScript,
+ESLint, webpack production build, dependency audit, and direct disposable-Neon
+round trip passed. Credentialed UI/API lifecycle and assistive-technology
+checks remain release gates; production remains unchanged.

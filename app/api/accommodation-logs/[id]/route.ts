@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { accommodationLogs, students } from "@/lib/db/schema";
+import {
+  accommodationLogs,
+  goals,
+  sessions,
+  studentAccommodations,
+  students,
+} from "@/lib/db/schema";
 import { getCurrentStaff } from "@/lib/auth/session";
-import { requireStaff, assertCanModifyEntry } from "@/lib/auth/authz";
+import {
+  requireStaff,
+  assertCanModifyEntry,
+  assertClassroomScope,
+  assertPermission,
+  assertStudentDataAccess,
+} from "@/lib/auth/authz";
 import { updateAccommodationLogSchema } from "@/lib/validation";
 import { recordAudit } from "@/lib/audit";
 import { handleRoute, assertWriteRateLimit, jsonError } from "@/lib/api-helpers";
@@ -26,6 +38,7 @@ export async function GET(
 ) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertStudentDataAccess(current);
     const { id } = await params;
     const log = await loadScopedLog(id, current.classroomId!);
     if (!log) return jsonError("Accommodation log not found.", 404);
@@ -47,6 +60,7 @@ export async function PATCH(
 ) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertPermission(current, "canRecordData", "You cannot correct accommodations.");
     assertWriteRateLimit(current.id, "accommodation-logs:patch");
     const { id } = await params;
     const body = updateAccommodationLogSchema.parse(await request.json());
@@ -54,6 +68,58 @@ export async function PATCH(
     const existing = await loadScopedLog(id, current.classroomId!);
     if (!existing) return jsonError("Accommodation log not found.", 404);
     assertCanModifyEntry(current, existing.enteredByStaffId);
+
+    if (body.accommodationName) {
+      const [configured] = await db
+        .select({ id: studentAccommodations.id })
+        .from(studentAccommodations)
+        .where(
+          and(
+            eq(studentAccommodations.studentId, existing.studentId),
+            eq(studentAccommodations.name, body.accommodationName),
+            isNull(studentAccommodations.deletedAt)
+          )
+        )
+        .limit(1);
+      if (!configured) {
+        return jsonError("This accommodation is not active in the student's data plan.", 400);
+      }
+    }
+
+    const used = body.used ?? existing.used;
+    const effectiveness = "effectivenessRating" in body
+      ? body.effectivenessRating
+      : existing.effectivenessRating;
+    const fidelity = "implementationFidelity" in body
+      ? body.implementationFidelity
+      : existing.implementationFidelity;
+    if (!used && (effectiveness !== null || fidelity !== null)) {
+      return jsonError(
+        "Effectiveness and implementation fidelity can be rated only when the accommodation was used.",
+        400
+      );
+    }
+
+    if (body.goalId) {
+      const [goal] = await db
+        .select({ studentId: goals.studentId })
+        .from(goals)
+        .where(and(eq(goals.id, body.goalId), isNull(goals.deletedAt)))
+        .limit(1);
+      if (!goal || goal.studentId !== existing.studentId) {
+        return jsonError("The related goal must be active for this student.", 400);
+      }
+    }
+
+    if (body.sessionId) {
+      const [session] = await db
+        .select({ classroomId: sessions.classroomId })
+        .from(sessions)
+        .where(and(eq(sessions.id, body.sessionId), isNull(sessions.deletedAt)))
+        .limit(1);
+      if (!session) return jsonError("Unknown session.", 404);
+      assertClassroomScope(current, session.classroomId);
+    }
 
     const [updated] = await db
       .update(accommodationLogs)
@@ -79,6 +145,7 @@ export async function DELETE(
 ) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertPermission(current, "canRecordData", "You cannot correct accommodations.");
     assertWriteRateLimit(current.id, "accommodation-logs:delete");
     const { id } = await params;
 

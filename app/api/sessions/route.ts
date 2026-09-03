@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { sessions } from "@/lib/db/schema";
 import { getCurrentStaff } from "@/lib/auth/session";
-import { requireStaff } from "@/lib/auth/authz";
+import { assertPermission, assertStudentDataAccess, requireStaff } from "@/lib/auth/authz";
 import { handleRoute, assertWriteRateLimit } from "@/lib/api-helpers";
 
 const createSessionSchema = z
@@ -18,6 +18,7 @@ const createSessionSchema = z
 export async function GET() {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertStudentDataAccess(current);
     const rows = await db
       .select()
       .from(sessions)
@@ -34,6 +35,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertPermission(current, "canRecordData", "You cannot create data-collection sessions.");
     assertWriteRateLimit(current.id, "sessions:post");
     const body = createSessionSchema.parse(await request.json());
 

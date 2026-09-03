@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api-client";
-import type { Student, Goal } from "@/lib/db/types";
+import type { Goal, Student, StudentAccommodation } from "@/lib/db/types";
 import {
   goalDomainValues,
   metricTypeValues,
@@ -15,12 +15,25 @@ import {
   collectionDayValues,
   type MeasurementPlan,
 } from "@/lib/measurement-plans";
+import {
+  isQuantitativeMetric,
+  type ProgressTarget,
+} from "@/lib/progress-monitoring";
+import {
+  DATA_COLLECTION_CATEGORIES,
+  DEFAULT_PROMPT_HIERARCHY,
+  TARGET_FREQUENCY_LABEL,
+  type RubricConfig,
+} from "@/lib/student-data-plan";
 
 const METRIC_LABEL: Record<(typeof metricTypeValues)[number], string> = {
   accuracy_pct: "Accuracy trials (✓ / ✗)",
   fluency_rate: "Fluency rate (typed number)",
   frequency_count: "Behavior tally",
-  duration_seconds: "Duration / latency timer",
+  duration_seconds: "Duration timer",
+  latency_seconds: "Response latency timer",
+  rubric_score: "Work sample / rubric score",
+  abc_observation: "ABC observation",
   prompt_level: "Prompt-level chips",
   task_analysis_step: "Task-analysis step",
   icon_scale: "Icon-degree rating",
@@ -33,8 +46,11 @@ type DraftGoal = {
   metricType: (typeof metricTypeValues)[number];
   iconSet: (typeof iconSetValues)[number];
   taskAnalysisSteps: string[];
+  promptHierarchy: string[];
+  rubricConfig: RubricConfig;
   targetFrequency: (typeof targetFrequencyValues)[number];
   measurementPlan: MeasurementPlan;
+  progressTarget: ProgressTarget | null;
 };
 
 const BLANK_DRAFT: DraftGoal = {
@@ -43,6 +59,12 @@ const BLANK_DRAFT: DraftGoal = {
   metricType: "accuracy_pct",
   iconSet: "smiley_5",
   taskAnalysisSteps: ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5"],
+  promptHierarchy: [...DEFAULT_PROMPT_HIERARCHY],
+  rubricConfig: {
+    title: "Work sample rubric",
+    maxScore: 4,
+    criteria: ["Accuracy", "Completeness", "Independence"],
+  },
   targetFrequency: "daily",
   measurementPlan: {
     baseline: "",
@@ -58,13 +80,33 @@ const BLANK_DRAFT: DraftGoal = {
     effectiveFrom: "",
     effectiveTo: null,
   },
+  progressTarget: null,
 };
 
 function isDraftValid(draft: DraftGoal): boolean {
   const plan = draft.measurementPlan;
+  const target = draft.progressTarget;
+  const targetIsValid =
+    target === null ||
+    (isQuantitativeMetric(draft.metricType) &&
+      target.baselineValue >= 0 &&
+      target.targetValue >= 0 &&
+      !!target.baselineDate &&
+      !!target.targetDate &&
+      target.targetDate > target.baselineDate &&
+      (draft.metricType !== "accuracy_pct" ||
+        (target.baselineValue <= 100 && target.targetValue <= 100)) &&
+      (target.direction === "increase"
+        ? target.targetValue > target.baselineValue
+        : target.targetValue < target.baselineValue));
   return (
     !!draft.goalText.trim() &&
     (draft.metricType !== "task_analysis_step" || draft.taskAnalysisSteps.length > 0) &&
+    (draft.metricType !== "prompt_level" || draft.promptHierarchy.length >= 2) &&
+    (draft.metricType !== "rubric_score" ||
+      (!!draft.rubricConfig.title.trim() &&
+        draft.rubricConfig.maxScore > 0 &&
+        draft.rubricConfig.criteria.length > 0)) &&
     !!plan.baseline.trim() &&
     !!plan.observableDefinition.trim() &&
     !!plan.measurementMethod.trim() &&
@@ -74,7 +116,8 @@ function isDraftValid(draft: DraftGoal): boolean {
     !!plan.setting.trim() &&
     (plan.opportunitiesRequired !== null || plan.observationWindowMinutes !== null) &&
     !!plan.effectiveFrom &&
-    (!plan.effectiveTo || plan.effectiveTo >= plan.effectiveFrom)
+    (!plan.effectiveTo || plan.effectiveTo >= plan.effectiveFrom) &&
+    targetIsValid
   );
 }
 
@@ -129,7 +172,7 @@ function GoalFields({
         >
           {targetFrequencyValues.map((f) => (
             <option key={f} value={f}>
-              {f}
+              {TARGET_FREQUENCY_LABEL[f]}
             </option>
           ))}
         </select>
@@ -140,9 +183,14 @@ function GoalFields({
         <select
           value={draft.metricType}
           disabled={disabled}
-          onChange={(e) =>
-            onChange({ ...draft, metricType: e.target.value as DraftGoal["metricType"] })
-          }
+          onChange={(e) => {
+            const metricType = e.target.value as DraftGoal["metricType"];
+            onChange({
+              ...draft,
+              metricType,
+              progressTarget: isQuantitativeMetric(metricType) ? draft.progressTarget : null,
+            });
+          }}
           className="input mt-1"
         >
           {metricTypeValues.map((m) => (
@@ -191,6 +239,97 @@ function GoalFields({
             placeholder={"Open materials\nComplete first step\nCheck work"}
           />
         </label>
+      )}
+
+      {draft.metricType === "prompt_level" && (
+        <label className="text-muted flex flex-col text-xs sm:col-span-2">
+          Prompt hierarchy (most support to independent, one level per line)
+          <textarea
+            value={draft.promptHierarchy.join("\n")}
+            disabled={disabled}
+            onChange={(event) =>
+              onChange({
+                ...draft,
+                promptHierarchy: event.target.value
+                  .split("\n")
+                  .map((level) => level.trim())
+                  .filter(Boolean),
+              })
+            }
+            rows={5}
+            className="input mt-1"
+          />
+        </label>
+      )}
+
+      {draft.metricType === "rubric_score" && (
+        <fieldset
+          className="sm:col-span-2"
+          style={{
+            border: "1px solid var(--color-neutral-300)",
+            borderRadius: "var(--radius-sm)",
+            padding: "var(--space-3)",
+          }}
+        >
+          <legend style={{ fontWeight: 600, padding: "0 6px" }}>Work sample rubric</legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="text-muted flex flex-col text-xs">
+              Rubric title
+              <input
+                className="input mt-1"
+                value={draft.rubricConfig.title}
+                disabled={disabled}
+                onChange={(event) =>
+                  onChange({
+                    ...draft,
+                    rubricConfig: { ...draft.rubricConfig, title: event.target.value },
+                  })
+                }
+              />
+            </label>
+            <label className="text-muted flex flex-col text-xs">
+              Maximum score
+              <input
+                className="input mt-1"
+                type="number"
+                min={1}
+                max={1000}
+                value={draft.rubricConfig.maxScore}
+                disabled={disabled}
+                onChange={(event) =>
+                  onChange({
+                    ...draft,
+                    rubricConfig: {
+                      ...draft.rubricConfig,
+                      maxScore: Number(event.target.value),
+                    },
+                  })
+                }
+              />
+            </label>
+            <label className="text-muted flex flex-col text-xs sm:col-span-2">
+              Criteria (one per line)
+              <textarea
+                className="input mt-1"
+                rows={4}
+                value={draft.rubricConfig.criteria.join("\n")}
+                disabled={disabled}
+                onChange={(event) =>
+                  onChange({
+                    ...draft,
+                    rubricConfig: {
+                      ...draft.rubricConfig,
+                      criteria: event.target.value
+                        .split("\n")
+                        .map((criterion) => criterion.trim())
+                        .filter(Boolean),
+                    },
+                  })
+                }
+              />
+            </label>
+          </div>
+        </fieldset>
       )}
 
       <fieldset
@@ -447,6 +586,151 @@ function GoalFields({
           </div>
         </div>
       </fieldset>
+
+      {isQuantitativeMetric(draft.metricType) && (
+        <fieldset
+          className="sm:col-span-2"
+          style={{
+            border: "1px solid var(--color-neutral-300)",
+            borderRadius: "var(--radius-sm)",
+            padding: "var(--space-3)",
+          }}
+        >
+          <legend style={{ fontWeight: 600, padding: "0 6px" }}>Progress target (optional)</legend>
+          <p className="text-muted mb-3 text-xs">
+            Add an explicit numeric baseline and target to show an aim line. Narrative mastery
+            criteria are never converted automatically.
+          </p>
+          <label className="flex items-center gap-2 text-sm" style={{ minHeight: 44 }}>
+            <input
+              type="checkbox"
+              checked={draft.progressTarget !== null}
+              disabled={disabled}
+              onChange={(event) => {
+                if (!event.target.checked) {
+                  onChange({ ...draft, progressTarget: null });
+                  return;
+                }
+                const direction = draft.metricType === "frequency_count" ? "decrease" : "increase";
+                onChange({
+                  ...draft,
+                  progressTarget: {
+                    baselineValue: direction === "increase" ? 0 : 1,
+                    baselineDate: draft.measurementPlan.effectiveFrom,
+                    targetValue: direction === "increase" ? 1 : 0,
+                    targetDate: draft.measurementPlan.effectiveTo ?? "",
+                    direction,
+                  },
+                });
+              }}
+            />
+            Show an aim line for this goal
+          </label>
+
+          {draft.progressTarget && (
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="text-muted flex flex-col text-xs sm:col-span-2">
+                Desired direction
+                <select
+                  value={draft.progressTarget.direction}
+                  disabled={disabled}
+                  onChange={(event) =>
+                    onChange({
+                      ...draft,
+                      progressTarget: {
+                        ...draft.progressTarget!,
+                        direction: event.target.value as ProgressTarget["direction"],
+                      },
+                    })
+                  }
+                  className="input mt-1"
+                >
+                  <option value="increase">Increase over time</option>
+                  <option value="decrease">Decrease over time</option>
+                </select>
+              </label>
+              <label className="text-muted flex flex-col text-xs">
+                Baseline value
+                <input
+                  type="number"
+                  min={0}
+                  max={draft.metricType === "accuracy_pct" ? 100 : 1000000}
+                  step="any"
+                  value={draft.progressTarget.baselineValue}
+                  disabled={disabled}
+                  onChange={(event) =>
+                    onChange({
+                      ...draft,
+                      progressTarget: {
+                        ...draft.progressTarget!,
+                        baselineValue: Number(event.target.value),
+                      },
+                    })
+                  }
+                  className="input mt-1"
+                />
+              </label>
+              <label className="text-muted flex flex-col text-xs">
+                Baseline date
+                <input
+                  type="date"
+                  value={draft.progressTarget.baselineDate}
+                  disabled={disabled}
+                  onChange={(event) =>
+                    onChange({
+                      ...draft,
+                      progressTarget: {
+                        ...draft.progressTarget!,
+                        baselineDate: event.target.value,
+                      },
+                    })
+                  }
+                  className="input mt-1"
+                />
+              </label>
+              <label className="text-muted flex flex-col text-xs">
+                Target value
+                <input
+                  type="number"
+                  min={0}
+                  max={draft.metricType === "accuracy_pct" ? 100 : 1000000}
+                  step="any"
+                  value={draft.progressTarget.targetValue}
+                  disabled={disabled}
+                  onChange={(event) =>
+                    onChange({
+                      ...draft,
+                      progressTarget: {
+                        ...draft.progressTarget!,
+                        targetValue: Number(event.target.value),
+                      },
+                    })
+                  }
+                  className="input mt-1"
+                />
+              </label>
+              <label className="text-muted flex flex-col text-xs">
+                Target date
+                <input
+                  type="date"
+                  value={draft.progressTarget.targetDate}
+                  disabled={disabled}
+                  onChange={(event) =>
+                    onChange({
+                      ...draft,
+                      progressTarget: {
+                        ...draft.progressTarget!,
+                        targetDate: event.target.value,
+                      },
+                    })
+                  }
+                  className="input mt-1"
+                />
+              </label>
+            </div>
+          )}
+        </fieldset>
+      )}
     </div>
   );
 }
@@ -464,17 +748,24 @@ function goalToDraft(goal: Goal): DraftGoal {
       "Step 4",
       "Step 5",
     ],
+    promptHierarchy: goal.promptHierarchy?.length
+      ? goal.promptHierarchy
+      : [...DEFAULT_PROMPT_HIERARCHY],
+    rubricConfig: goal.rubricConfig ?? BLANK_DRAFT.rubricConfig,
     targetFrequency: goal.targetFrequency,
     measurementPlan: goal.measurementPlan ?? BLANK_DRAFT.measurementPlan,
+    progressTarget: goal.progressTarget ?? null,
   };
 }
 
 function GoalEditor({
   goal,
+  highlighted,
   onSaved,
   onRetired,
 }: {
   goal: Goal;
+  highlighted?: boolean;
   onSaved: (g: Goal, replacedGoalId?: string) => void;
   onRetired: (id: string) => void;
 }) {
@@ -496,7 +787,11 @@ function GoalEditor({
         iconSet: draft.metricType === "icon_scale" ? draft.iconSet : null,
         taskAnalysisSteps:
           draft.metricType === "task_analysis_step" ? draft.taskAnalysisSteps : null,
+        promptHierarchy:
+          draft.metricType === "prompt_level" ? draft.promptHierarchy : null,
+        rubricConfig: draft.metricType === "rubric_score" ? draft.rubricConfig : null,
         measurementPlan: draft.measurementPlan,
+        progressTarget: draft.progressTarget,
       };
       const res = await apiFetch<{ goal: Goal; replacedGoalId?: string }>(`/api/goals/${goal.id}`, {
         method: "PATCH",
@@ -524,7 +819,11 @@ function GoalEditor({
   }
 
   return (
-    <div className="card">
+    <div
+      id={`goal-${goal.id}`}
+      className="card"
+      style={highlighted ? { outline: "3px solid var(--color-accent-600)", outlineOffset: 2 } : undefined}
+    >
       {!goal.measurementPlan && (
         <p
           role="status"
@@ -574,9 +873,16 @@ function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (
         metricType: draft.metricType,
         targetFrequency: draft.targetFrequency,
         measurementPlan: draft.measurementPlan,
+        progressTarget: draft.progressTarget,
         ...(draft.metricType === "icon_scale" ? { iconSet: draft.iconSet } : {}),
         ...(draft.metricType === "task_analysis_step"
           ? { taskAnalysisSteps: draft.taskAnalysisSteps }
+          : {}),
+        ...(draft.metricType === "prompt_level"
+          ? { promptHierarchy: draft.promptHierarchy }
+          : {}),
+        ...(draft.metricType === "rubric_score"
+          ? { rubricConfig: draft.rubricConfig }
           : {}),
       };
       const res = await apiFetch<{ goal: Goal }>("/api/goals", {
@@ -601,7 +907,8 @@ function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (
       {!valid && (
         <p className="text-muted mt-2 text-xs">
           Complete the goal text and all measurement-plan fields except the optional end date.
-          Enter opportunities, an observation window, or both.
+          Enter opportunities, an observation window, or both. If an aim line is enabled, complete
+          its values and dates too.
         </p>
       )}
       {error && (
@@ -623,31 +930,251 @@ function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (
   );
 }
 
-export function GoalsManager({ studentId }: { studentId: string }) {
+function AccommodationEditor({
+  item,
+  onSaved,
+  onRetired,
+}: {
+  item: StudentAccommodation;
+  onSaved: (item: StudentAccommodation) => void;
+  onRetired: (id: string) => void;
+}) {
+  const [draft, setDraft] = useState({
+    name: item.name,
+    setting: item.setting,
+    implementationNotes: item.implementationNotes,
+  });
+  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const dirty =
+    draft.name !== item.name ||
+    draft.setting !== item.setting ||
+    draft.implementationNotes !== item.implementationNotes;
+
+  async function save() {
+    setPending(true);
+    setMessage(null);
+    try {
+      const response = await apiFetch<{ accommodation: StudentAccommodation }>(
+        `/api/student-accommodations/${item.id}`,
+        { method: "PATCH", body: JSON.stringify(draft) }
+      );
+      setDraft({
+        name: response.accommodation.name,
+        setting: response.accommodation.setting,
+        implementationNotes: response.accommodation.implementationNotes,
+      });
+      onSaved(response.accommodation);
+      setMessage("Accommodation saved.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to save accommodation.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function retire() {
+    if (!confirm(`Remove ${item.name} from this student's active plan? Past use logs will remain.`)) {
+      return;
+    }
+    setPending(true);
+    setMessage(null);
+    try {
+      await apiFetch(`/api/student-accommodations/${item.id}`, { method: "DELETE" });
+      onRetired(item.id);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to remove accommodation.");
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="card">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="text-muted flex flex-col text-xs">
+          Accommodation
+          <input className="input mt-1" value={draft.name} disabled={pending} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+        </label>
+        <label className="text-muted flex flex-col text-xs">
+          Setting
+          <input className="input mt-1" value={draft.setting} disabled={pending} onChange={(event) => setDraft({ ...draft, setting: event.target.value })} />
+        </label>
+        <label className="text-muted flex flex-col text-xs sm:col-span-2">
+          Implementation directions
+          <textarea className="input mt-1" rows={3} value={draft.implementationNotes} disabled={pending} onChange={(event) => setDraft({ ...draft, implementationNotes: event.target.value })} />
+        </label>
+      </div>
+      {message && <p role="status" className="mt-2 text-sm">{message}</p>}
+      <div className="mt-3 flex justify-between gap-2">
+        <button type="button" className="btn btn-ghost" style={{ color: "#b91c1c" }} disabled={pending} onClick={retire}>Remove</button>
+        <button type="button" className="btn btn-primary" disabled={pending || !dirty || !draft.name.trim() || !draft.setting.trim() || !draft.implementationNotes.trim()} onClick={save}>{pending ? "Saving…" : "Save"}</button>
+      </div>
+    </div>
+  );
+}
+
+function AccommodationPlan({
+  studentId,
+  accommodations,
+  onChange,
+}: {
+  studentId: string;
+  accommodations: StudentAccommodation[];
+  onChange: (items: StudentAccommodation[]) => void;
+}) {
+  const [draft, setDraft] = useState({ name: "", setting: "", implementationNotes: "" });
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function add() {
+    setPendingId("new");
+    setMessage(null);
+    try {
+      const response = await apiFetch<{ accommodation: StudentAccommodation }>(
+        "/api/student-accommodations",
+        { method: "POST", body: JSON.stringify({ studentId, ...draft }) }
+      );
+      onChange([...accommodations, response.accommodation]);
+      setDraft({ name: "", setting: "", implementationNotes: "" });
+      setMessage("Accommodation added to this student's data plan.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to add accommodation.");
+    } finally {
+      setPendingId(null);
+    }
+  }
+
+  return (
+    <section aria-labelledby="accommodations-heading">
+      <h2 id="accommodations-heading">Accommodations & access</h2>
+      <p className="text-muted mt-1 text-sm">
+        Configure only IEP-team-approved supports. Staff can then log whether each support was
+        used and rate its impact.
+      </p>
+      <div className="mt-3 grid grid-cols-1 gap-3">
+        {accommodations.map((item) => (
+          <AccommodationEditor
+            key={item.id}
+            item={item}
+            onSaved={(updated) =>
+              onChange(
+                accommodations.map((current) =>
+                  current.id === updated.id ? updated : current
+                )
+              )
+            }
+            onRetired={(id) => onChange(accommodations.filter((current) => current.id !== id))}
+          />
+        ))}
+        {accommodations.length === 0 && (
+          <p className="text-muted text-sm">No accommodations configured.</p>
+        )}
+      </div>
+      <div className="card mt-3" style={{ borderStyle: "dashed" }}>
+        <h3>Add accommodation</h3>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="text-muted flex flex-col text-xs">
+            Accommodation
+            <input
+              className="input mt-1"
+              value={draft.name}
+              disabled={pendingId === "new"}
+              onChange={(event) => setDraft({ ...draft, name: event.target.value })}
+              placeholder="e.g. Text-to-speech"
+            />
+          </label>
+          <label className="text-muted flex flex-col text-xs">
+            Setting
+            <input
+              className="input mt-1"
+              value={draft.setting}
+              disabled={pendingId === "new"}
+              onChange={(event) => setDraft({ ...draft, setting: event.target.value })}
+              placeholder="e.g. Reading assessments"
+            />
+          </label>
+          <label className="text-muted flex flex-col text-xs sm:col-span-2">
+            Implementation directions
+            <textarea
+              className="input mt-1"
+              rows={3}
+              value={draft.implementationNotes}
+              disabled={pendingId === "new"}
+              onChange={(event) => setDraft({ ...draft, implementationNotes: event.target.value })}
+              placeholder="Describe when and how staff should provide the support."
+            />
+          </label>
+        </div>
+        <div className="mt-3 flex justify-end">
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={
+              pendingId === "new" ||
+              !draft.name.trim() ||
+              !draft.setting.trim() ||
+              !draft.implementationNotes.trim()
+            }
+            onClick={add}
+          >
+            {pendingId === "new" ? "Adding…" : "Add accommodation"}
+          </button>
+        </div>
+      </div>
+      {message && <p role="status" className="mt-2 text-sm">{message}</p>}
+    </section>
+  );
+}
+
+export function GoalsManager({
+  studentId,
+  initialGoalId,
+}: {
+  studentId: string;
+  initialGoalId?: string;
+}) {
   const [student, setStudent] = useState<Student | null>(null);
   const [goals, setGoals] = useState<Goal[] | null>(null);
+  const [accommodations, setAccommodations] = useState<StudentAccommodation[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
       apiFetch<{ students: Student[] }>("/api/students"),
       apiFetch<{ goals: Goal[] }>(`/api/goals?studentId=${studentId}`),
+      apiFetch<{ accommodations: StudentAccommodation[] }>(
+        `/api/student-accommodations?studentId=${studentId}`
+      ),
     ])
-      .then(([studentsRes, goalsRes]) => {
+      .then(([studentsRes, goalsRes, accommodationsRes]) => {
         const found = studentsRes.students.find((s) => s.id === studentId) ?? null;
         setStudent(found);
         setGoals(goalsRes.goals);
+        setAccommodations(accommodationsRes.accommodations);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load."));
   }, [studentId]);
 
+  useEffect(() => {
+    if (!initialGoalId || !goals?.some((goal) => goal.id === initialGoalId)) return;
+    document.getElementById(`goal-${initialGoalId}`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [goals, initialGoalId]);
+
   return (
     <main className="page" style={{ maxWidth: 720 }}>
-      <Link href="/entry" className="text-muted text-xs underline underline-offset-4">
-        ← Back to entry
-      </Link>
+      <div className="flex gap-3">
+        <Link href="/entry" className="text-muted text-xs underline underline-offset-4">
+          ← Entry
+        </Link>
+        <Link href="/admin" className="text-muted text-xs underline underline-offset-4">
+          Admin console
+        </Link>
+      </div>
 
-      <h2 className="mt-2">Manage goals{student ? ` — ${student.displayName}` : ""}</h2>
+      <h1 className="mt-2">Student data plan{student ? ` — ${student.displayName}` : ""}</h1>
       <p className="text-muted mt-1 text-sm">
         Adding, editing, or retiring a goal here changes what shows up on this student&apos;s
         roster-sweep card. Retiring a goal keeps its past data points, it just stops collecting
@@ -660,7 +1187,25 @@ export function GoalsManager({ studentId }: { studentId: string }) {
         </p>
       )}
 
-      {!goals ? (
+      {student && (
+        <section className="mt-5" aria-labelledby="supported-data-heading">
+          <h2 id="supported-data-heading">Supported data collection</h2>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {DATA_COLLECTION_CATEGORIES.map((category) => (
+              <article key={category.title} className="card">
+                <h3>{category.title}</h3>
+                <p className="text-muted mt-1 text-sm">{category.description}</p>
+              </article>
+            ))}
+          </div>
+          <p className="text-muted mt-3 text-sm">
+            Collection cadence is set by the IEP team for each goal. Quarterly reporting
+            summarizes evidence; it does not replace scheduled probes or observations.
+          </p>
+        </section>
+      )}
+
+      {!goals || !accommodations ? (
         <p className="text-muted mt-6 text-sm">Loading…</p>
       ) : student === null && !error ? (
         <p className="mt-6 text-sm" style={{ color: "var(--color-accent-700)" }}>
@@ -668,10 +1213,12 @@ export function GoalsManager({ studentId }: { studentId: string }) {
         </p>
       ) : (
         <div className="mt-6 flex flex-col gap-4">
+          <h2>Goals & measurement plans</h2>
           {goals.map((goal) => (
             <GoalEditor
               key={goal.id}
               goal={goal}
+              highlighted={goal.id === initialGoalId}
               onSaved={(updated, replacedGoalId) =>
                 setGoals((prev) =>
                   prev!.map((g) =>
@@ -689,6 +1236,11 @@ export function GoalsManager({ studentId }: { studentId: string }) {
           <NewGoalForm
             studentId={studentId}
             onCreated={(created) => setGoals((prev) => [...(prev ?? []), created])}
+          />
+          <AccommodationPlan
+            studentId={studentId}
+            accommodations={accommodations}
+            onChange={setAccommodations}
           />
         </div>
       )}

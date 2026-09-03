@@ -3,7 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { goals, students } from "@/lib/db/schema";
 import { getCurrentStaff } from "@/lib/auth/session";
-import { requireStaff, assertClassroomScope } from "@/lib/auth/authz";
+import { requireStaff, assertClassroomScope, assertPermission, assertStudentDataAccess } from "@/lib/auth/authz";
 import { createGoalSchema } from "@/lib/validation";
 import { recordAudit } from "@/lib/audit";
 import { handleRoute, assertWriteRateLimit, jsonError } from "@/lib/api-helpers";
@@ -12,6 +12,7 @@ import { handleRoute, assertWriteRateLimit, jsonError } from "@/lib/api-helpers"
 export async function GET(request: NextRequest) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertStudentDataAccess(current);
     const studentId = request.nextUrl.searchParams.get("studentId");
 
     const rows = await db
@@ -35,6 +36,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertPermission(current, "canManageGoals", "You cannot create goals.");
     assertWriteRateLimit(current.id, "goals:post");
     const body = createGoalSchema.parse(await request.json());
 

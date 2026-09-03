@@ -3,6 +3,7 @@ import { getCurrentStaff } from "@/lib/auth/session";
 import { getProgressSummary } from "@/lib/summary";
 import { PrintButton } from "./PrintButton";
 import { schoolDateIso } from "@/lib/observations";
+import { summaryFilterSchema } from "@/lib/validation";
 
 function defaultFrom() {
   const d = new Date();
@@ -17,17 +18,18 @@ export default async function PrintSummaryPage({
 }) {
   const current = await getCurrentStaff();
   if (!current) redirect("/login");
+  if (!current.canViewReports) redirect("/");
   if (!current.classroomId) redirect("/entry");
 
   const params = await searchParams;
-  const from = params.from ?? defaultFrom();
-  const to = params.to ?? schoolDateIso();
-
-  const summary = await getProgressSummary(current.classroomId, {
+  const filters = summaryFilterSchema.safeParse({
     studentId: params.studentId,
-    from,
-    to,
+    from: params.from ?? defaultFrom(),
+    to: params.to ?? schoolDateIso(),
   });
+  if (!filters.success) redirect("/summary");
+
+  const summary = await getProgressSummary(current.classroomId, filters.data);
 
   const isSynthetic = summary.students.every((s) => s.student.isSynthetic);
 
@@ -79,6 +81,9 @@ export default async function PrintSummaryPage({
                 <th scope="col" className="py-1">
                   Trend
                 </th>
+                <th scope="col" className="py-1 pl-2">
+                  Evidence / aim
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -88,11 +93,21 @@ export default async function PrintSummaryPage({
                   <td className="py-1 pr-2 align-top">{g.goal.goalText}</td>
                   <td className="py-1 pr-2 align-top font-mono">{g.currentValueLabel}</td>
                   <td className="py-1 align-top font-mono">{g.trendLabel}</td>
+                  <td className="py-1 pl-2 align-top text-xs">
+                    {g.collectionEvidence.label}
+                    <span className="block">{g.dataSufficiency.label}</span>
+                    <span className="block">{g.aimStatus.label}</span>
+                    {g.interventions.map((annotation) => (
+                      <span key={annotation.id} className="mt-1 block">
+                        Intervention {annotation.interventionDate}: {annotation.description}
+                      </span>
+                    ))}
+                  </td>
                 </tr>
               ))}
               {s.goals.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-2 text-zinc-400">
+                  <td colSpan={5} className="py-2 text-zinc-400">
                     No goals on file.
                   </td>
                 </tr>
@@ -101,10 +116,20 @@ export default async function PrintSummaryPage({
           </table>
 
           {s.accommodations.logs.length > 0 && (
-            <p className="mt-2 text-xs text-zinc-600">
-              Accommodation usage: {s.accommodations.usageRatePct ?? "—"}% ·
-              Avg. effectiveness: {s.accommodations.avgEffectiveness ?? "—"} / 5
-            </p>
+            <div className="mt-3 text-xs text-zinc-600">
+              <p>
+                Accommodation usage: {s.accommodations.usageRatePct ?? "—"}% ·
+                Avg. effectiveness: {s.accommodations.avgEffectiveness ?? "—"} / 5.
+                Descriptive evidence only; small samples do not establish impact.
+              </p>
+              <ul className="mt-1 list-disc pl-5">
+                {s.accommodations.bySupport.map((support) => (
+                  <li key={`${support.accommodationName}:${support.setting ?? ""}`}>
+                    {support.accommodationName} ({support.setting ?? "setting not recorded"}): used {support.usedCount}/{support.logCount}; effectiveness {support.avgEffectiveness ?? "—"}/5 (n={support.effectivenessN}); fidelity {support.avgFidelity ?? "—"}/5 (n={support.fidelityN})
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </section>
       ))}

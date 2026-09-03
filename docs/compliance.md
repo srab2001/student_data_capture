@@ -25,34 +25,68 @@ https://claude.ai/code/artifact/f42a3d9c-ee1a-4b8d-860d-e8a4326da173
 ## Data captured
 
 - Accuracy/fluency probe results (`accuracy_pct`, `fluency_rate`)
-- Behavior frequency & duration tallies (`frequency_count`, `duration_seconds`)
+- Behavior frequency, duration, and response-latency measures
+  (`frequency_count`, `duration_seconds`, `latency_seconds`)
+- Named work samples scored against a goal-versioned rubric title, maximum,
+  and criterion list (`rubric_score`)
 - Icon-degree readings — a configurable alternative to a plain tally
   (5-point smiley scale by default; stars, thumbs, or Zones-of-Regulation
   colors also supported per goal)
-- ABC (antecedent-behavior-consequence) notes
-- Prompt-level / independence tracking (`prompt_level`)
+- Structured ABC (antecedent-behavior-consequence) observations, with each
+  bounded narrative field stored separately (`abc_observation`)
+- Prompt-level / independence tracking with a student-specific ordered prompt
+  hierarchy (`prompt_level`)
 - Task analysis checklist steps (`task_analysis_step`)
 - Accommodation-usage logs, including an effectiveness rating (rendered
   with the same icon-degree control as behavior goals)
+- Optional accommodation-log context: related session and goal, setting,
+  activity, implementation-fidelity rating, and reason not used. These fields
+  are bounded and classroom scoped. They describe implementation and do not
+  establish that an accommodation caused an outcome.
+- Student-specific active accommodation assignments: support name, setting,
+  and implementation directions. Removing an assignment is a soft delete and
+  does not remove historical use logs.
 - Per-observation event type and timestamp so multiple readings in one session
   remain distinct; client-generated random request IDs prevent duplicate
   records during offline retries
 - Explicit observation-window completion markers so zero behavior occurrences
   or zero-duration observations remain valid evidence without manufacturing a
   numeric value
+- Actual opportunities observed and/or actual observation duration on a
+  completed behavior window. Reports may normalize frequency per minute or per
+  100 opportunities and must identify the unit used.
 - Goal-version relationships and goal-specific task-analysis step labels so
   historical readings retain the measurement definition used when collected
+- Goal-specific prompt hierarchy, rubric definition, and collection cadence;
+  changes are versioned once observations exist so historical evidence retains
+  the definition used when it was collected
 - Versioned goal measurement plans: baseline description, observable behavior,
   measurement method, mastery criterion, scheduled collection days,
   minimum observations per scheduled day, setting/activity, opportunities or
   observation duration when applicable, responsible collector role, and
   effective start/end dates. These fields describe how an IEP goal is measured;
   they do not expand the student-identifying data collected.
+- Goal collection-cadence labels from every session through quarterly. The
+  weekday/evidence measurement plan remains authoritative for compliance math;
+  the quarterly value describes reporting synthesis rather than manufacturing
+  quarterly observations.
 - Classroom roster-group names and student membership, used only to narrow the
   teacher/aide entry screen during instruction. Groups remain scoped to one
   classroom and are managed by teachers.
 - Per-staff entry-screen preferences: roster layout, workflow mode, and
   optional selected group. The currently focused student is not persisted.
+- Optional, teacher-entered quantitative progress targets: baseline value/date,
+  target value/date, and desired direction. Existing narrative criteria are
+  never parsed or backfilled into this structure.
+- Dated intervention annotations containing a short teacher-entered description
+  of an instructional or support change. These are soft-deletable and audited;
+  the UI warns against confidential narrative detail.
+- Per-staff access status, role label, and six authorization flags for managing
+  users, students, goals, and classroom colors, recording observations, and
+  viewing reports. These are operational access-control data, not student data.
+- Classroom color-guide entries: a bounded name, six-digit color value, short
+  hover/focus explanation, and display order. The guide is classroom scoped,
+  soft-deletable, audited, and never used as the only way to convey meaning.
 
 No other fields should be added without updating this document first —
 see "Data minimization" in the full compliance review.
@@ -113,12 +147,23 @@ later without losing audit history.
 Enforced in a single shared authorization helper (see Phase 2), not
 inline checks scattered across routes:
 
-- `teacher` — full access to their own classroom's students only
-- `aide` — same classroom scope as their assigned teacher; can create
-  entries but not edit or delete another staff member's past entries
+- `teacher`, `aide`, and `admin` are role presets and job-context labels.
+  Authorization is determined by six explicit per-user capabilities: manage
+  users, manage students/groups, manage goals/targets/interventions, manage
+  colors, record/correct observations, and view/export reports.
+- Every role remains limited to one classroom. User and color administration
+  queries are scoped by that classroom in the same way as student and goal
+  data. A foreign identifier returns the missing-resource path.
+- Disabling or retiring a staff record blocks the prototype login picker and
+  request-time session lookup, so an existing signed cookie stops resolving to
+  an authorized user on the next server request.
+- An administrator cannot retire themselves or remove their own user-management
+  access, and the API prevents removal of the last active user manager.
+- Teachers/admins may correct another classroom staff member's past entry when
+  they retain record-data permission; aides may correct only their own.
 
 Every read and write is audit-logged (`audit_log` table), and that table
-is not deletable from the application, including by a future admin role.
+is not deletable from the application, including by the admin role.
 
 ## Synthetic data only, until sign-off
 
@@ -172,7 +217,7 @@ Built 2026-08-31, on synthetic data only, no Policy 3060 sign-off (Track A):
 | **"Organic" design system** | ✅ Adopted app-wide | Warm cream/terracotta palette, Caprasimo/Figtree type, pill buttons/chips — tokens and component classes in `app/globals.css`, fonts wired via `next/font/google` in `app/layout.tsx`. Source design handoff archived at `docs/design/entry-screen-handoff/`. |
 | **Three entry-screen layouts** | ✅ Built | `/entry` now has a Card stack / Grid / Accordion switcher (`app/entry/EntryScreen.tsx`) — all three read and write through the same autosave state (`app/entry/types.ts`'s `EntryActions`), never duplicated per layout. New: `app/entry/GridView.tsx`, `app/entry/AccordionView.tsx`. |
 | **Goal-management, home, login screens** | ✅ Restyled | Reskinned to the same tokens for visual consistency; functionality unchanged. |
-| **Summary and help screens** | ⚠️ Not yet restyled | Still on the prior look — the design handoff was scoped to the entry screen only. Follow-up task if full app-wide consistency is wanted. |
+| **Summary and help screens** | ✅ Token-aligned in Phase 4 | Summary now uses the shared Organic cards, inputs, and buttons while adding accessible evidence displays. Help retains its established content layout and includes Phase 4 guidance. |
 | **Production deploy** | ✅ Live and verified | The Vercel project is git-linked to `main`; PR #7's merge (commit `eca5c3a`) triggered a real `git clone` build that compiled cleanly, type-checked, and generated all 20 routes. Confirmed live at https://iep-capture-pilot.vercel.app: home/`help`/`login` all serve the Organic redesign with correct styling, `/entry` correctly redirects an unauthenticated request to `/login`, and `/api/auth/staff` returned the real seeded roster (`Synthetic Teacher`, `Synthetic Aide`) — i.e. the production Neon connection works end-to-end, not just the build. |
 | **Production deploy — history** | Resolved | Two earlier problems, now both fixed: (1) before Vercel was git-linked, its manual file-upload tool failed twice on this codebase's size (~150KB/56 files) — the transferred tree came back missing most of `lib/`. (2) The first two builds *after* linking Git still failed, oddly, on a single `Module not found: Can't resolve './globals.css'` despite the file being confirmed present on GitHub — diagnosed as stale "Redeploy" actions replaying an old pre-link deployment's file snapshot (no `Cloning github.com/...` line in their logs), not real builds off current code. A genuine webhook-triggered build immediately after showed a proper clone step and succeeded, confirming the git integration itself was fine all along. |
 
@@ -242,3 +287,49 @@ sign-off:
 | **API verification** | ✅ Scoped synthetic writes passed | Teacher group create/update/retire and duplicate rejection passed; aide list passed and all three aide mutations returned 403; per-staff preferences restored independently. The temporary group was retired and both preferences were reset. Cross-classroom rejection and direct audit-row inspection remain open. |
 | **Browser verification** | ✅ Smoke passed; full matrix open | Chrome restored teacher Focus/group preferences, wrapped Next navigation, restored Timers after reload, preserved independent aide Grid/Timers preferences, hid group management from the aide, and fell back to All students after group retirement. The seed has no duration fixture, and zoom/keyboard/screen-reader/offline checks remain open. |
 | **Runtime verification** | ✅ Clean post-test scan | The Vercel one-hour error scan returned no matching entries after API and Chrome testing. |
+
+## Phase 4 decision-support implementation log
+
+Implemented locally 2026-09-03, synthetic data only, no Policy 3060 sign-off.
+It is intentionally not deployed until migration and browser gates pass:
+
+| Piece | Status | Notes |
+|---|---|---|
+| **Evidence context** | ✅ Code complete | Summary reports planned-versus-collected observations and distinct observation days. The three-day threshold is labeled descriptive/limited, never mastery or statistical significance. Filters are strictly validated and capped at 366 days. |
+| **Metric-appropriate charts** | ✅ Code complete | Accuracy, fluency, frequency, duration, and task-step goals use numeric time-series plots. Prompt, icon, and accommodation-used goals use exact categorical counts rather than invented numeric spacing. Charts include text/table equivalents and do not rely on color alone. |
+| **Explicit aim lines** | ✅ Code complete | Teachers may enter a bounded numeric baseline/date, target/date, and direction for quantitative goals. Direction and date relationships are validated. Existing and categorical goals receive null; narrative IEP text is never converted automatically. Target edits participate in goal versioning. |
+| **Intervention annotations** | ✅ Code complete | Teachers can add and soft-retire short, dated, classroom-scoped annotations; aides can read them. Every operation is authenticated, bounded, rate-limited for writes, and audited. |
+| **Role boundary** | ✅ Code complete | Configuration writes now use explicit permissions rather than a role label. The teacher preset retains student/goal/group/target/intervention access; the aide preset retains observation entry and summary review; the new admin preset receives all classroom capabilities. |
+| **Migration `0006`** | ✅ Upgrade and fresh rehearsals passed; not production | The 26-goal clone preserved null targets and added the JSONB column, annotation table, foreign keys, and index. An empty database ran `0000`–`0006` and exposed 11 expected tables, seven journal rows, and the append-only audit trigger. The first clone was discarded; the final prepared clone and fresh-test branch await explicit completion/cleanup. |
+| **Local verification** | ✅ Automated gates passed | 58 unit tests, ESLint, strict TypeScript, webpack production build, Drizzle metadata check, whitespace check, and production dependency audit passed. CSV formula neutralization and shared-color contrast are covered. Turbopack alone hit the documented managed-host worker-port restriction. |
+| **Disposable API/database integration** | ✅ Passed | Synthetic teacher target versioning, idempotent observation retry, annotation lifecycle, summary/CSV/print context, invalid filters, and missing-goal behavior passed. Aide read plus five mutation denials passed. A genuine second classroom produced six isolation denials; direct inspection confirmed no leaked mutation, no duplicate ID, zero real students, and expected audit rows. |
+| **Browser/accessibility verification** | ✅ Automated scope passed; human AT open | Role visibility, direct aide route guarding, keyboard login, Timers start/stop/undo, eight metric chart stories, exact text/table equivalents, 1366×768 layout, and half-width reflow passed with no browser errors. Muted text and primary buttons were raised to 5.53:1 and 6.81:1 contrast. Native 200% zoom and a real screen reader remain human checks. |
+| **Deployment / remaining gates** | ⏳ Awaiting confirmation | Production remains on Phase 3. The exact tested production migration is prepared. After explicit approval: apply it, clean disposable branches, commit/push, verify the Git-linked deployment, and run authenticated synthetic smoke/error scans. Desktop-spreadsheet, offline/reconnect, native zoom, and screen-reader exercises remain follow-ups. |
+
+## Classroom administration implementation log
+
+Implemented locally 2026-09-03, synthetic data only, no Policy 3060 sign-off:
+
+| Piece | Status | Notes |
+|---|---|---|
+| **User and access administration** | ✅ Code complete | Classroom-scoped managers can add, edit, disable/reactivate, and soft-retire users; apply teacher/aide/admin presets; and configure six explicit capabilities. Self-lockout and removal of the last active user manager are blocked. |
+| **Student and goal administration** | ✅ Code complete | Permitted admins can add, rename, and soft-retire synthetic students and reuse the version-safe goal create/edit/retire workflow with complete measurement-plan validation. Student retirement preserves every related record. |
+| **Color guide** | ✅ Code complete | Classroom colors have bounded names, six-digit values, explanations, order, soft deletion, and audit history. All staff in the classroom may read the guide; only permitted users may mutate it. Visible names, keyboard focus, and described tooltips prevent color-only communication. |
+| **Audit oversight** | ✅ Code complete; credentialed integration open | User managers can review bounded, newest-first classroom audit history, including retired actors. The API returns changed-field names rather than stored diff values and records each audit-history read. Classroom isolation and permission checks are enforced in the route; disposable credentialed verification remains open. |
+| **Migration `0007`** | ✅ Disposable upgrade passed; not production | Adds the admin enum value, access/capability columns, and `classroom_colors`. Existing active teachers become initial managers on upgrade; the synthetic seed also creates a dedicated admin and three example colors. |
+| **Verification** | ✅ Automated/API/browser scope passed | 65 unit tests, lint, strict types, webpack build, metadata, diff, and dependency audit passed. Disposable API testing covered user/access, permission denial, cross-classroom denial, color, student, and goal lifecycles. Browser testing confirmed the console and focus-triggered color explanation. |
+| **Deployment** | ⏳ Not deployed | Production schema and Vercel deployment remain unchanged. Migration `0007` must follow `0006`; both require the existing explicit production-release approval path. |
+
+## Data readiness and contextual analytics implementation log
+
+Implemented locally 2026-09-03, synthetic data only, no Policy 3060 sign-off:
+
+| Piece | Status | Notes |
+|---|---|---|
+| **Readiness repair queue** | ✅ Code complete | Goal managers receive classroom-scoped incomplete-plan/default-prompt inventories and a guided goal-editor queue. Historical accommodation names are grouped for explicit reconciliation; the workflow never rewrites old logs or invents a setting/directions. |
+| **Due-first capture and exposure** | ✅ Code complete | Entry defaults to goals due on the local date/collector role and separately reveals optional goals. Frequency window completion requires actual positive duration or opportunities and reports an explicit normalized unit. |
+| **Descriptive reporting** | ✅ Code complete | Quantitative trends use the configured improvement direction and show sample count, date span, and range. Prompt and task-analysis changes retain temporal/step context. Accommodation results are grouped by student, support, and setting with `n` and a no-causation warning. |
+| **Context linkage** | ✅ Code complete | Accommodation logs may link to a validated session and active same-student goal and store bounded setting, activity, implementation fidelity, and reason not used. Ratings/fidelity are accepted only for used supports. |
+| **Migrations `0009`–`0010`** | ✅ Disposable rehearsal passed; not production | Nullable exposure/context columns preserve legacy rows. Foreign keys, indexes, positive exposure constraints, and 1–5 rating/fidelity constraints passed on the retained disposable Neon branch. |
+| **Verification** | ✅ Local gates passed; authenticated preview open | 79 tests, lint, strict types, webpack build, migration metadata, disposable schema application, and public Chromium smoke passed. Authenticated browser/API lifecycle, fresh seed execution, native 200% zoom, and real screen-reader testing remain pre-release gates because this host has no local synthetic `DATABASE_URL`. |
+| **Deployment** | ⏳ Not deployed | Production remains on Phase 3. Migrations `0006`–`0010` and the corresponding application must move together through the approved migration-first synthetic release process before any production verification. |

@@ -5,6 +5,7 @@ import { SummaryView } from "./SummaryView";
 export default async function SummaryPage() {
   const current = await getCurrentStaff();
   if (!current) redirect("/login");
+  if (!current.canViewReports) redirect("/");
 
-  return <SummaryView />;
+  return <SummaryView canManageInterventions={current.canManageGoals} />;
 }

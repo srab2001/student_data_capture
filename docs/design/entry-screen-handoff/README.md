@@ -1,14 +1,17 @@
 # Handoff: IEP Capture Pilot — Entry Screen Redesign
 
-> Historical design reference. The Phase 1–3 releases supersede
+> Historical design reference. The Phase 1–4 implementation supersedes
 > the state-management notes below: the production entry screen now records
 > immutable observation events, derives session aggregates, keeps idempotent
 > pending writes in a staff-specific browser queue, and exposes per-goal
 > save/undo status. Phase 2 also replaces "logged today" with plan-aware
 > due/evidence status and adds collapsed collection directions. Deployed Phase 3 adds
 > Roster/Focus/Timers workflows, shared roster groups, and saved staff
-> preferences around these original layouts. The visual
-> references remain useful; do not reintroduce
+> preferences around these original layouts. Phase 4 changes Summary rather
+> than these entry layouts, adding evidence/aim context and metric-appropriate
+> charts. The visual language now also covers a local, not-yet-deployed
+> `/admin` console and a navigation Color guide with named swatches and
+> hover/focus explanations. The visual references remain useful; do not reintroduce
 > the former one-row-per-goal PATCH model.
 
 ## Overview
@@ -31,7 +34,9 @@ The rest of this document assumes (1); if the team picks (2), map each token bel
 Single screen, `/entry`, with a layout switcher. All three views share one nav bar and title row.
 
 **Shared header**
-- Nav bar (`.nav`): brand "IEP Capture Pilot" left, links Entry/Summary/Guide, staff name + Sign out ghost button right.
+- Nav bar (`.nav`): brand "IEP Capture Pilot" left; permission-aware
+  Entry/Summary/Admin links; the shared, accessible Color guide; Guide; staff
+  name; and Sign out on the right.
 - Title row: `<h1>` "Roster sweep — Daily Log", staff name + date below it, and a `tag-outline` pill reading "Synthetic data only — pilot" pinned to the right.
 - View switcher: a native segmented control (radio group) with three options — Card stack / Grid / Accordion.
 

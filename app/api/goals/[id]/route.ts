@@ -3,7 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dataPoints, goals, students } from "@/lib/db/schema";
 import { getCurrentStaff } from "@/lib/auth/session";
-import { requireStaff } from "@/lib/auth/authz";
+import { assertPermission, assertStudentDataAccess, requireStaff } from "@/lib/auth/authz";
 import { createGoalSchema, updateGoalSchema } from "@/lib/validation";
 import { recordAudit } from "@/lib/audit";
 import { handleRoute, assertWriteRateLimit, jsonError } from "@/lib/api-helpers";
@@ -27,6 +27,7 @@ export async function GET(
 ) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertStudentDataAccess(current);
     const { id } = await params;
     const goal = await loadScopedGoal(id, current.classroomId!);
     if (!goal) return jsonError("Goal not found.", 404);
@@ -48,6 +49,7 @@ export async function PATCH(
 ) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertPermission(current, "canManageGoals", "You cannot edit goals.");
     assertWriteRateLimit(current.id, "goals:patch");
     const { id } = await params;
     const body = updateGoalSchema.parse(await request.json());
@@ -68,7 +70,19 @@ export async function PATCH(
         (body.metricType ?? existing.metricType) === "task_analysis_step"
           ? (body.taskAnalysisSteps ?? existing.taskAnalysisSteps ?? undefined)
           : undefined,
+      promptHierarchy:
+        (body.metricType ?? existing.metricType) === "prompt_level"
+          ? (body.promptHierarchy ?? existing.promptHierarchy ?? undefined)
+          : undefined,
+      rubricConfig:
+        (body.metricType ?? existing.metricType) === "rubric_score"
+          ? (body.rubricConfig ?? existing.rubricConfig ?? undefined)
+          : undefined,
       measurementPlan: body.measurementPlan ?? existing.measurementPlan ?? undefined,
+      progressTarget:
+        body.progressTarget !== undefined
+          ? body.progressTarget
+          : existing.progressTarget,
       targetFrequency: body.targetFrequency ?? existing.targetFrequency,
     });
 
@@ -78,8 +92,15 @@ export async function PATCH(
       (nextDefinition.iconSet ?? null) !== existing.iconSet ||
       JSON.stringify(nextDefinition.taskAnalysisSteps ?? null) !==
         JSON.stringify(existing.taskAnalysisSteps ?? null) ||
+      JSON.stringify(nextDefinition.promptHierarchy ?? null) !==
+        JSON.stringify(existing.promptHierarchy ?? null) ||
+      JSON.stringify(nextDefinition.rubricConfig ?? null) !==
+        JSON.stringify(existing.rubricConfig ?? null) ||
       JSON.stringify(nextDefinition.measurementPlan) !==
-        JSON.stringify(existing.measurementPlan);
+        JSON.stringify(existing.measurementPlan) ||
+      JSON.stringify(nextDefinition.progressTarget ?? null) !==
+        JSON.stringify(existing.progressTarget ?? null) ||
+      nextDefinition.targetFrequency !== existing.targetFrequency;
 
     if (changesMeasurementDefinition) {
       const [existingObservation] = await db
@@ -132,7 +153,10 @@ export async function PATCH(
         ...body,
         iconSet: nextDefinition.iconSet ?? null,
         taskAnalysisSteps: nextDefinition.taskAnalysisSteps ?? null,
+        promptHierarchy: nextDefinition.promptHierarchy ?? null,
+        rubricConfig: nextDefinition.rubricConfig ?? null,
         measurementPlan: nextDefinition.measurementPlan,
+        progressTarget: nextDefinition.progressTarget ?? null,
         updatedAt: new Date(),
       })
       .where(eq(goals.id, id))
@@ -156,6 +180,7 @@ export async function DELETE(
 ) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertPermission(current, "canManageGoals", "You cannot retire goals.");
     assertWriteRateLimit(current.id, "goals:delete");
     const { id } = await params;
 

@@ -6,6 +6,7 @@ import { IconDegreePicker } from "@/components/IconDegreePicker";
 import { PROMPT_LEVELS } from "@/lib/icon-sets";
 import type { IconSetKey } from "@/lib/icon-sets";
 import type { MeasurementPlanStatus } from "@/lib/measurement-plans";
+import { DEFAULT_PROMPT_HIERARCHY, TARGET_FREQUENCY_LABEL } from "@/lib/student-data-plan";
 
 const DOMAIN_LABEL: Record<Goal["domain"], string> = {
   academic: "Academic",
@@ -60,6 +61,8 @@ export function GoalRow({
   onSetIconReading,
   onSetPromptLevel,
   onSetFluencyRate,
+  onLogRubric,
+  onLogAbc,
   onSetTaskStep,
   onSetAccommodationUsed,
   onStartTimer,
@@ -79,10 +82,15 @@ export function GoalRow({
   timerRunning: boolean;
   onTapAccuracy: (correct: boolean) => void;
   onTapTally: () => void;
-  onCompleteObservation: () => void;
+  onCompleteObservation: (exposure?: {
+    opportunitiesObserved?: number;
+    observationDurationSeconds?: number;
+  }) => void;
   onSetIconReading: (value: string) => void;
   onSetPromptLevel: (value: string) => void;
   onSetFluencyRate: (value: number) => void;
+  onLogRubric: (score: number, workSample: string, criterion: string | null) => void;
+  onLogAbc: (antecedent: string, behavior: string, consequence: string) => void;
   onSetTaskStep: (step: number) => void;
   onSetAccommodationUsed: (used: boolean) => void;
   onStartTimer: () => void;
@@ -99,6 +107,12 @@ export function GoalRow({
   showNote?: boolean;
 }) {
   const [noteOpen, setNoteOpen] = useState(!!dataPoint?.note);
+  const [workSample, setWorkSample] = useState("");
+  const [rubricScore, setRubricScore] = useState("");
+  const [rubricCriterion, setRubricCriterion] = useState("");
+  const [abc, setAbc] = useState({ antecedent: "", behavior: "", consequence: "" });
+  const [observationMinutes, setObservationMinutes] = useState("");
+  const [opportunitiesObserved, setOpportunitiesObserved] = useState("");
   const total = dataPoint?.trialsTotal ?? 0;
   const correct = dataPoint?.trialsCorrect ?? 0;
   const pct = total > 0 ? Math.round((correct / total) * 100) : null;
@@ -122,7 +136,7 @@ export function GoalRow({
                     ? "#9a3412"
                     : measurementStatus.kind === "complete"
                       ? "#166534"
-                      : "var(--color-neutral-600)",
+                      : "var(--color-neutral-700)",
                 fontWeight: measurementStatus.isDue ? 600 : 400,
               }}
             >
@@ -155,7 +169,7 @@ export function GoalRow({
                 ? "#9a3412"
                 : measurementStatus.kind === "complete"
                   ? "#166534"
-                  : "var(--color-neutral-600)",
+                  : "var(--color-neutral-700)",
             fontWeight: measurementStatus.isDue ? 600 : 400,
           }}
         >
@@ -176,6 +190,8 @@ export function GoalRow({
             <dd>{goal.measurementPlan.observableDefinition}</dd>
             <dt className="text-muted">Method</dt>
             <dd>{goal.measurementPlan.measurementMethod}</dd>
+            <dt className="text-muted">Cadence</dt>
+            <dd>{TARGET_FREQUENCY_LABEL[goal.targetFrequency]}</dd>
             <dt className="text-muted">Mastery</dt>
             <dd>{goal.measurementPlan.masteryCriterion}</dd>
             {goal.measurementPlan.opportunitiesRequired && (
@@ -241,26 +257,180 @@ export function GoalRow({
           </div>
         )}
 
-        {goal.metricType === "frequency_count" && (
-          <div data-tour="tally-counter" className="flex items-center gap-2">
+        {goal.metricType === "rubric_score" && goal.rubricConfig && (
+          <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <legend className="mb-1 text-sm font-semibold">{goal.rubricConfig.title}</legend>
+            <label className="text-muted flex flex-col text-xs">
+              Work sample
+              <input
+                className="input mt-1"
+                value={workSample}
+                disabled={disabled}
+                onChange={(event) => setWorkSample(event.target.value)}
+                placeholder="e.g. Paragraph draft 2"
+              />
+            </label>
+            <label className="text-muted flex flex-col text-xs">
+              Criterion
+              <select
+                className="input mt-1"
+                value={rubricCriterion}
+                disabled={disabled}
+                onChange={(event) => setRubricCriterion(event.target.value)}
+              >
+                <option value="">Overall score</option>
+                {goal.rubricConfig.criteria.map((criterion) => (
+                  <option key={criterion} value={criterion}>{criterion}</option>
+                ))}
+              </select>
+            </label>
+            <label className="text-muted flex flex-col text-xs">
+              Score (0–{goal.rubricConfig.maxScore})
+              <input
+                className="input mt-1"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={goal.rubricConfig.maxScore}
+                value={rubricScore}
+                disabled={disabled}
+                onChange={(event) => setRubricScore(event.target.value)}
+              />
+            </label>
+            <div className="flex items-end">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={
+                  disabled ||
+                  !workSample.trim() ||
+                  rubricScore === "" ||
+                  !Number.isFinite(Number(rubricScore)) ||
+                  Number(rubricScore) < 0 ||
+                  Number(rubricScore) > goal.rubricConfig.maxScore
+                }
+                onClick={() => {
+                  onLogRubric(
+                    Number(rubricScore),
+                    workSample.trim(),
+                    rubricCriterion || null
+                  );
+                  setWorkSample("");
+                  setRubricScore("");
+                }}
+              >
+                Record score
+              </button>
+            </div>
+          </fieldset>
+        )}
+
+        {goal.metricType === "abc_observation" && (
+          <fieldset className="grid grid-cols-1 gap-2">
+            <legend className="mb-1 text-sm font-semibold">ABC observation</legend>
+            {(["antecedent", "behavior", "consequence"] as const).map((field) => (
+              <label key={field} className="text-muted flex flex-col text-xs">
+                {field[0].toUpperCase() + field.slice(1)}
+                <textarea
+                  className="input mt-1"
+                  rows={2}
+                  value={abc[field]}
+                  disabled={disabled}
+                  onChange={(event) => setAbc({ ...abc, [field]: event.target.value })}
+                />
+              </label>
+            ))}
             <button
               type="button"
-              disabled={disabled}
-              onClick={onTapTally}
               className="btn btn-secondary"
-              aria-label={`Tally occurrence for ${goal.goalText}`}
+              disabled={disabled || !abc.antecedent.trim() || !abc.behavior.trim() || !abc.consequence.trim()}
+              onClick={() => {
+                onLogAbc(abc.antecedent.trim(), abc.behavior.trim(), abc.consequence.trim());
+                setAbc({ antecedent: "", behavior: "", consequence: "" });
+              }}
             >
-              Tally: {dataPoint?.valueNumeric ?? 0}
+              Record ABC observation
             </button>
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={onCompleteObservation}
-              className="btn btn-ghost"
-              aria-label={`Mark observation window complete for ${goal.goalText}`}
-            >
-              Window complete
-            </button>
+          </fieldset>
+        )}
+
+        {goal.metricType === "frequency_count" && (
+          <div data-tour="tally-counter" className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={onTapTally}
+                className="btn btn-secondary"
+                aria-label={`Tally occurrence for ${goal.goalText}`}
+              >
+                Tally: {dataPoint?.valueNumeric ?? 0}
+              </button>
+              {dataPoint?.observationDurationSeconds ? (
+                <span className="text-muted text-xs">
+                  {(
+                    ((dataPoint.valueNumeric ?? 0) * 60) /
+                    dataPoint.observationDurationSeconds
+                  ).toFixed(1)} per minute · {Math.round(dataPoint.observationDurationSeconds / 60)} min
+                </span>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="text-muted flex flex-col text-xs">
+                Actual minutes
+                <input
+                  className="input mt-1"
+                  type="number"
+                  inputMode="decimal"
+                  min={0.1}
+                  max={1440}
+                  step={0.1}
+                  value={observationMinutes}
+                  disabled={disabled}
+                  onChange={(event) => setObservationMinutes(event.target.value)}
+                  style={{ width: 112 }}
+                />
+              </label>
+              <label className="text-muted flex flex-col text-xs">
+                Opportunities
+                <input
+                  className="input mt-1"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={10000}
+                  value={opportunitiesObserved}
+                  disabled={disabled}
+                  onChange={(event) => setOpportunitiesObserved(event.target.value)}
+                  style={{ width: 112 }}
+                />
+              </label>
+              <button
+                type="button"
+                disabled={
+                  disabled ||
+                  (!Number.isFinite(Number(observationMinutes)) &&
+                    !Number.isFinite(Number(opportunitiesObserved))) ||
+                  (Number(observationMinutes) <= 0 && Number(opportunitiesObserved) <= 0)
+                }
+                onClick={() => {
+                  const minutes = Number(observationMinutes);
+                  const opportunities = Number(opportunitiesObserved);
+                  onCompleteObservation({
+                    ...(minutes > 0
+                      ? { observationDurationSeconds: Math.round(minutes * 60) }
+                      : {}),
+                    ...(Number.isInteger(opportunities) && opportunities > 0
+                      ? { opportunitiesObserved: opportunities }
+                      : {}),
+                  });
+                }}
+                className="btn btn-ghost"
+                aria-label={`Mark observation window complete for ${goal.goalText}`}
+              >
+                Window complete
+              </button>
+            </div>
           </div>
         )}
 
@@ -276,8 +446,11 @@ export function GoalRow({
           </div>
         )}
 
-        {goal.metricType === "duration_seconds" && (
+        {(goal.metricType === "duration_seconds" || goal.metricType === "latency_seconds") && (
           <div data-tour="timer" className="flex items-center gap-2">
+            <span className="text-muted text-xs">
+              {goal.metricType === "latency_seconds" ? "Prompt → response" : "Behavior duration"}
+            </span>
             <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 15 }}>
               {String(Math.floor(timerSeconds / 60)).padStart(2, "0")}:
               {String(timerSeconds % 60).padStart(2, "0")}
@@ -306,7 +479,7 @@ export function GoalRow({
                 <button
                   type="button"
                   disabled={disabled}
-                  onClick={onCompleteObservation}
+                  onClick={() => onCompleteObservation()}
                   className="btn btn-ghost"
                   aria-label={`Record no occurrence for ${goal.goalText}`}
                 >
@@ -324,7 +497,11 @@ export function GoalRow({
             role="group"
             aria-label={`${goal.goalText} prompt level`}
           >
-            {PROMPT_LEVELS.map((level) => (
+            {(goal.promptHierarchy?.length
+              ? goal.promptHierarchy.map((label) => ({ value: label, label }))
+              : PROMPT_LEVELS.length
+                ? PROMPT_LEVELS
+                : DEFAULT_PROMPT_HIERARCHY.map((label) => ({ value: label, label }))).map((level) => (
               <button
                 key={level.value}
                 type="button"

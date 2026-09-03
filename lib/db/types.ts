@@ -7,6 +7,9 @@ import type {
   staff,
   rosterGroups,
   rosterGroupStudents,
+  interventionAnnotations,
+  classroomColors,
+  studentAccommodations,
 } from "./schema";
 
 export type Student = typeof students.$inferSelect;
@@ -17,3 +20,6 @@ export type AccommodationLog = typeof accommodationLogs.$inferSelect;
 export type Staff = typeof staff.$inferSelect;
 export type RosterGroup = typeof rosterGroups.$inferSelect;
 export type RosterGroupStudent = typeof rosterGroupStudents.$inferSelect;
+export type InterventionAnnotation = typeof interventionAnnotations.$inferSelect;
+export type ClassroomColor = typeof classroomColors.$inferSelect;
+export type StudentAccommodation = typeof studentAccommodations.$inferSelect;

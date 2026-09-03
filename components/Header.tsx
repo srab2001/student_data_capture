@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getCurrentStaff } from "@/lib/auth/session";
 import { SignOutButton } from "@/components/SignOutButton";
+import { ClassroomColorGuide } from "@/components/ClassroomColorGuide";
+import { canOpenAdmin } from "@/lib/auth/authz";
 
 export async function Header() {
   const current = await getCurrentStaff();
@@ -13,8 +15,10 @@ export async function Header() {
 
       {current ? (
         <div className="ml-auto flex items-center gap-4">
-          <Link href="/entry">Entry</Link>
-          <Link href="/summary">Summary</Link>
+          {current.canRecordData && <Link href="/entry">Entry</Link>}
+          {current.canViewReports && <Link href="/summary">Summary</Link>}
+          {canOpenAdmin(current) && <Link href="/admin">Admin</Link>}
+          <ClassroomColorGuide />
           <Link href="/help">Guide</Link>
           <span className="text-muted hidden text-xs sm:inline">
             {current.name} · {current.role}

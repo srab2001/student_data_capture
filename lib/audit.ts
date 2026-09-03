@@ -17,7 +17,12 @@ export async function recordAudit(entry: {
     | "accommodation_logs"
     | "students"
     | "roster_groups"
-    | "staff_entry_preferences";
+    | "staff_entry_preferences"
+    | "intervention_annotations"
+    | "staff"
+    | "classroom_colors"
+    | "student_accommodations"
+    | "audit_log";
   recordId?: string;
   diff?: unknown;
 }) {

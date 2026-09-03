@@ -1,18 +1,57 @@
 # User guide
 
-This is the repository copy of the Phase 1–3 workflow guide. The same guidance
-is presented in the application at `/help`.
+This is the repository copy of the Phase 1–4 workflow and classroom-admin
+guide. The same guidance is presented in the application at `/help`. Phase 4
+and admin guidance apply to the local implementation until migrations `0006`
+and `0007` and the release gates pass.
 
 ## Prerequisites
 
 - Use synthetic students only. Real identifiable student data is prohibited
   until the approvals in `docs/compliance.md` are complete.
 - The environment must have migrations `0002_mighty_maggott.sql` through
-  `0005_colorful_clea.sql` applied in order. Migrations `0002`–`0005` are
+  `0007_striped_morlocks.sql` applied in order. Migrations `0002`–`0005` are
   applied on the hosted synthetic pilot as of 2026-09-03; local and preview
-  databases still require `npm run db:migrate` before use.
-- Sign in at `/login` as a synthetic teacher or aide. The picker is not
+  databases need `npm run db:migrate` before Phase 4 use. Migration `0006`
+  passed both upgrade and fresh-database disposable rehearsals on 2026-09-03
+  but is not yet applied to production. Migration `0007_striped_morlocks.sql`
+  adds the admin role, explicit access permissions, and classroom color guide;
+  it passed an upgrade rehearsal but is also not applied to production.
+- Sign in at `/login` as a synthetic teacher, aide, or admin. The picker is not
   production authentication.
+
+## Administer the classroom
+
+Open `/admin` when your account has at least one configuration permission.
+The page shows only the sections that permission allows.
+
+- **Users:** add teacher, aide, or admin records; apply a role preset; then
+  adjust user management, student management, goal management, color
+  management, observation-entry, and report-viewing permissions individually.
+  Turn off **Sign-in access enabled** to block new sign-ins and invalidate an
+  existing session on its next request. You cannot retire yourself or remove
+  your own user-management access, and the classroom must retain at least one
+  active user manager.
+- **Students & goals:** add or rename a synthetic student, then choose
+  **Configure data plan** beside that student. Goal management supports create,
+  edit/version, and retire. **Retire student** removes the student from active
+  rosters while preserving their goals, observations, and audit history.
+- **Color guide:** add, edit, order, or remove named colors and their short
+  explanations. The guide appears in the signed-in navigation. Open it, then
+  hover a swatch or move keyboard focus to it to read the explanation. Color is
+  never the only cue: each swatch always retains a text name and screen-reader
+  label.
+- **Audit history:** user managers can review the 50 most recent classroom
+  actions, including the staff member, time, action, configuration area, and
+  names of changed fields. The screen intentionally does not expose changed
+  field values. Retired staff members' earlier actions remain visible.
+
+Role presets are starting points, not the authorization rule. The explicit
+permissions saved on each user determine which routes and controls are
+available. All admin operations remain scoped to the signed-in classroom and
+are audit logged. The admin console is for configuration and oversight: it does
+not rewrite historical observations, infer mastery, or replace IEP-team
+decisions.
 
 ## Choose a classroom workflow
 
@@ -29,10 +68,10 @@ Open `/entry` and select the workflow that fits the moment:
 Your workflow mode, Roster layout, and selected group are saved to your staff
 account. The currently focused student is not saved.
 
-Use the roster-group menu to narrow any workflow. Teachers can open **Manage
-groups** to create, edit, or retire groups. Aides can use teacher-created groups
-but cannot change them. Groups only filter the screen; they do not add or
-remove students from the classroom.
+Use the roster-group menu to narrow any workflow. Staff with student-management
+permission can open **Manage groups** to create, edit, or retire groups. Other
+staff can use shared groups but cannot change them. Groups only filter the
+screen; they do not add or remove students from the classroom.
 
 ## Record observations
 
@@ -55,8 +94,14 @@ Student headers count due goals only. In Card and Accordion layouts, open
 **Collection directions** to review what counts, the collection method,
 mastery criterion, and required opportunities or observation window.
 
+The screen opens with **Due today** goals. Choose **Show optional goals** to
+temporarily include goals assigned to another day, role, or effective period.
+Optional collection remains available and is reported separately from planned
+compliance; it does not inflate planned completion above 100%.
+
 - Accuracy: tap check or X once for each trial.
-- Frequency: tap Tally once per occurrence, then select **Window complete**
+- Frequency: tap Tally once per occurrence, enter the actual observation
+  minutes, opportunities, or both, then select **Window complete**
   when the planned observation window ends. Select it even when the tally is
   zero; zero occurrences are valid evidence.
 - Duration: start and stop the timer. Each stop preserves a timer segment; the
@@ -88,11 +133,30 @@ display. Aides cannot undo another staff member's past entry.
 Undo is unavailable while that goal is actively saving. Historical
 `legacy_snapshot` rows cannot be undone from the event UI.
 
-## Manage goals
+## Configure a student data plan
 
-From a student's Card-stack view, choose **Manage goals**. Teachers can add,
-edit, or retire goals. Task-analysis goals require one to twenty unique step
-labels.
+From a student's Card-stack view choose **Manage goals**, or from the admin
+console choose **Configure data plan**.
+Any staff member with goal-management permission can add, edit, or retire
+goals. Task-analysis goals require one to twenty unique step labels.
+
+The top of the page shows the four supported evidence areas: academic
+performance/mastery, behavioral/functional, independence/support, and
+accommodations/access. Choose a goal entry control that matches the IEP team's
+measurement method:
+
+- accuracy trials for percent-correct probes;
+- fluency rate for correct responses per minute;
+- rubric score for a named work sample and configured criterion;
+- behavior tally, duration timer, latency timer, or structured ABC record;
+- a student-specific prompt hierarchy or task-analysis checklist; or
+- accommodation-used when accommodation delivery is itself an IEP goal.
+
+Rubric goals require a rubric title, maximum score, and at least one criterion.
+Prompt goals require at least two unique levels ordered from greatest support
+to independence. ABC entry requires separate antecedent, observable behavior,
+and consequence text; do not include diagnoses or unrelated confidential
+narrative.
 
 Each new goal also requires a measurement plan:
 
@@ -108,17 +172,47 @@ Use the wording and values from the student's approved IEP and local progress-
 monitoring procedures. Do not guess or accept synthetic placeholder text for a
 real student.
 
+Administrators should first open **Admin → Data readiness**. The guided queue
+lists each active goal whose plan is incomplete and links directly to that goal.
+The same section lists historical accommodation names that do not yet have a
+confirmed active assignment. Enter the approved setting and implementation
+directions to activate each support; the app never invents those values.
+
+Set cadence to Every session, Daily, Weekly, Every two weeks, Monthly, or
+Quarterly reporting summary, as determined by the IEP team. Scheduled weekdays
+and observations required remain the source of truth for due-status math.
+Quarterly is a reporting cadence; it does not replace the probes or observations
+scheduled in the measurement plan. HCPSS reporting timing must be confirmed by
+district policy before real use.
+
+For accuracy, fluency, frequency, duration, latency, rubric, and task-step goals, a goal manager
+can optionally enable **Show an aim line** and enter an explicit baseline value/date,
+target value/date, and increase/decrease direction. The dates and values must be
+complete and internally consistent. Leave this off when the approved plan does
+not define an appropriate numeric target—the app will not infer one from the
+narrative mastery criterion.
+
 If observations already exist, changing goal text, metric type, icon set, task
-steps, or any measurement-plan field creates a replacement version and retires
+steps, prompt hierarchy, rubric, cadence, or any measurement-plan field creates a replacement version and retires
 the previous definition. The old observations and plan remain in historical
 summaries/API data.
 
 ## Log accommodations
 
-In Card stack, open **Log accommodation**, choose the accommodation, optionally
-rate effectiveness, and log Used or Not used. A blank effectiveness rating is
-stored as blank. Student-level accommodation logs currently require a network
-connection and are not part of the offline observation queue.
+First use the student data plan's **Accommodations & access** section to assign
+each IEP-team-approved support with its setting and implementation directions.
+Removing an assignment hides it from new logs but retains its historical logs.
+
+In Card stack, open **Log accommodation**, choose an assigned accommodation,
+and optionally connect it to today's session, a goal, an activity, and the
+configured setting. When it was used, staff may rate effectiveness and
+implementation fidelity from 1–5. When it was not used, staff may record why.
+Blank optional fields remain blank. Student-level accommodation logs currently
+require a network connection and are not part of the offline observation queue.
+
+Rubric and ABC goal observations use the same staff-specific offline queue as
+other goal data. Reports display structured ABC fields and work-sample identity,
+and the CSV includes them in the `structured_observations` column.
 
 ## Review progress
 
@@ -127,14 +221,53 @@ Multiple event rows from one session are aggregated for display without
 discarding the underlying observations. Retired goal versions appear when they
 have data in the selected period.
 
+The goal list shows current value, a direction-aware recent-window comparison,
+percent of scheduled evidence collected, and the number of observation days.
+The trend includes `n`, the observed range, and the configured favorable
+direction when available. Without a target direction it says that direction is
+not configured rather than treating an upward arrow as improvement. Goals with
+missing scheduled evidence appear first. In the detail panel:
+
+- **Collection** compares observations collected on scheduled days with the
+  measurement-plan requirement; extra observations do not inflate it above 100%.
+- **Evidence depth** says no evidence, limited/interpret cautiously for one or
+  two observation days, or descriptive trend for three or more days.
+- **Aim line** compares the latest numeric reading with the explicit target path,
+  if one was configured. `Aim line not configured` is a valid state.
+- Quantitative goals use a dated line chart. Frequency charts use the actual
+  window or opportunity denominator when recorded. Prompt goals show their
+  hierarchy positions over time, task analyses report the proportion of
+  sessions reaching each step, and non-ordered icon/accommodation categories
+  remain exact counts.
+
+The accommodation table groups logs by student, support, and setting. It shows
+use, effectiveness, fidelity, context linkage, and the exact sample size for
+each average. These are descriptive implementation data only; the app does not
+claim that a support caused a student outcome.
+
+These labels support professional review; they do not declare mastery, select an
+intervention, or replace the IEP team's judgment.
+
+Staff with goal-management permission can add a dated intervention marker with a brief description such as
+“Began visual task checklist.” The marker appears on numeric charts and in CSV
+and print output. Avoid confidential narrative details. Removing a marker
+soft-retires it and keeps the audit history. Aides can view markers but cannot
+add or remove them. Aides also cannot add students or manage goals/groups.
+
 ## Troubleshooting
 
 - **Queued does not clear:** verify the Chromebook is online and leave the tab
   open for a retry. Reloading is safe; the staff-specific queue persists.
 - **Failed:** use Undo last and record the observation again. Save the visible
   error message for support if it repeats.
-- **Entry screen will not load:** sign out and back in. If it persists, the
-  database may be unavailable or missing migrations `0002` through `0005`.
+- **Entry, Summary, or Admin will not load:** confirm the account has the
+  matching permission, then sign out and back in. If it persists, the database
+  may be unavailable or missing migrations `0002` through `0010`.
+- **A disabled user still has a page open:** their next server request is
+  rejected; ask them to refresh or sign out. Offline queued observations remain
+  synthetic-only and should be reviewed before retiring access.
+- **Color comment is not visible:** open Color guide, then hover the named
+  swatch or use Tab to focus it. Touch/keyboard focus exposes the same text.
 - **Goal stays marked plan incomplete:** open Manage goals, complete every plan
   field except the optional end date, and enter opportunities or a window.
 - **Goal is not in today's due count:** confirm its effective dates, weekday
@@ -147,3 +280,9 @@ have data in the selected period.
 - **Preferences did not save:** keep working in the current view, reconnect,
   and change the setting once more. Observation saving is separate from
   preference saving.
+- **Aim line is unavailable:** only quantitative goal metrics support one. Open
+  Manage goals with goal-management permission and enter all four values/dates
+  plus the direction.
+- **Collection says plan incomplete:** the historical goal has no structured
+  measurement plan. A teacher must enter the approved plan; the app will not
+  backfill it.

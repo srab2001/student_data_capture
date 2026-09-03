@@ -27,6 +27,7 @@ function Section({
 const TOC = [
   ["what", "What this tool is"],
   ["signing-in", "Signing in"],
+  ["admin", "Classroom administration"],
   ["entry-screen", "The roster-sweep entry screen"],
   ["controls", "What each control does"],
   ["managing-goals", "Changing a student's goals"],
@@ -75,10 +76,10 @@ export default function HelpPage() {
       <div className="mt-6 space-y-6">
         <Section id="what" title="What this tool is">
           <p>
-            A single-classroom prototype for capturing IEP progress data — accuracy/fluency
-            trials, behavior tallies, icon-degree ratings, prompt-level/independence tracking,
-            and accommodation usage — as fast taps during instruction, instead of typing into a
-            spreadsheet afterward.
+            A single-classroom prototype for capturing IEP progress data — accuracy and fluency
+            probes, work-sample rubrics, frequency/duration/latency measures, structured ABC
+            observations, independence tracking, and accommodation usage — during instruction,
+            instead of typing into a spreadsheet afterward.
           </p>
           <p>
             It was built independently by a teacher using Claude Code, and{" "}
@@ -104,6 +105,39 @@ export default function HelpPage() {
             If the list is empty, the database hasn&apos;t been seeded with synthetic staff yet —
             that&apos;s a setup step for whoever is running this instance, not something you can
             fix from the browser.
+          </p>
+        </Section>
+
+        <Section id="admin" title="Classroom administration">
+          <p>
+            If your account has a configuration permission, open <strong>Admin</strong> in
+            the top navigation. The page shows only the sections you can manage, and every
+            change remains limited to your classroom.
+          </p>
+          <ul className="list-disc space-y-2 pl-5">
+            <li>
+              <strong>Users:</strong> add teacher, aide, or admin records, choose a role
+              preset, adjust individual permissions, or disable sign-in access. A disabled
+              account is rejected on its next server request. You cannot retire yourself or
+              remove the classroom&apos;s final active user manager.
+            </li>
+            <li>
+              <strong>Students &amp; goals:</strong> add a synthetic student, then use Configure
+              data plan to create, edit, version, or retire goals and assign accommodations.
+              Rubrics, prompt hierarchies, task analyses, settings, and cadence are configured
+              for the selected student rather than shared as one classroom list.
+            </li>
+            <li>
+              <strong>Colors:</strong> add a named classroom color and a short explanation.
+              Everyone in the classroom can open Color guide; hover the swatch or focus it
+              with Tab to read the same explanation. The visible name means color is never
+              the only cue.
+            </li>
+          </ul>
+          <p>
+            Role presets are starting points. The saved permissions—not the role name alone—
+            determine whether a user may manage people, students, goals, or colors, record
+            observations, or view reports.
           </p>
         </Section>
 
@@ -147,8 +181,9 @@ export default function HelpPage() {
           </p>
           <p>
             The roster-group menu narrows any workflow without changing classroom enrollment.
-            Teachers can open <strong>Manage groups</strong> to create, edit, or retire shared
-            instructional groups. Aides can select those groups but cannot change them. Retiring
+            Staff with student-management permission can open <strong>Manage groups</strong> to
+            create, edit, or retire shared instructional groups. Other staff can select those
+            groups but cannot change them. Retiring
             a group does not remove students or their observations.
           </p>
           <p>
@@ -163,6 +198,11 @@ export default function HelpPage() {
             and shows observations collected versus required. Student headers summarize only due
             goals. In Card stack and Accordion, open <strong>Collection directions</strong> to
             confirm what counts, the method, mastery criterion, and opportunities or timed window.
+          </p>
+          <p>
+            The screen defaults to goals due today. Use <strong>Show optional goals</strong> to
+            include off-schedule goals without counting those extra readings toward planned
+            compliance.
           </p>
           <p>
             The dashed <strong>+ Add student to roster</strong> card at the bottom of Card stack and
@@ -180,7 +220,8 @@ export default function HelpPage() {
             </li>
             <li>
               <strong>Behavior tally:</strong> one tap per occurrence of a behavior. The number
-              shown is this session&apos;s running count. Select <strong>Window complete</strong>
+              shown is this session&apos;s running count. Enter the actual minutes or opportunities,
+              then select <strong>Window complete</strong>
               when the planned observation ends, including when the count is zero; occurrence
               taps alone do not claim that a full window was observed.
             </li>
@@ -200,23 +241,36 @@ export default function HelpPage() {
               </ul>
             </li>
             <li>
-              <strong>Duration / latency timer:</strong> Start when the behavior or task begins,
-              Stop when it ends. Restarting adds to the same session&apos;s total rather than
+              <strong>Duration timer:</strong> Start when the behavior begins and Stop when it
+              ends. Restarting adds to the same session&apos;s total rather than
               resetting it. Select <strong>No occurrence</strong> if the planned observation ends
               without the behavior occurring, so the zero is retained as evidence.
             </li>
             <li>
+              <strong>Latency timer:</strong> Start when the prompt is delivered and Stop when
+              the student begins the defined response.
+            </li>
+            <li>
+              <strong>Work sample / rubric:</strong> name the sample, choose a configured
+              criterion or overall score, enter a value within the configured maximum, and
+              select Record score.
+            </li>
+            <li>
+              <strong>ABC observation:</strong> separately record the antecedent, observable
+              behavior, and immediate consequence. All three fields are required.
+            </li>
+            <li>
               <strong>Prompt-level chips:</strong> one tap sets how much support the student
-              needed — Full Physical, Partial Physical, Gestural, Verbal, or Independent.
+              needed. The options follow the hierarchy configured for that student&apos;s goal.
             </li>
             <li>
               <strong>Task-analysis steps:</strong> tap the named step the student reached in a
               multi-step task. The step labels are configured for that specific goal.
             </li>
             <li>
-              <strong>Notes:</strong> every goal has an optional, collapsed-by-default note field —
-              useful for a quick ABC (antecedent-behavior-consequence) observation without
-              slowing down the sweep.
+              <strong>Notes:</strong> every goal has an optional, collapsed-by-default note field
+              for brief context. Use the structured ABC control—not a general note—when collecting
+              Functional Behavior Assessment evidence.
             </li>
           </ul>
         </Section>
@@ -236,6 +290,17 @@ export default function HelpPage() {
             window. Use the approved IEP and local procedures; do not guess these values.
           </p>
           <p>
+            In Admin, open <strong>Data readiness</strong> to work through incomplete plans and
+            reconcile historical accommodation names. Approved settings and directions must be
+            confirmed by authorized staff; the app does not infer them.
+          </p>
+          <p>
+            For a quantitative goal, a goal manager may also enable a <strong>Progress target</strong>
+            with an explicit numeric baseline/date, target/date, and desired direction. This
+            produces an aim line in Summary. It is optional because the app never tries to turn
+            narrative IEP language into a number.
+          </p>
+          <p>
             Changing a goal&apos;s wording, entry control, icon set, task-analysis steps, or
             measurement plan after observations exist creates a new goal version. The previous
             version is retired but remains in historical summaries, so older observations are
@@ -248,10 +313,10 @@ export default function HelpPage() {
         <Section id="accommodations" title="Logging accommodations">
           <p>
             Under each student&apos;s goals, &quot;+ Log accommodation&quot; opens a small form:
-            pick the accommodation, optionally rate its effectiveness with the same star control
-            used for icon-degree goals, and log it as used or not used. Leaving the rating blank
-            stores no rating; the app does not substitute a default. This is separate from goal
-            observations and currently requires a network connection.
+            pick the accommodation, optionally connect it to a goal and activity, and retain the
+            configured setting. Used logs may include effectiveness and implementation-fidelity
+            ratings; not-used logs may explain why. Blank optional fields stay blank. This is
+            separate from goal observations and currently requires a network connection.
           </p>
         </Section>
 
@@ -260,7 +325,24 @@ export default function HelpPage() {
             <span className="font-mono text-xs">/summary</span> is read-mostly — it rolls up
             everything logged on the entry screen into the kind of quantitative snapshot used for
             a PLAAFP update. Filter by date range, IEP domain, or a single student; click any goal
-            row to see its trend line and every logged reading with its date.
+            row to see its evidence detail and every logged reading with its date. Quantitative
+            goals show a time-series chart; prompt goals retain their hierarchy order over time,
+            task analyses show per-step reach rates, and unordered icon/accommodation values remain
+            categorical counts.
+          </p>
+          <p>
+            Recent-window comparisons include the configured direction, sample size, date span,
+            and observed range. The detail cards compare scheduled and collected observations,
+            separately count off-schedule evidence, state how many distinct observation days are
+            available, and compare the latest numeric reading with an aim line
+            only when a teacher configured one. These are descriptive decision supports—not an
+            automatic mastery or instructional decision. Staff with goal-management permission can add dated intervention
+            markers; aides can view them but cannot change student, goal, or intervention setup.
+          </p>
+          <p>
+            Accommodation summaries are grouped by student, support, and setting with exact sample
+            sizes for effectiveness and fidelity. They are descriptive and never claim that a
+            support caused an outcome.
           </p>
           <p>
             <strong>Export CSV</strong> and <strong>Print view</strong> both produce a
@@ -284,8 +366,8 @@ export default function HelpPage() {
             </li>
             <li>
               An aide can create entries but cannot edit or delete another staff member&apos;s
-              past entries or manage roster groups; a teacher has full access within their own
-              classroom only.
+              past entries or manage students, goals, intervention markers, or roster groups; a
+              teacher has full access within their own classroom only.
             </li>
             <li>
               Real, identifiable student data is not permitted in this system until HCPSS

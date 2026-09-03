@@ -1,4 +1,4 @@
-import type { DataPoint } from "@/lib/db/types";
+import type { DataPoint, StudentAccommodation } from "@/lib/db/types";
 import type { MeasurementPlanStatus } from "@/lib/measurement-plans";
 import type { EntryLayout } from "@/lib/entry-workflow";
 
@@ -10,15 +10,31 @@ import type { EntryLayout } from "@/lib/entry-workflow";
  */
 export type EntryActions = {
   dataPointForGoal: (goalId: string) => DataPoint | undefined;
+  accommodationsForStudent: (studentId: string) => StudentAccommodation[];
   measurementStatusForGoal: (goalId: string) => MeasurementPlanStatus;
   timerSecondsForGoal: (goalId: string) => number;
   timerRunningForGoal: (goalId: string) => boolean;
   onTapAccuracy: (goalId: string, correct: boolean) => void;
   onTapTally: (goalId: string) => void;
-  onCompleteObservation: (goalId: string) => void;
+  onCompleteObservation: (
+    goalId: string,
+    exposure?: { opportunitiesObserved?: number; observationDurationSeconds?: number }
+  ) => void;
   onSetIconReading: (goalId: string, value: string) => void;
   onSetPromptLevel: (goalId: string, value: string) => void;
   onSetFluencyRate: (goalId: string, value: number) => void;
+  onLogRubric: (
+    goalId: string,
+    score: number,
+    workSample: string,
+    criterion: string | null
+  ) => void;
+  onLogAbc: (
+    goalId: string,
+    antecedent: string,
+    behavior: string,
+    consequence: string
+  ) => void;
   onSetTaskStep: (goalId: string, step: number) => void;
   onSetAccommodationUsed: (goalId: string, used: boolean) => void;
   onStartTimer: (goalId: string) => void;
@@ -33,7 +49,15 @@ export type EntryActions = {
     studentId: string,
     accommodationName: string,
     used: boolean,
-    effectivenessRating: number | null
+    effectivenessRating: number | null,
+    context: {
+      sessionId: string | null;
+      goalId: string | null;
+      setting: string | null;
+      activity: string | null;
+      implementationFidelity: number | null;
+      reasonNotUsed: string | null;
+    }
   ) => void;
   disabled?: boolean;
 };

@@ -3,7 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { students } from "@/lib/db/schema";
 import { getCurrentStaff } from "@/lib/auth/session";
-import { requireStaff } from "@/lib/auth/authz";
+import { assertPermission, assertStudentDataAccess, requireStaff } from "@/lib/auth/authz";
 import { createStudentSchema } from "@/lib/validation";
 import { recordAudit } from "@/lib/audit";
 import { handleRoute, assertWriteRateLimit } from "@/lib/api-helpers";
@@ -16,6 +16,7 @@ import { handleRoute, assertWriteRateLimit } from "@/lib/api-helpers";
 export async function GET() {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertStudentDataAccess(current);
 
     const rows = await db
       .select()
@@ -42,6 +43,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertPermission(current, "canManageStudents", "You cannot add students.");
     assertWriteRateLimit(current.id, "students:post");
     const body = createStudentSchema.parse(await request.json());
 

@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import type { Student, Goal, Session, DataPoint } from "@/lib/db/types";
+import type {
+  DataPoint,
+  Goal,
+  Session,
+  Student,
+  StudentAccommodation,
+} from "@/lib/db/types";
+import type { ObservationDetails } from "@/lib/student-data-plan";
 import {
   aggregateObservationEvents,
   evidenceUnitCount,
@@ -56,6 +63,9 @@ type PendingObservation = {
   valueNumeric?: number;
   valueEnum?: string;
   note?: string | null;
+  observationDetails?: ObservationDetails;
+  opportunitiesObserved?: number;
+  observationDurationSeconds?: number;
   queuedAt: number;
 };
 
@@ -110,6 +120,9 @@ function pendingAsDataPoint(pending: PendingObservation): DataPoint {
     trialsTotal: null,
     trialsCorrect: null,
     note: pending.note ?? null,
+    observationDetails: pending.observationDetails ?? null,
+    opportunitiesObserved: pending.opportunitiesObserved ?? null,
+    observationDurationSeconds: pending.observationDurationSeconds ?? null,
     createdAt: at,
     updatedAt: at,
     deletedAt: null,
@@ -120,13 +133,20 @@ export function EntryScreen({
   currentStaffId,
   currentStaffName,
   currentStaffRole,
+  canManageStudents,
+  canManageGoals,
 }: {
   currentStaffId: string;
   currentStaffName: string;
   currentStaffRole: "teacher" | "aide";
+  canManageStudents: boolean;
+  canManageGoals: boolean;
 }) {
   const [students, setStudents] = useState<Student[] | null>(null);
   const [goalsByStudent, setGoalsByStudent] = useState<Map<string, Goal[]>>(new Map());
+  const [accommodationsByStudent, setAccommodationsByStudent] = useState<
+    Map<string, StudentAccommodation[]>
+  >(new Map());
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [groups, setGroups] = useState<RosterGroupSummary[]>([]);
@@ -139,6 +159,8 @@ export function EntryScreen({
   const [preferenceStatus, setPreferenceStatus] = useState<
     "idle" | "saving" | "saved" | "failed"
   >("idle");
+  const [showOptionalGoals, setShowOptionalGoals] = useState(false);
+  const [today] = useState(() => localDateIso());
 
   const eventsByGoalRef = useRef<Map<string, DataPoint[]>>(new Map());
   const goalsByIdRef = useRef<Map<string, Goal>>(new Map());
@@ -170,6 +192,15 @@ export function EntryScreen({
           : {}),
         ...(pending.valueEnum !== undefined ? { valueEnum: pending.valueEnum } : {}),
         ...(pending.note !== undefined ? { note: pending.note } : {}),
+        ...(pending.observationDetails !== undefined
+          ? { observationDetails: pending.observationDetails }
+          : {}),
+        ...(pending.opportunitiesObserved !== undefined
+          ? { opportunitiesObserved: pending.opportunitiesObserved }
+          : {}),
+        ...(pending.observationDurationSeconds !== undefined
+          ? { observationDurationSeconds: pending.observationDurationSeconds }
+          : {}),
       };
       const res = await apiFetch<{ dataPoint: DataPoint }>("/api/data-points", {
         method: "POST",
@@ -228,9 +259,19 @@ export function EntryScreen({
     async function load() {
       try {
         const sessionDate = localDateIso();
-        const [studentsRes, goalsRes, sessionRes, groupsRes, preferencesRes] = await Promise.all([
+        const [
+          studentsRes,
+          goalsRes,
+          accommodationsRes,
+          sessionRes,
+          groupsRes,
+          preferencesRes,
+        ] = await Promise.all([
           apiFetch<{ students: Student[] }>("/api/students"),
           apiFetch<{ goals: Goal[] }>("/api/goals"),
+          apiFetch<{ accommodations: StudentAccommodation[] }>(
+            "/api/student-accommodations"
+          ),
           apiFetch<{ session: Session }>("/api/sessions", {
             method: "POST",
             body: JSON.stringify({ sessionDate, periodLabel: PERIOD_LABEL }),
@@ -249,6 +290,12 @@ export function EntryScreen({
         goalsByIdRef.current = new Map(
           goalsRes.goals.map((goal) => [goal.id, goal])
         );
+        const accommodationsMap = new Map<string, StudentAccommodation[]>();
+        for (const accommodation of accommodationsRes.accommodations) {
+          const list = accommodationsMap.get(accommodation.studentId) ?? [];
+          list.push(accommodation);
+          accommodationsMap.set(accommodation.studentId, list);
+        }
 
         const dpRes = await apiFetch<{ dataPoints: DataPoint[] }>(
           `/api/data-points?sessionId=${sessionRes.session.id}`
@@ -267,6 +314,7 @@ export function EntryScreen({
 
         setStudents(studentsRes.students);
         setGoalsByStudent(byStudent);
+        setAccommodationsByStudent(accommodationsMap);
         setSession(sessionRes.session);
         setGroups(groupsRes.groups);
         setView(preferencesRes.preferences.layout);
@@ -318,6 +366,8 @@ export function EntryScreen({
       valueEnum: aggregate.valueEnum,
       trialsTotal: aggregate.trialsTotal,
       trialsCorrect: aggregate.trialsCorrect,
+      opportunitiesObserved: aggregate.opportunitiesObserved,
+      observationDurationSeconds: aggregate.observationDurationSeconds,
       note: aggregate.note,
     };
   }
@@ -409,7 +459,15 @@ export function EntryScreen({
     studentId: string,
     accommodationName: string,
     used: boolean,
-    effectivenessRating: number | null
+    effectivenessRating: number | null,
+    context: {
+      sessionId: string | null;
+      goalId: string | null;
+      setting: string | null;
+      activity: string | null;
+      implementationFidelity: number | null;
+      reasonNotUsed: string | null;
+    }
   ) {
     try {
       await apiFetch("/api/accommodation-logs", {
@@ -419,6 +477,8 @@ export function EntryScreen({
           accommodationName,
           used,
           effectivenessRating,
+          ...context,
+          sessionId: context.sessionId ?? session?.id ?? null,
         }),
       });
     } catch (err) {
@@ -490,6 +550,8 @@ export function EntryScreen({
 
   const actions: EntryActions = {
     dataPointForGoal,
+    accommodationsForStudent: (studentId) =>
+      accommodationsByStudent.get(studentId) ?? [],
     measurementStatusForGoal: (goalId) => {
       const goal = goalForId(goalId);
       const observationCount = goal?.measurementPlan
@@ -510,14 +572,28 @@ export function EntryScreen({
       }),
     onTapTally: (goalId) =>
       enqueueObservation(goalId, { entryKind: "tally", valueNumeric: 1 }),
-    onCompleteObservation: (goalId) =>
-      enqueueObservation(goalId, { entryKind: "observation_complete" }),
+    onCompleteObservation: (goalId, exposure) =>
+      enqueueObservation(goalId, {
+        entryKind: "observation_complete",
+        ...exposure,
+      }),
     onSetIconReading: (goalId, value) =>
       enqueueObservation(goalId, { entryKind: "rating", valueEnum: value }),
     onSetPromptLevel: (goalId, value) =>
       enqueueObservation(goalId, { entryKind: "rating", valueEnum: value }),
     onSetFluencyRate: (goalId, value) =>
       enqueueObservation(goalId, { entryKind: "numeric", valueNumeric: value }),
+    onLogRubric: (goalId, score, workSample, criterion) =>
+      enqueueObservation(goalId, {
+        entryKind: "rubric_score",
+        valueNumeric: score,
+        observationDetails: { kind: "rubric", workSample, criterion },
+      }),
+    onLogAbc: (goalId, antecedent, behavior, consequence) =>
+      enqueueObservation(goalId, {
+        entryKind: "abc_observation",
+        observationDetails: { kind: "abc", antecedent, behavior, consequence },
+      }),
     onSetTaskStep: (goalId, step) =>
       enqueueObservation(goalId, { entryKind: "task_step", valueNumeric: step }),
     onSetAccommodationUsed: (goalId, used) =>
@@ -552,6 +628,33 @@ export function EntryScreen({
   const visibleStudents = students
     ? studentsInSelectedGroup(students, groups, selectedGroupId)
     : [];
+  const optionalGoalCount = visibleStudents.reduce(
+    (count, student) =>
+      count +
+      (goalsByStudent.get(student.id) ?? []).filter(
+        (goal) =>
+          !measurementPlanStatus(goal.measurementPlan ?? null, {
+            dateIso: today,
+            staffRole: currentStaffRole,
+            observationCount: 0,
+          }).isDue
+      ).length,
+    0
+  );
+  const displayedGoalsByStudent = new Map(
+    visibleStudents.map((student) => [
+      student.id,
+      (goalsByStudent.get(student.id) ?? []).filter(
+        (goal) =>
+          showOptionalGoals ||
+          measurementPlanStatus(goal.measurementPlan ?? null, {
+            dateIso: today,
+            staffRole: currentStaffRole,
+            observationCount: 0,
+          }).isDue
+      ),
+    ])
+  );
   const activeFocusStudentId = visibleStudents.some(
     (student) => student.id === focusStudentId
   )
@@ -567,7 +670,7 @@ export function EntryScreen({
         <div>
           <h1>Classroom capture — {PERIOD_LABEL}</h1>
           <p className="text-muted mt-1">
-            {currentStaffName} · {localDateIso()}
+            {currentStaffName} · {today}
           </p>
         </div>
         <span className="tag tag-outline">Synthetic data only — pilot</span>
@@ -652,6 +755,25 @@ export function EntryScreen({
         </div>
       )}
 
+      <div className="card mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="card-kicker">Goal visibility</p>
+          <p className="text-muted mt-1 text-xs">
+            Due today is the default. Optional and off-schedule collection remains available.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          aria-pressed={showOptionalGoals}
+          onClick={() => setShowOptionalGoals((current) => !current)}
+        >
+          {showOptionalGoals
+            ? "Show due today only"
+            : `Show optional goals (${optionalGoalCount})`}
+        </button>
+      </div>
+
       {error && (
         <div className="mb-4 flex items-start justify-between gap-3" role="alert">
           <p className="text-sm" style={{ color: "#b91c1c" }}>
@@ -663,7 +785,7 @@ export function EntryScreen({
         </div>
       )}
 
-      {students && currentStaffRole === "teacher" && (
+      {students && canManageStudents && (
         <div className="mb-4">
           <RosterGroupManager students={students} groups={groups} onChange={updateGroups} />
         </div>
@@ -674,7 +796,7 @@ export function EntryScreen({
       ) : workflowMode === "timers" ? (
         <TimerView
           students={visibleStudents}
-          goalsByStudent={goalsByStudent}
+          goalsByStudent={displayedGoalsByStudent}
           actions={actions}
         />
       ) : workflowMode === "focus" ? (
@@ -720,8 +842,9 @@ export function EntryScreen({
             </div>
             <StudentCard
               student={focusedStudent}
-              goals={goalsByStudent.get(focusedStudent.id) ?? []}
+              goals={displayedGoalsByStudent.get(focusedStudent.id) ?? []}
               actions={actions}
+              canManageGoals={canManageGoals}
             />
           </div>
         ) : (
@@ -733,11 +856,14 @@ export function EntryScreen({
             <StudentCard
               key={student.id}
               student={student}
-              goals={goalsByStudent.get(student.id) ?? []}
+              goals={displayedGoalsByStudent.get(student.id) ?? []}
               actions={actions}
+              canManageGoals={canManageGoals}
             />
           ))}
-          {!selectedGroupId && <AddStudentCard onCreated={handleStudentCreated} />}
+          {!selectedGroupId && canManageStudents && (
+            <AddStudentCard onCreated={handleStudentCreated} />
+          )}
         </div>
       ) : view === "grid" ? (
         visibleStudents.length === 0 ? (
@@ -745,12 +871,14 @@ export function EntryScreen({
             No students in this roster view.
           </p>
         ) : (
-          <GridView students={visibleStudents} goalsByStudent={goalsByStudent} actions={actions} />
+          <GridView students={visibleStudents} goalsByStudent={displayedGoalsByStudent} actions={actions} />
         )
       ) : (
         <div className="flex flex-col gap-3">
-          <AccordionView students={visibleStudents} goalsByStudent={goalsByStudent} actions={actions} />
-          {!selectedGroupId && <AddStudentCard onCreated={handleStudentCreated} />}
+          <AccordionView students={visibleStudents} goalsByStudent={displayedGoalsByStudent} actions={actions} />
+          {!selectedGroupId && canManageStudents && (
+            <AddStudentCard onCreated={handleStudentCreated} />
+          )}
         </div>
       )}
 

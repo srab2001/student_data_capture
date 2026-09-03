@@ -6,7 +6,7 @@ export type TourStep = {
 };
 
 export const ENTRY_TOUR_KEY = "iep_pilot_tour_entry_v2";
-export const SUMMARY_TOUR_KEY = "iep_pilot_tour_summary_v1";
+export const SUMMARY_TOUR_KEY = "iep_pilot_tour_summary_v2";
 
 export const ENTRY_TOUR_STEPS: TourStep[] = [
   {
@@ -82,16 +82,16 @@ export const SUMMARY_TOUR_STEPS: TourStep[] = [
   {
     target: '[data-tour="summary-table"]',
     title: "Goal list",
-    body: "One row per active goal, with the current value and trend at a glance. Goals with no recent entry float to the top so they're easy to spot. Click any row to see its detail.",
+    body: "One row per goal shows the current value, collection-plan compliance, and number of observation days. Goals needing scheduled evidence surface first. Select a goal to review the evidence behind the status.",
   },
   {
     target: '[data-tour="summary-detail"]',
-    title: "Trend detail",
-    body: "A trend line plus every logged reading with its date — the numbers you'd copy into a PLAAFP update or parent progress report.",
+    title: "Evidence detail",
+    body: "Quantitative goals use a time-series chart and an optional explicit aim line. Prompt and icon goals use category counts. Collection, evidence-depth, and aim labels explain what the data can support; they do not determine mastery.",
   },
   {
     target: '[data-tour="summary-export"]',
     title: "Export",
-    body: "CSV for spreadsheets, or a print-friendly view you can save as a PDF. Both are labeled SYNTHETIC or REAL so it's always clear what kind of data you're looking at.",
+    body: "CSV for spreadsheets, or a print-friendly view you can save as a PDF. Both include collection, evidence-depth, aim, and intervention context and remain manual supports for IEP reporting.",
   },
 ];

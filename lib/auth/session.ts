@@ -57,8 +57,15 @@ export type CurrentStaff = {
   id: string;
   name: string;
   email: string;
-  role: "teacher" | "aide";
+  role: "teacher" | "aide" | "admin";
   classroomId: string | null;
+  accessEnabled: boolean;
+  canManageUsers: boolean;
+  canManageStudents: boolean;
+  canManageGoals: boolean;
+  canManageColors: boolean;
+  canRecordData: boolean;
+  canViewReports: boolean;
 };
 
 export async function getCurrentStaff(): Promise<CurrentStaff | null> {
@@ -74,7 +81,13 @@ export async function getCurrentStaff(): Promise<CurrentStaff | null> {
     [row] = await db
       .select()
       .from(staff)
-      .where(and(eq(staff.id, staffId), isNull(staff.deletedAt)))
+      .where(
+        and(
+          eq(staff.id, staffId),
+          eq(staff.accessEnabled, true),
+          isNull(staff.deletedAt)
+        )
+      )
       .limit(1);
   } catch (err) {
     // Treat a database/config problem as "signed out" rather than
@@ -91,5 +104,12 @@ export async function getCurrentStaff(): Promise<CurrentStaff | null> {
     email: row.email,
     role: row.role,
     classroomId: row.classroomId,
+    accessEnabled: row.accessEnabled,
+    canManageUsers: row.canManageUsers,
+    canManageStudents: row.canManageStudents,
+    canManageGoals: row.canManageGoals,
+    canManageColors: row.canManageColors,
+    canRecordData: row.canRecordData,
+    canViewReports: row.canViewReports,
   };
 }

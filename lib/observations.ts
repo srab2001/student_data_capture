@@ -13,7 +13,10 @@ export type ObservationValues = Pick<
   | "valueEnum"
   | "trialsTotal"
   | "trialsCorrect"
+  | "opportunitiesObserved"
+  | "observationDurationSeconds"
   | "note"
+  | "observationDetails"
 >;
 
 export type AggregatedObservation = {
@@ -23,6 +26,8 @@ export type AggregatedObservation = {
   trialsCorrect: number;
   note: string | null;
   observationCount: number;
+  opportunitiesObserved: number | null;
+  observationDurationSeconds: number | null;
 };
 
 const COMPATIBLE_KINDS: Record<Goal["metricType"], ObservationEntryKind[]> = {
@@ -30,6 +35,9 @@ const COMPATIBLE_KINDS: Record<Goal["metricType"], ObservationEntryKind[]> = {
   fluency_rate: ["legacy_snapshot", "numeric", "note"],
   frequency_count: ["legacy_snapshot", "tally", "observation_complete", "note"],
   duration_seconds: ["legacy_snapshot", "duration", "observation_complete", "note"],
+  latency_seconds: ["legacy_snapshot", "duration", "observation_complete", "note"],
+  rubric_score: ["legacy_snapshot", "rubric_score", "note"],
+  abc_observation: ["legacy_snapshot", "abc_observation", "note"],
   prompt_level: ["legacy_snapshot", "rating", "note"],
   task_analysis_step: ["legacy_snapshot", "task_step", "note"],
   icon_scale: ["legacy_snapshot", "rating", "note"],
@@ -63,6 +71,8 @@ export function aggregateObservationEvents(
     trialsCorrect: 0,
     note: null,
     observationCount: 0,
+    opportunitiesObserved: null,
+    observationDurationSeconds: null,
   };
 
   const sorted = [...events].sort((a, b) => eventTime(a) - eventTime(b));
@@ -71,6 +81,12 @@ export function aggregateObservationEvents(
     if (!isObservationCompatible(metricType, event.entryKind)) continue;
 
     if (event.entryKind !== "note") aggregate.observationCount += 1;
+    if (event.opportunitiesObserved != null) {
+      aggregate.opportunitiesObserved = event.opportunitiesObserved;
+    }
+    if (event.observationDurationSeconds != null) {
+      aggregate.observationDurationSeconds = event.observationDurationSeconds;
+    }
 
     switch (event.entryKind) {
       case "legacy_snapshot":
@@ -79,7 +95,8 @@ export function aggregateObservationEvents(
           aggregate.trialsCorrect += event.trialsCorrect ?? 0;
         } else if (
           metricType === "frequency_count" ||
-          metricType === "duration_seconds"
+          metricType === "duration_seconds" ||
+          metricType === "latency_seconds"
         ) {
           aggregate.valueNumeric =
             (aggregate.valueNumeric ?? 0) + (event.valueNumeric ?? 0);
@@ -103,7 +120,10 @@ export function aggregateObservationEvents(
         break;
       case "numeric":
       case "task_step":
+      case "rubric_score":
         aggregate.valueNumeric = event.valueNumeric;
+        break;
+      case "abc_observation":
         break;
       case "rating":
       case "accommodation":
@@ -111,7 +131,9 @@ export function aggregateObservationEvents(
         break;
       case "observation_complete":
         if (
-          (metricType === "frequency_count" || metricType === "duration_seconds") &&
+          (metricType === "frequency_count" ||
+            metricType === "duration_seconds" ||
+            metricType === "latency_seconds") &&
           aggregate.valueNumeric === null
         ) {
           aggregate.valueNumeric = 0;
@@ -159,7 +181,7 @@ export function evidenceUnitCount(
     ).length;
   }
 
-  if (metricType === "duration_seconds") {
+  if (metricType === "duration_seconds" || metricType === "latency_seconds") {
     return compatible.filter(
       (event) =>
         event.entryKind === "duration" ||

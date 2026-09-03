@@ -11,16 +11,20 @@ import {
   smallint,
   index,
   uniqueIndex,
+  check,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import type { MeasurementPlan } from "@/lib/measurement-plans";
 import type { EntryPreferences } from "@/lib/entry-workflow";
+import type { ProgressTarget } from "@/lib/progress-monitoring";
+import type { ObservationDetails, RubricConfig } from "@/lib/student-data-plan";
 
 // See docs/compliance.md — this file is the source of truth for what data
 // this app stores. Do not add a field here without updating that document
 // first.
 
-export const staffRoleEnum = pgEnum("staff_role", ["teacher", "aide"]);
+export const staffRoleEnum = pgEnum("staff_role", ["teacher", "aide", "admin"]);
 
 export const goalDomainEnum = pgEnum("goal_domain", [
   "academic",
@@ -34,6 +38,9 @@ export const metricTypeEnum = pgEnum("metric_type", [
   "fluency_rate",
   "frequency_count",
   "duration_seconds",
+  "latency_seconds",
+  "rubric_score",
+  "abc_observation",
   "prompt_level",
   "task_analysis_step",
   "icon_scale",
@@ -49,9 +56,11 @@ export const iconSetEnum = pgEnum("icon_set", [
 
 export const targetFrequencyEnum = pgEnum("target_frequency", [
   "daily",
+  "session_based",
   "weekly",
   "biweekly",
   "monthly",
+  "quarterly",
 ]);
 
 export const promptLevelEnum = pgEnum("prompt_level", [
@@ -73,6 +82,8 @@ export const observationEntryKindEnum = pgEnum("observation_entry_kind", [
   "duration",
   "rating",
   "numeric",
+  "rubric_score",
+  "abc_observation",
   "task_step",
   "accommodation",
   "observation_complete",
@@ -103,14 +114,51 @@ export const staff = pgTable("staff", {
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   role: staffRoleEnum("role").notNull(),
-  // Teacher: the classroom they own. Aide: the same classroom as their
-  // assigned teacher. Null only until a staff member is assigned.
+  // Every role is scoped to one classroom in this pilot. Null only until a
+  // staff member is assigned.
   classroomId: uuid("classroom_id").references(() => classrooms.id),
+  // Admin-configurable, classroom-scoped access. Role labels provide useful
+  // presets, but these explicit capabilities are the authorization source of
+  // truth so a teacher or aide can receive only the access they need.
+  accessEnabled: boolean("access_enabled").notNull().default(true),
+  canManageUsers: boolean("can_manage_users").notNull().default(false),
+  canManageStudents: boolean("can_manage_students").notNull().default(false),
+  canManageGoals: boolean("can_manage_goals").notNull().default(false),
+  canManageColors: boolean("can_manage_colors").notNull().default(false),
+  canRecordData: boolean("can_record_data").notNull().default(true),
+  canViewReports: boolean("can_view_reports").notNull().default(true),
   // Small, non-instructional UI preference object. The currently focused
   // student is deliberately not persisted.
   entryPreferences: jsonb("entry_preferences").$type<EntryPreferences>(),
   ...timestamps,
 });
+
+// Classroom-wide color meanings are a visual legend, not a replacement for
+// text. Every swatch is rendered with its label and an explanation available
+// on hover and keyboard focus.
+export const classroomColors = pgTable(
+  "classroom_colors",
+  {
+    ...identity,
+    classroomId: uuid("classroom_id")
+      .notNull()
+      .references(() => classrooms.id),
+    name: text("name").notNull(),
+    hexValue: text("hex_value").notNull(),
+    hoverComment: text("hover_comment").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdByStaffId: uuid("created_by_staff_id")
+      .notNull()
+      .references(() => staff.id),
+    ...timestamps,
+  },
+  (table) => [
+    index("classroom_colors_classroom_sort_idx").on(
+      table.classroomId,
+      table.sortOrder
+    ),
+  ]
+);
 
 export const students = pgTable("students", {
   ...identity,
@@ -175,10 +223,18 @@ export const goals = pgTable(
     iconSet: iconSetEnum("icon_set"),
     // Goal-specific labels replace the former hard-coded 1-5 task analysis.
     taskAnalysisSteps: jsonb("task_analysis_steps").$type<string[]>(),
+    // Student-specific least-to-most or most-to-least assistance sequence.
+    promptHierarchy: jsonb("prompt_hierarchy").$type<string[]>(),
+    // Scoring frame for work samples; stored on the versioned goal so old
+    // scores retain the rubric that was in effect when they were collected.
+    rubricConfig: jsonb("rubric_config").$type<RubricConfig>(),
     // Versioned, structured directions for collecting defensible evidence.
     // Nullable only so pre-Phase-2 goals can be upgraded deliberately rather
     // than receiving fabricated baselines or mastery criteria in a migration.
     measurementPlan: jsonb("measurement_plan").$type<MeasurementPlan>(),
+    // Optional because existing narrative criteria must never be parsed into
+    // fabricated numeric targets. Quantitative goals can add this explicitly.
+    progressTarget: jsonb("progress_target").$type<ProgressTarget>(),
     // A measurement-definition edit creates a new goal version and retires
     // the previous row instead of reinterpreting historical observations.
     supersedesGoalId: uuid("supersedes_goal_id").references(
@@ -227,7 +283,15 @@ export const dataPoints = pgTable(
     valueEnum: text("value_enum"),
     trialsTotal: integer("trials_total"),
     trialsCorrect: integer("trials_correct"),
+    // Actual exposure for this observation. These values live on the event,
+    // not only in the plan, so rates remain comparable when a lesson ends
+    // early or offers a different number of opportunities.
+    opportunitiesObserved: integer("opportunities_observed"),
+    observationDurationSeconds: integer("observation_duration_seconds"),
     note: text("note"),
+    // Structured details used only for rubric and ABC events. A discriminated
+    // union prevents narrative fields from being confused across event types.
+    observationDetails: jsonb("observation_details").$type<ObservationDetails>(),
     ...timestamps,
   },
   (table) => [
@@ -237,7 +301,33 @@ export const dataPoints = pgTable(
       table.sessionId,
       table.entryAt
     ),
+    check(
+      "data_points_opportunities_positive",
+      sql`${table.opportunitiesObserved} IS NULL OR ${table.opportunitiesObserved} > 0`
+    ),
+    check(
+      "data_points_observation_duration_positive",
+      sql`${table.observationDurationSeconds} IS NULL OR ${table.observationDurationSeconds} > 0`
+    ),
   ]
+);
+
+export const studentAccommodations = pgTable(
+  "student_accommodations",
+  {
+    ...identity,
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id),
+    name: text("name").notNull(),
+    setting: text("setting").notNull(),
+    implementationNotes: text("implementation_notes").notNull(),
+    createdByStaffId: uuid("created_by_staff_id")
+      .notNull()
+      .references(() => staff.id),
+    ...timestamps,
+  },
+  (table) => [index("student_accommodations_student_id_idx").on(table.studentId)]
 );
 
 export const accommodationLogs = pgTable("accommodation_logs", {
@@ -245,17 +335,57 @@ export const accommodationLogs = pgTable("accommodation_logs", {
   studentId: uuid("student_id")
     .notNull()
     .references(() => students.id),
+  sessionId: uuid("session_id").references(() => sessions.id),
+  goalId: uuid("goal_id").references(() => goals.id),
   accommodationName: text("accommodation_name").notNull(),
   used: boolean("used").notNull(),
   // Rendered with the same icon-degree component as icon_scale goals,
   // not a separate control (Phase 3).
   effectivenessRating: smallint("effectiveness_rating"),
+  setting: text("setting"),
+  activity: text("activity"),
+  implementationFidelity: smallint("implementation_fidelity"),
+  reasonNotUsed: text("reason_not_used"),
   entryAt: timestamp("entry_at", { withTimezone: true }).notNull().defaultNow(),
   enteredByStaffId: uuid("entered_by_staff_id")
     .notNull()
     .references(() => staff.id),
   ...timestamps,
-});
+}, (table) => [
+  index("accommodation_logs_student_entry_idx").on(table.studentId, table.entryAt),
+  index("accommodation_logs_session_id_idx").on(table.sessionId),
+  index("accommodation_logs_goal_id_idx").on(table.goalId),
+  check(
+    "accommodation_logs_effectiveness_range",
+    sql`${table.effectivenessRating} IS NULL OR ${table.effectivenessRating} BETWEEN 1 AND 5`
+  ),
+  check(
+    "accommodation_logs_fidelity_range",
+    sql`${table.implementationFidelity} IS NULL OR ${table.implementationFidelity} BETWEEN 1 AND 5`
+  ),
+]);
+
+export const interventionAnnotations = pgTable(
+  "intervention_annotations",
+  {
+    ...identity,
+    goalId: uuid("goal_id")
+      .notNull()
+      .references(() => goals.id),
+    interventionDate: date("intervention_date").notNull(),
+    description: text("description").notNull(),
+    createdByStaffId: uuid("created_by_staff_id")
+      .notNull()
+      .references(() => staff.id),
+    ...timestamps,
+  },
+  (table) => [
+    index("intervention_annotations_goal_date_idx").on(
+      table.goalId,
+      table.interventionDate
+    ),
+  ]
+);
 
 // Append-only. A `no_delete` trigger (see migration) blocks DELETE at the
 // database level so no application role — including a future admin role

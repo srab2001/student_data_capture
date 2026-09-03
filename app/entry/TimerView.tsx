@@ -18,7 +18,10 @@ export function TimerView({
 }) {
   const rows = students.flatMap((student) =>
     (goalsByStudent.get(student.id) ?? [])
-      .filter((goal) => goal.metricType === "duration_seconds")
+      .filter(
+        (goal) =>
+          goal.metricType === "duration_seconds" || goal.metricType === "latency_seconds"
+      )
       .map((goal) => ({ student, goal }))
   );
 

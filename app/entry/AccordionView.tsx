@@ -66,6 +66,12 @@ export function AccordionView({
                     onSetIconReading={(value) => actions.onSetIconReading(goal.id, value)}
                     onSetPromptLevel={(value) => actions.onSetPromptLevel(goal.id, value)}
                     onSetFluencyRate={(value) => actions.onSetFluencyRate(goal.id, value)}
+                    onLogRubric={(score, workSample, criterion) =>
+                      actions.onLogRubric(goal.id, score, workSample, criterion)
+                    }
+                    onLogAbc={(antecedent, behavior, consequence) =>
+                      actions.onLogAbc(goal.id, antecedent, behavior, consequence)
+                    }
                     onSetTaskStep={(step) => actions.onSetTaskStep(goal.id, step)}
                     onSetAccommodationUsed={(used) => actions.onSetAccommodationUsed(goal.id, used)}
                     onStartTimer={() => actions.onStartTimer(goal.id)}

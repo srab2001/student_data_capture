@@ -3,7 +3,7 @@ import { and, asc, eq, ilike, inArray, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { rosterGroups, rosterGroupStudents, students } from "@/lib/db/schema";
 import { getCurrentStaff } from "@/lib/auth/session";
-import { assertClassroomScope, assertTeacher, requireStaff } from "@/lib/auth/authz";
+import { assertClassroomScope, assertPermission, assertStudentDataAccess, requireStaff } from "@/lib/auth/authz";
 import { rosterGroupSchema } from "@/lib/validation";
 import { recordAudit } from "@/lib/audit";
 import {
@@ -15,6 +15,7 @@ import {
 export async function GET() {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
+    assertStudentDataAccess(current);
     const groupRows = await db
       .select()
       .from(rosterGroups)
@@ -70,7 +71,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   return handleRoute(async () => {
     const current = requireStaff(await getCurrentStaff());
-    assertTeacher(current);
+    assertPermission(current, "canManageStudents", "You cannot manage roster groups.");
     assertWriteRateLimit(current.id, "roster-groups:post");
     const body = rosterGroupSchema.parse(await request.json());
 
