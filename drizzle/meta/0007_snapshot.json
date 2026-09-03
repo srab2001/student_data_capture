@@ -1,6 +1,6 @@
 {
-  "id": "6242f03d-f055-41b0-8c77-36aa38ee6ca8",
-  "prevId": "27e3830a-45ae-4434-bea3-b10fbde88c88",
+  "id": "62dda21d-a484-4062-b876-c2d7ec68a9e1",
+  "prevId": "dd8839d6-51fe-4e5d-86c2-eee3bc90df93",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -20,6 +20,18 @@
           "primaryKey": false,
           "notNull": true
         },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "goal_id": {
+          "name": "goal_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "accommodation_name": {
           "name": "accommodation_name",
           "type": "text",
@@ -35,6 +47,30 @@
         "effectiveness_rating": {
           "name": "effectiveness_rating",
           "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "setting": {
+          "name": "setting",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "activity": {
+          "name": "activity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "implementation_fidelity": {
+          "name": "implementation_fidelity",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reason_not_used": {
+          "name": "reason_not_used",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -72,7 +108,59 @@
           "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "accommodation_logs_student_entry_idx": {
+          "name": "accommodation_logs_student_entry_idx",
+          "columns": [
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "entry_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "accommodation_logs_session_id_idx": {
+          "name": "accommodation_logs_session_id_idx",
+          "columns": [
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "accommodation_logs_goal_id_idx": {
+          "name": "accommodation_logs_goal_id_idx",
+          "columns": [
+            {
+              "expression": "goal_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "accommodation_logs_student_id_students_id_fk": {
           "name": "accommodation_logs_student_id_students_id_fk",
@@ -80,6 +168,32 @@
           "tableTo": "students",
           "columnsFrom": [
             "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "accommodation_logs_session_id_sessions_id_fk": {
+          "name": "accommodation_logs_session_id_sessions_id_fk",
+          "tableFrom": "accommodation_logs",
+          "tableTo": "sessions",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "accommodation_logs_goal_id_goals_id_fk": {
+          "name": "accommodation_logs_goal_id_goals_id_fk",
+          "tableFrom": "accommodation_logs",
+          "tableTo": "goals",
+          "columnsFrom": [
+            "goal_id"
           ],
           "columnsTo": [
             "id"
@@ -104,7 +218,16 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "accommodation_logs_effectiveness_range": {
+          "name": "accommodation_logs_effectiveness_range",
+          "value": "\"accommodation_logs\".\"effectiveness_rating\" IS NULL OR \"accommodation_logs\".\"effectiveness_rating\" BETWEEN 1 AND 5"
+        },
+        "accommodation_logs_fidelity_range": {
+          "name": "accommodation_logs_fidelity_range",
+          "value": "\"accommodation_logs\".\"implementation_fidelity\" IS NULL OR \"accommodation_logs\".\"implementation_fidelity\" BETWEEN 1 AND 5"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.audit_log": {
@@ -420,9 +543,27 @@
           "primaryKey": false,
           "notNull": false
         },
+        "opportunities_observed": {
+          "name": "opportunities_observed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observation_duration_seconds": {
+          "name": "observation_duration_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "note": {
           "name": "note",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observation_details": {
+          "name": "observation_details",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         },
@@ -535,7 +676,16 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "data_points_opportunities_positive": {
+          "name": "data_points_opportunities_positive",
+          "value": "\"data_points\".\"opportunities_observed\" IS NULL OR \"data_points\".\"opportunities_observed\" > 0"
+        },
+        "data_points_observation_duration_positive": {
+          "name": "data_points_observation_duration_positive",
+          "value": "\"data_points\".\"observation_duration_seconds\" IS NULL OR \"data_points\".\"observation_duration_seconds\" > 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.goals": {
@@ -583,6 +733,18 @@
         },
         "task_analysis_steps": {
           "name": "task_analysis_steps",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prompt_hierarchy": {
+          "name": "prompt_hierarchy",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rubric_config": {
+          "name": "rubric_config",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
@@ -1224,6 +1386,118 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.student_accommodations": {
+      "name": "student_accommodations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "setting": {
+          "name": "setting",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "implementation_notes": {
+          "name": "implementation_notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by_staff_id": {
+          "name": "created_by_staff_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "student_accommodations_student_id_idx": {
+          "name": "student_accommodations_student_id_idx",
+          "columns": [
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "student_accommodations_student_id_students_id_fk": {
+          "name": "student_accommodations_student_id_students_id_fk",
+          "tableFrom": "student_accommodations",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "student_accommodations_created_by_staff_id_staff_id_fk": {
+          "name": "student_accommodations_created_by_staff_id_staff_id_fk",
+          "tableFrom": "student_accommodations",
+          "tableTo": "staff",
+          "columnsFrom": [
+            "created_by_staff_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.students": {
       "name": "students",
       "schema": "",
@@ -1326,6 +1600,9 @@
         "fluency_rate",
         "frequency_count",
         "duration_seconds",
+        "latency_seconds",
+        "rubric_score",
+        "abc_observation",
         "prompt_level",
         "task_analysis_step",
         "icon_scale",
@@ -1343,6 +1620,8 @@
         "duration",
         "rating",
         "numeric",
+        "rubric_score",
+        "abc_observation",
         "task_step",
         "accommodation",
         "observation_complete",
@@ -1374,9 +1653,11 @@
       "schema": "public",
       "values": [
         "daily",
+        "session_based",
         "weekly",
         "biweekly",
-        "monthly"
+        "monthly",
+        "quarterly"
       ]
     }
   },

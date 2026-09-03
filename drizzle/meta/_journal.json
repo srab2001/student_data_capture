@@ -47,36 +47,15 @@
     {
       "idx": 6,
       "version": "7",
-      "when": 1788450382514,
-      "tag": "0006_aspiring_captain_stacy",
+      "when": 1788459499905,
+      "tag": "0006_melted_nomad",
       "breakpoints": true
     },
     {
       "idx": 7,
       "version": "7",
-      "when": 1788453568741,
-      "tag": "0007_striped_morlocks",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1788455052080,
-      "tag": "0008_heavy_red_hulk",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1788457982950,
-      "tag": "0009_sad_reavers",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1788458001993,
-      "tag": "0010_uneven_albert_cleary",
+      "when": 1788460866962,
+      "tag": "0007_superb_tiger_shark",
       "breakpoints": true
     }
   ]

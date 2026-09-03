@@ -1,5 +1,5 @@
 {
-  "id": "27e3830a-45ae-4434-bea3-b10fbde88c88",
+  "id": "dd8839d6-51fe-4e5d-86c2-eee3bc90df93",
   "prevId": "921c2a83-869f-4aad-a18d-8dd1328ce29a",
   "version": "7",
   "dialect": "postgresql",
@@ -468,12 +468,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "progress_target": {
-          "name": "progress_target",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
         "supersedes_goal_id": {
           "name": "supersedes_goal_id",
           "type": "uuid",
@@ -545,118 +539,6 @@
           "tableTo": "goals",
           "columnsFrom": [
             "supersedes_goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.intervention_annotations": {
-      "name": "intervention_annotations",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "goal_id": {
-          "name": "goal_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "intervention_date": {
-          "name": "intervention_date",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_by_staff_id": {
-          "name": "created_by_staff_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "intervention_annotations_goal_date_idx": {
-          "name": "intervention_annotations_goal_date_idx",
-          "columns": [
-            {
-              "expression": "goal_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "intervention_date",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "intervention_annotations_goal_id_goals_id_fk": {
-          "name": "intervention_annotations_goal_id_goals_id_fk",
-          "tableFrom": "intervention_annotations",
-          "tableTo": "goals",
-          "columnsFrom": [
-            "goal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "intervention_annotations_created_by_staff_id_staff_id_fk": {
-          "name": "intervention_annotations_created_by_staff_id_staff_id_fk",
-          "tableFrom": "intervention_annotations",
-          "tableTo": "staff",
-          "columnsFrom": [
-            "created_by_staff_id"
           ],
           "columnsTo": [
             "id"
@@ -1046,6 +928,71 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.student_accommodations": {
+      "name": "student_accommodations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "student_accommodations_student_id_students_id_fk": {
+          "name": "student_accommodations_student_id_students_id_fk",
+          "tableFrom": "student_accommodations",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

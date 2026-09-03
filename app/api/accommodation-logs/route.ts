@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   accommodationLogs,
@@ -68,6 +68,8 @@ export async function POST(request: NextRequest) {
         and(
           eq(studentAccommodations.studentId, body.studentId),
           eq(studentAccommodations.name, body.accommodationName),
+          isNotNull(studentAccommodations.setting),
+          isNotNull(studentAccommodations.implementationNotes),
           isNull(studentAccommodations.deletedAt)
         )
       )

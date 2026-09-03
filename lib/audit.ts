@@ -16,6 +16,7 @@ export async function recordAudit(entry: {
     | "data_points"
     | "accommodation_logs"
     | "students"
+    | "student_accommodations"
     | "roster_groups"
     | "staff_entry_preferences"
     | "intervention_annotations"

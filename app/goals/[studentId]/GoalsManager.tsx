@@ -941,8 +941,8 @@ function AccommodationEditor({
 }) {
   const [draft, setDraft] = useState({
     name: item.name,
-    setting: item.setting,
-    implementationNotes: item.implementationNotes,
+    setting: item.setting ?? "",
+    implementationNotes: item.implementationNotes ?? "",
   });
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -961,8 +961,8 @@ function AccommodationEditor({
       );
       setDraft({
         name: response.accommodation.name,
-        setting: response.accommodation.setting,
-        implementationNotes: response.accommodation.implementationNotes,
+        setting: response.accommodation.setting ?? "",
+        implementationNotes: response.accommodation.implementationNotes ?? "",
       });
       onSaved(response.accommodation);
       setMessage("Accommodation saved.");
@@ -1143,7 +1143,7 @@ export function GoalsManager({
       apiFetch<{ students: Student[] }>("/api/students"),
       apiFetch<{ goals: Goal[] }>(`/api/goals?studentId=${studentId}`),
       apiFetch<{ accommodations: StudentAccommodation[] }>(
-        `/api/student-accommodations?studentId=${studentId}`
+        `/api/student-accommodations?studentId=${studentId}&includeIncomplete=true`
       ),
     ])
       .then(([studentsRes, goalsRes, accommodationsRes]) => {

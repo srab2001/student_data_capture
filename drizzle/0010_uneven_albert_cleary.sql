@@ -1,4 +1,0 @@
-ALTER TABLE "accommodation_logs" ADD CONSTRAINT "accommodation_logs_effectiveness_range" CHECK ("accommodation_logs"."effectiveness_rating" IS NULL OR "accommodation_logs"."effectiveness_rating" BETWEEN 1 AND 5);--> statement-breakpoint
-ALTER TABLE "accommodation_logs" ADD CONSTRAINT "accommodation_logs_fidelity_range" CHECK ("accommodation_logs"."implementation_fidelity" IS NULL OR "accommodation_logs"."implementation_fidelity" BETWEEN 1 AND 5);--> statement-breakpoint
-ALTER TABLE "data_points" ADD CONSTRAINT "data_points_opportunities_positive" CHECK ("data_points"."opportunities_observed" IS NULL OR "data_points"."opportunities_observed" > 0);--> statement-breakpoint
-ALTER TABLE "data_points" ADD CONSTRAINT "data_points_observation_duration_positive" CHECK ("data_points"."observation_duration_seconds" IS NULL OR "data_points"."observation_duration_seconds" > 0);

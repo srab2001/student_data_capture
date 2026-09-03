@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { studentAccommodations, students } from "@/lib/db/schema";
 import { getCurrentStaff } from "@/lib/auth/session";
@@ -18,6 +18,14 @@ export async function GET(request: NextRequest) {
     const current = requireStaff(await getCurrentStaff());
     assertStudentDataAccess(current);
     const studentId = request.nextUrl.searchParams.get("studentId");
+    const includeIncomplete = request.nextUrl.searchParams.get("includeIncomplete") === "true";
+    if (includeIncomplete) {
+      assertPermission(
+        current,
+        "canManageGoals",
+        "You cannot review incomplete accommodation configuration."
+      );
+    }
 
     const rows = await db
       .select({ accommodation: studentAccommodations })
@@ -28,6 +36,10 @@ export async function GET(request: NextRequest) {
           eq(students.classroomId, current.classroomId!),
           isNull(students.deletedAt),
           isNull(studentAccommodations.deletedAt),
+          includeIncomplete ? undefined : isNotNull(studentAccommodations.setting),
+          includeIncomplete
+            ? undefined
+            : isNotNull(studentAccommodations.implementationNotes),
           studentId ? eq(studentAccommodations.studentId, studentId) : undefined
         )
       )

@@ -423,6 +423,12 @@ export const createStudentSchema = z
   })
   .strict();
 
+export const updateStudentSchema = z
+  .object({
+    displayName: z.string().trim().min(1).max(200).optional(),
+  })
+  .strict();
+
 export const createAccommodationLogSchema = z
   .object({
     studentId: z.uuid(),

@@ -44,8 +44,12 @@ export async function GET() {
         .orderBy(asc(students.displayName), asc(goals.goalText)),
       db
         .select({
+          id: studentAccommodations.id,
           studentId: studentAccommodations.studentId,
+          studentName: students.displayName,
           name: studentAccommodations.name,
+          setting: studentAccommodations.setting,
+          implementationNotes: studentAccommodations.implementationNotes,
         })
         .from(studentAccommodations)
         .innerJoin(students, eq(studentAccommodations.studentId, students.id))
@@ -73,19 +77,46 @@ export async function GET() {
         ),
     ]);
 
-    const configured = new Set(
-      configuredRows.map((row) => `${row.studentId}:${normalized(row.name)}`)
+    const configured = new Map(
+      configuredRows.map((row) => [
+        `${row.studentId}:${normalized(row.name)}`,
+        row,
+      ])
     );
-    const historical = new Map<
+    const reconciliation = new Map<
       string,
-      { studentId: string; studentName: string; name: string; logCount: number }
+      {
+        accommodationId: string | null;
+        studentId: string;
+        studentName: string;
+        name: string;
+        logCount: number;
+      }
     >();
+    for (const row of configuredRows) {
+      if (row.setting && row.implementationNotes) continue;
+      const key = `${row.studentId}:${normalized(row.name)}`;
+      reconciliation.set(key, {
+        accommodationId: row.id,
+        studentId: row.studentId,
+        studentName: row.studentName,
+        name: row.name,
+        logCount: 0,
+      });
+    }
     for (const row of historicalRows) {
       const key = `${row.studentId}:${normalized(row.name)}`;
-      if (configured.has(key)) continue;
-      const existing = historical.get(key);
+      const configuredRow = configured.get(key);
+      if (configuredRow?.setting && configuredRow.implementationNotes) continue;
+      const existing = reconciliation.get(key);
       if (existing) existing.logCount += 1;
-      else historical.set(key, { ...row, logCount: 1 });
+      else {
+        reconciliation.set(key, {
+          accommodationId: null,
+          ...row,
+          logCount: 1,
+        });
+      }
     }
 
     const goalsMissingPlan = goalRows
@@ -112,10 +143,10 @@ export async function GET() {
         activeGoals: goalRows.length,
         goalsMissingPlan: goalsMissingPlan.length,
         promptGoalsUsingDefault,
-        historicalAccommodationsToReconcile: historical.size,
+        historicalAccommodationsToReconcile: reconciliation.size,
       },
       goalsMissingPlan,
-      unmatchedAccommodations: [...historical.values()].sort(
+      unmatchedAccommodations: [...reconciliation.values()].sort(
         (a, b) =>
           a.studentName.localeCompare(b.studentName) || a.name.localeCompare(b.name)
       ),

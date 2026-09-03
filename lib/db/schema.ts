@@ -320,10 +320,12 @@ export const studentAccommodations = pgTable(
       .notNull()
       .references(() => students.id),
     name: text("name").notNull(),
-    setting: text("setting").notNull(),
-    implementationNotes: text("implementation_notes").notNull(),
+    // Nullable only for supports created before the setting and directions
+    // fields existed. Admin reconciliation completes these legacy rows before
+    // they appear in the entry picker; new API writes require both fields.
+    setting: text("setting"),
+    implementationNotes: text("implementation_notes"),
     createdByStaffId: uuid("created_by_staff_id")
-      .notNull()
       .references(() => staff.id),
     ...timestamps,
   },

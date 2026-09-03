@@ -19,6 +19,7 @@ type Readiness = {
     metricType: string;
   }>;
   unmatchedAccommodations: Array<{
+    accommodationId: string | null;
     studentId: string;
     studentName: string;
     name: string;
@@ -43,15 +44,20 @@ function ReconcileAccommodation({
     setPending(true);
     setError(null);
     try {
-      await apiFetch("/api/student-accommodations", {
-        method: "POST",
-        body: JSON.stringify({
-          studentId: item.studentId,
-          name: item.name,
-          setting,
-          implementationNotes: directions,
-        }),
-      });
+      await apiFetch(
+        item.accommodationId
+          ? `/api/student-accommodations/${item.accommodationId}`
+          : "/api/student-accommodations",
+        {
+          method: item.accommodationId ? "PATCH" : "POST",
+          body: JSON.stringify({
+            ...(item.accommodationId ? {} : { studentId: item.studentId }),
+            name: item.name,
+            setting,
+            implementationNotes: directions,
+          }),
+        }
+      );
       onReconciled();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not reconcile support.");
