@@ -37,9 +37,14 @@ export function GridView({
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ student, goal }) => (
+          {rows.map(({ student, goal }) => {
+            const isAbsent = actions.isStudentAbsent(student.id);
+            return (
             <tr key={goal.id}>
-              <td style={{ whiteSpace: "nowrap" }}>{student.displayName}</td>
+              <td style={{ whiteSpace: "nowrap" }}>
+                {student.displayName}
+                {isAbsent && <span className="tag tag-neutral ml-2">Absent</span>}
+              </td>
               <td>{goal.goalText}</td>
               <td>
                 <span className="tag tag-neutral">{DOMAIN_LABEL[goal.domain]}</span>
@@ -71,13 +76,14 @@ export function GridView({
                   onUndoLast={() => actions.onUndoLast(goal.id)}
                   saveStatus={actions.saveStatusForGoal(goal.id)}
                   measurementStatus={actions.measurementStatusForGoal(goal.id)}
-                  disabled={actions.disabled}
+                  disabled={actions.disabled || isAbsent}
                   showDomainAndText={false}
                   showNote={false}
                 />
               </td>
             </tr>
-          ))}
+            );
+          })}
           {rows.length === 0 && (
             <tr>
               <td colSpan={4} className="text-muted" style={{ textAlign: "center", padding: "var(--space-6)" }}>

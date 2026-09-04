@@ -32,6 +32,7 @@ const TOC = [
   ["controls", "What each control does"],
   ["managing-goals", "Changing a student's goals"],
   ["accommodations", "Logging accommodations"],
+  ["absences", "Marking a student absent"],
   ["summary", "The progress summary"],
   ["data-privacy", "Data & privacy"],
   ["troubleshooting", "Troubleshooting"],
@@ -329,6 +330,23 @@ export default function HelpPage() {
             goals</strong> screen — add, rename, or retire accommodations there to match what&apos;s
             actually on that student&apos;s IEP, rather than picking from every student&apos;s combined
             list.
+          </p>
+        </Section>
+
+        <Section id="absences" title="Marking a student absent">
+          <p>
+            <strong>Mark absent</strong>, next to a student&apos;s name in Card stack, Focus, and
+            Accordion, records that the student was not in class for that session — not just that
+            no data was logged for them. This is the difference between a goal that wasn&apos;t
+            addressed while the student was present (which the progress summary should flag) and a
+            student who simply wasn&apos;t there (which it shouldn&apos;t). Grid and Timers show the
+            same status as a read-only &quot;Absent&quot; badge; toggle it from one of the other
+            layouts.
+          </p>
+          <p>
+            Marking a student absent disables their goal-entry controls for that session so no one
+            accidentally logs data for them, but it does not hide their goals — staff can still see
+            what was due. <strong>Present today</strong> undoes the mark and re-enables entry.
           </p>
         </Section>
 

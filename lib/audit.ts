@@ -17,12 +17,12 @@ export async function recordAudit(entry: {
     | "accommodation_logs"
     | "students"
     | "student_accommodations"
+    | "session_absences"
     | "roster_groups"
     | "staff_entry_preferences"
     | "intervention_annotations"
     | "staff"
     | "classroom_colors"
-    | "student_accommodations"
     | "audit_log";
   recordId?: string;
   diff?: unknown;

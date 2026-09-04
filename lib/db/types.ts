@@ -5,6 +5,7 @@ import type {
   dataPoints,
   accommodationLogs,
   studentAccommodations,
+  sessionAbsences,
   staff,
   rosterGroups,
   rosterGroupStudents,
@@ -18,6 +19,7 @@ export type Session = typeof sessions.$inferSelect;
 export type DataPoint = typeof dataPoints.$inferSelect;
 export type AccommodationLog = typeof accommodationLogs.$inferSelect;
 export type StudentAccommodation = typeof studentAccommodations.$inferSelect;
+export type SessionAbsence = typeof sessionAbsences.$inferSelect;
 export type Staff = typeof staff.$inferSelect;
 export type RosterGroup = typeof rosterGroups.$inferSelect;
 export type RosterGroupStudent = typeof rosterGroupStudents.$inferSelect;

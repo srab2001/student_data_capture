@@ -69,26 +69,53 @@ export function StudentCard({
     .map((goal) => actions.measurementStatusForGoal(goal.id))
     .filter((status) => status.isDue);
   const completedDueCount = dueStatuses.filter((status) => status.isComplete).length;
+  const isAbsent = actions.isStudentAbsent(student.id);
+  const absenceStatus = actions.absenceStatusForStudent(student.id);
 
   return (
     <section aria-label={student.displayName} data-tour="student-card" className="card elev-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="card-kicker">
-            {dueStatuses.length === 0
-              ? "No goals assigned today"
-              : completedDueCount === dueStatuses.length
-                ? "All due evidence collected"
-                : `${completedDueCount}/${dueStatuses.length} due goals complete`}
+            {isAbsent
+              ? "Absent — goals not addressed"
+              : dueStatuses.length === 0
+                ? "No goals assigned today"
+                : completedDueCount === dueStatuses.length
+                  ? "All due evidence collected"
+                  : `${completedDueCount}/${dueStatuses.length} due goals complete`}
           </div>
-          <div className="card-title">{student.displayName}</div>
+          <div className="card-title">
+            {student.displayName}
+            {isAbsent && <span className="tag tag-neutral ml-2">Absent</span>}
+          </div>
         </div>
-        {canManageGoals && (
-          <Link href={`/goals/${student.id}`} className="btn btn-ghost">
-            Manage goals
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className={isAbsent ? "btn btn-secondary" : "btn btn-ghost"}
+            aria-pressed={isAbsent}
+            disabled={actions.disabled || absenceStatus === "saving"}
+            onClick={() => actions.onToggleAbsence(student.id)}
+          >
+            {absenceStatus === "saving"
+              ? "Saving…"
+              : isAbsent
+                ? "Present today"
+                : "Mark absent"}
+          </button>
+          {canManageGoals && (
+            <Link href={`/goals/${student.id}`} className="btn btn-ghost">
+              Manage goals
+            </Link>
+          )}
+        </div>
       </div>
+      {absenceStatus === "failed" && (
+        <p className="text-xs mt-1" style={{ color: "#b91c1c" }} role="alert">
+          Attendance update failed. Try again.
+        </p>
+      )}
 
       <div className="mt-3 flex flex-col gap-3">
         {goals.map((goal) => (
@@ -119,7 +146,7 @@ export function StudentCard({
             onUndoLast={() => actions.onUndoLast(goal.id)}
             saveStatus={actions.saveStatusForGoal(goal.id)}
             measurementStatus={actions.measurementStatusForGoal(goal.id)}
-            disabled={actions.disabled}
+            disabled={actions.disabled || isAbsent}
           />
         ))}
         {goals.length === 0 && <p className="text-muted text-sm">No active goals.</p>}

@@ -26,27 +26,47 @@ export function AccordionView({
           .filter((status) => status.isDue);
         const completedDueCount = dueStatuses.filter((status) => status.isComplete).length;
         const isExpanded = !!expanded[student.id];
+        const isAbsent = actions.isStudentAbsent(student.id);
+        const absenceStatus = actions.absenceStatusForStudent(student.id);
 
         return (
           <div key={student.id} className="card elev-sm">
-            <button
-              type="button"
-              onClick={() => setExpanded((s) => ({ ...s, [student.id]: !s[student.id] }))}
-              className="flex w-full items-center justify-between gap-3"
-              style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", fontFamily: "var(--font-body)", color: "var(--color-text)" }}
-              aria-expanded={isExpanded}
-            >
-              <span className="card-title" style={{ margin: 0 }}>
-                {isExpanded ? "▾" : "▸"} {student.displayName}
-              </span>
-              <span className="text-muted text-xs">
-                {dueStatuses.length === 0
-                  ? "No goals assigned today"
-                  : completedDueCount === dueStatuses.length
-                    ? "All due evidence collected"
-                    : `${completedDueCount}/${dueStatuses.length} due goals complete`}
-              </span>
-            </button>
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setExpanded((s) => ({ ...s, [student.id]: !s[student.id] }))}
+                className="flex flex-1 items-center justify-between gap-3"
+                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", fontFamily: "var(--font-body)", color: "var(--color-text)" }}
+                aria-expanded={isExpanded}
+              >
+                <span className="card-title" style={{ margin: 0 }}>
+                  {isExpanded ? "▾" : "▸"} {student.displayName}
+                  {isAbsent && <span className="tag tag-neutral ml-2">Absent</span>}
+                </span>
+                <span className="text-muted text-xs">
+                  {isAbsent
+                    ? "Absent — goals not addressed"
+                    : dueStatuses.length === 0
+                      ? "No goals assigned today"
+                      : completedDueCount === dueStatuses.length
+                        ? "All due evidence collected"
+                        : `${completedDueCount}/${dueStatuses.length} due goals complete`}
+                </span>
+              </button>
+              <button
+                type="button"
+                className={isAbsent ? "btn btn-secondary" : "btn btn-ghost"}
+                aria-pressed={isAbsent}
+                disabled={actions.disabled || absenceStatus === "saving"}
+                onClick={() => actions.onToggleAbsence(student.id)}
+              >
+                {absenceStatus === "saving"
+                  ? "Saving…"
+                  : isAbsent
+                    ? "Present today"
+                    : "Mark absent"}
+              </button>
+            </div>
 
             {isExpanded && (
               <div
@@ -81,7 +101,7 @@ export function AccordionView({
                     onUndoLast={() => actions.onUndoLast(goal.id)}
                     saveStatus={actions.saveStatusForGoal(goal.id)}
                     measurementStatus={actions.measurementStatusForGoal(goal.id)}
-                    disabled={actions.disabled}
+                    disabled={actions.disabled || isAbsent}
                     showNote={false}
                   />
                 ))}

@@ -40,9 +40,13 @@ export function TimerView({
         const running = actions.timerRunningForGoal(goal.id);
         const measurement = actions.measurementStatusForGoal(goal.id);
         const saveStatus = actions.saveStatusForGoal(goal.id);
+        const isAbsent = actions.isStudentAbsent(student.id);
         return (
           <section key={goal.id} className="card elev-sm" aria-label={`${student.displayName}: ${goal.goalText}`}>
-            <p className="card-kicker">{student.displayName}</p>
+            <p className="card-kicker">
+              {student.displayName}
+              {isAbsent && <span className="tag tag-neutral ml-2">Absent</span>}
+            </p>
             <h2 style={{ fontSize: 18 }}>{goal.goalText}</h2>
             <p className="text-muted text-sm mt-1">{measurement.label}</p>
             {goal.measurementPlan?.observationWindowMinutes && (
@@ -59,7 +63,7 @@ export function TimerView({
               <button
                 type="button"
                 className="btn btn-secondary"
-                disabled={actions.disabled}
+                disabled={actions.disabled || isAbsent}
                 aria-label={`${running ? "Stop" : "Start"} timer for ${student.displayName}, ${goal.goalText}`}
                 onClick={() => running ? actions.onStopTimer(goal.id) : actions.onStartTimer(goal.id)}
               >
@@ -69,7 +73,7 @@ export function TimerView({
                 <button
                   type="button"
                   className="btn btn-ghost"
-                  disabled={actions.disabled}
+                  disabled={actions.disabled || isAbsent}
                   aria-label={`Record no occurrence for ${student.displayName}, ${goal.goalText}`}
                   onClick={() => actions.onCompleteObservation(goal.id)}
                 >
@@ -79,7 +83,7 @@ export function TimerView({
               <button
                 type="button"
                 className="btn btn-ghost"
-                disabled={actions.disabled || !actions.canUndoForGoal(goal.id)}
+                disabled={actions.disabled || isAbsent || !actions.canUndoForGoal(goal.id)}
                 aria-label={`Undo last timer observation for ${student.displayName}, ${goal.goalText}`}
                 onClick={() => actions.onUndoLast(goal.id)}
               >
