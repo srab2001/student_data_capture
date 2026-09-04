@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 /**
  * Vendor attribution only — this app's own identity stays "IEP Capture
- * Pilot" for the district. Hides the mark rather than showing a broken
- * image if /public/asr-logo.png hasn't been added yet.
+ * Pilot" for the district. Hides the mark (rather than showing a broken
+ * image) if /public/asr-logo.png is ever removed. next/image resizes the
+ * source file down to this footer's fixed 18px mark instead of shipping
+ * it at full resolution.
  */
 export function Footer() {
   const [logoFailed, setLogoFailed] = useState(false);
@@ -16,8 +19,7 @@ export function Footer() {
       style={{ borderTop: "1px solid var(--color-neutral-300)", color: "var(--color-neutral-600)" }}
     >
       {!logoFailed && (
-        // eslint-disable-next-line @next/next/no-img-element -- tiny fixed-size attribution mark, not a page asset worth next/image's overhead
-        <img
+        <Image
           src="/asr-logo.png"
           alt=""
           width={18}
