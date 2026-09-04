@@ -142,6 +142,41 @@ later without losing audit history.
   consent to record a conversation, a second legal issue on top of
   everything above.
 
+## AI-assisted features (goal/measurement-plan wizard, accommodation chat)
+
+Full review: `STRATEGY-ai-goal-accommodation-assistant.md`. Summary here,
+kept current as the source of truth this code is built to match:
+
+- **Anthropic's API becomes a data processor** the moment either feature
+  is used — the same "self-built doesn't mean no vendor" logic already
+  recorded above for Vercel/Neon applies here. This is new versus the rest
+  of the app, which has never sent student data to a third party before.
+- **Data minimization is enforced by construction, not by caller
+  discipline.** `lib/ai/redact.ts` builds the only payloads either feature
+  is allowed to send: the goal wizard sends goal domain, metric type, a
+  short skill/behavior description, and an optional numeric baseline
+  summary — never a student name, ID, or any other identifying field. The
+  accommodation chat sends goal domain plus existing accommodation
+  names/settings/effectiveness ratings — never narrative
+  `implementationNotes`/`reasonNotUsed` text, which is the field most
+  likely to carry identifying detail. Neither route even accepts a student
+  name in its request body.
+- **The AI never gets a write path.** Both `app/api/ai/goal-wizard` and
+  `app/api/ai/accommodation-chat` only return a proposal; saving it still
+  goes through the existing, authorized, audited `POST /api/goals` and
+  `POST /api/student-accommodations` endpoints with an explicit teacher
+  action in between.
+- **Blockers before real student data reaches either feature** (same
+  Track A/B gate as the rest of this app, plus these AI-specific items):
+  no compliance officer yet to review a new AI vendor; no Anthropic data
+  processing/retention agreement on file; Maryland/COMAR AI-specific
+  requirements unconfirmed; parent-notification scope for AI-assisted
+  decision support unconfirmed. Resolving the base app's Track B gate does
+  **not** automatically clear these — they are their own sign-off.
+- No new database table logs raw AI prompts/responses. `audit_log` records
+  only that a teacher asked (which fields, how many chat turns), never the
+  request payload or the AI's response content — see `lib/audit.ts`.
+
 ## Access control
 
 Enforced in a single shared authorization helper (see Phase 2), not
@@ -356,3 +391,18 @@ Implemented and deployed to the synthetic pilot 2026-09-03, with no Policy
 | **Migration** | ✅ Consolidated `0007` applied | The former local `0009`–`0010` numbers were superseded during the upstream merge. Nullable exposure/context columns, foreign keys, indexes, positive exposure checks, and 1–5 rating/fidelity checks are included in production `0007_superb_tiger_shark.sql`. |
 | **Verification** | ✅ Local and live gates passed | 81 tests, lint, strict types, webpack build, migration metadata, two managed production-clone rehearsals, live API lifecycle, and authenticated Chromium admin smoke passed. Native 200% zoom and a real screen reader remain human gates. |
 | **Deployment** | ✅ Live synthetic pilot | The production readiness screen rendered 26 incomplete plans, 3 default prompt ladders, and 33 historical support reconciliations. No error-level Vercel logs appeared after testing. |
+
+## AI-assisted features implementation log
+
+Implemented 2026-09-04, on synthetic data only, no Policy 3060 sign-off,
+and — separately from that gate — no compliance-officer review or
+Anthropic data-processing agreement yet, per the Blockers recorded above:
+
+| Piece | Status | Notes |
+|---|---|---|
+| **Server-only AI plumbing** | ✅ Code complete | `lib/ai/client.ts` wraps `@anthropic-ai/sdk` behind a single `requestStructuredJson` helper that forces tool-use (structured output, not free text parsed with regex) and is never imported from a client component. `ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL` documented in `.env.local.example`, server-side only. |
+| **Data minimization by construction** | ✅ Code complete, unit tested | `lib/ai/redact.ts` builds the only payloads either feature may send, by listing allowed fields explicitly rather than forwarding a caller's object; `lib/ai/redact.test.ts` asserts a student name/ID or narrative note never survives even when a caller passes a whole row in. |
+| **Goal wizard** | ✅ Code complete, unit tested | `POST /api/ai/goal-wizard` (`lib/ai/goal-wizard.ts`) proposes a `MeasurementPlan`, re-validated against the same Zod schema manual entry uses before it's returned; it never writes to `goals`. UI: an "AI-assisted setup" panel on `/goals/[studentId]`'s new-goal form pre-fills the measurement-plan fields, all left editable, with a graceful "AI unavailable — continue manually" fallback. |
+| **Accommodation chat** | ✅ Code complete, unit tested | `POST /api/ai/accommodation-chat` (`lib/ai/accommodation-chat.ts`) runs a bounded (max 5-exchange) Q&A from structured signals only (domain, existing accommodation names/settings/effectiveness ratings — never narrative `implementationNotes`), ending in a suggestion re-validated the same way; it never writes to `student_accommodations`. UI: an "Ask for a suggestion" chat panel on the same screen's Accommodations section, prefilling the existing add-accommodation form. |
+| **Audit logging** | ✅ Code complete | Both routes record an `ai_suggest` audit entry (who asked, which fields/how many turns) and never log the AI request payload or response content, per the new `docs/compliance.md` section above and the comment on `recordAudit`. |
+| **Verification** | ✅ Automated scope passed; live/browser exercise open | 104 unit tests (17 new: `lib/ai/redact.test.ts`, `lib/ai/goal-wizard.test.ts`, `lib/ai/accommodation-chat.test.ts`, plus new `lib/validation.test.ts` cases), ESLint, and a strict-TypeScript Next.js production build (`npm run test`, `npm run lint`, `npm run build`) all passed, including both new routes compiling into the route manifest. This build environment has no live `ANTHROPIC_API_KEY` or Neon connection, so an actual end-to-end call to Anthropic and a browser walkthrough of both features against a running dev server were **not** performed here — do that (Phase A5's synthetic-student walkthrough) before treating this as more than code-complete, and record the result in a follow-up entry here. |
