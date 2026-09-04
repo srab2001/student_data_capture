@@ -211,6 +211,31 @@ Rubric and ABC goal observations use the same staff-specific offline queue as
 other goal data. Reports display structured ABC fields and work-sample identity,
 and the CSV includes them in the `structured_observations` column.
 
+## Get AI help with goals and accommodations
+
+Two optional AI-assisted helpers, built on the Anthropic API, are available from a student's
+data plan screen. Both only ever propose — nothing they suggest is saved until you review it and
+click the same Add/Save action you would use for a manually entered goal or accommodation.
+
+- **AI-assisted setup**, on the new-goal form: set the domain and entry control, describe the
+  skill or behavior in your own words, and optionally add a short baseline summary, then choose
+  **Suggest a measurement plan**. It fills in the baseline, observable definition, method,
+  mastery criterion, schedule, and setting below — every field remains editable, and you still
+  enter the goal text yourself before saving.
+- **Ask for a suggestion**, in the Accommodations section: a short, bounded chat (at most 5
+  messages) about what the student is struggling with, ending in one proposed accommodation with
+  a setting and implementation directions that you can send to the add-accommodation form with
+  one click, or discard and start over.
+
+No student name, ID, or narrative note is ever sent to the AI — only the domain, entry control,
+and what a staff member types into these two panels, plus (for the accommodation chat) the
+student's existing accommodation names, settings, and effectiveness ratings; see
+`docs/compliance.md`'s "AI-assisted features" section for the full data-minimization design. If
+the AI is unavailable or times out, the panel shows a plain error message and the manual form
+below it still works exactly as before — neither feature is required to add a goal or an
+accommodation, and both remain gated to synthetic data until the Track B compliance blockers
+recorded there clear.
+
 ## Review progress
 
 Open `/summary`, choose date/student/domain filters, and select a goal.
@@ -283,3 +308,6 @@ add or remove them. Aides also cannot add students or manage goals/groups.
 - **Collection says plan incomplete:** the historical goal has no structured
   measurement plan. A teacher must enter the approved plan; the app will not
   backfill it.
+- **"AI unavailable" on the goal wizard or accommodation chat:** the Anthropic
+  API call failed or timed out. Continue with the manual form below the
+  message — neither feature is required, and no partial AI response is saved.
