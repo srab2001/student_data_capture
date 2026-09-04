@@ -6,6 +6,7 @@ import type {
   DataPoint,
   Goal,
   Session,
+  SessionAbsence,
   Student,
   StudentAccommodation,
 } from "@/lib/db/types";
@@ -147,6 +148,9 @@ export function EntryScreen({
   const [accommodationsByStudent, setAccommodationsByStudent] = useState<
     Map<string, StudentAccommodation[]>
   >(new Map());
+  const [absencesByStudent, setAbsencesByStudent] = useState<Map<string, SessionAbsence>>(
+    new Map()
+  );
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [groups, setGroups] = useState<RosterGroupSummary[]>([]);
@@ -169,6 +173,8 @@ export function EntryScreen({
   const failedIdsRef = useRef<Set<string>>(new Set());
   const lastSavedGoalsRef = useRef<Set<string>>(new Set());
   const timersRef = useRef<Map<string, number | null>>(new Map());
+  const absenceSavingRef = useRef<Set<string>>(new Set());
+  const absenceFailedRef = useRef<Set<string>>(new Set());
   const preferenceQueueRef = useRef<Promise<unknown>>(Promise.resolve());
   const preferenceVersionRef = useRef(0);
   const [, bump] = useReducer((n: number) => n + 1, 0);
@@ -297,9 +303,14 @@ export function EntryScreen({
           accommodationsMap.set(accommodation.studentId, list);
         }
 
-        const dpRes = await apiFetch<{ dataPoints: DataPoint[] }>(
-          `/api/data-points?sessionId=${sessionRes.session.id}`
-        );
+        const [dpRes, absencesRes] = await Promise.all([
+          apiFetch<{ dataPoints: DataPoint[] }>(
+            `/api/data-points?sessionId=${sessionRes.session.id}`
+          ),
+          apiFetch<{ absences: SessionAbsence[] }>(
+            `/api/session-absences?sessionId=${sessionRes.session.id}`
+          ),
+        ]);
         if (cancelled) return;
         const byGoal = new Map<string, DataPoint[]>();
         for (const dataPoint of dpRes.dataPoints) {
@@ -308,6 +319,10 @@ export function EntryScreen({
           byGoal.set(dataPoint.goalId, list);
         }
         eventsByGoalRef.current = byGoal;
+        const absenceMap = new Map<string, SessionAbsence>();
+        for (const absence of absencesRes.absences) {
+          absenceMap.set(absence.studentId, absence);
+        }
 
         const pending = readPendingObservations(currentStaffId);
         pendingRef.current = new Map(pending.map((item) => [item.clientRequestId, item]));
@@ -315,6 +330,7 @@ export function EntryScreen({
         setStudents(studentsRes.students);
         setGoalsByStudent(byStudent);
         setAccommodationsByStudent(accommodationsMap);
+        setAbsencesByStudent(absenceMap);
         setSession(sessionRes.session);
         setGroups(groupsRes.groups);
         setView(preferencesRes.preferences.layout);
@@ -486,6 +502,36 @@ export function EntryScreen({
     }
   }
 
+  async function toggleAbsence(studentId: string) {
+    if (!session) return;
+    const existing = absencesByStudent.get(studentId);
+    absenceSavingRef.current.add(studentId);
+    bump();
+    try {
+      if (existing) {
+        await apiFetch(`/api/session-absences/${existing.id}`, { method: "DELETE" });
+        setAbsencesByStudent((prev) => {
+          const next = new Map(prev);
+          next.delete(studentId);
+          return next;
+        });
+      } else {
+        const res = await apiFetch<{ absence: SessionAbsence }>("/api/session-absences", {
+          method: "POST",
+          body: JSON.stringify({ sessionId: session.id, studentId }),
+        });
+        setAbsencesByStudent((prev) => new Map(prev).set(studentId, res.absence));
+      }
+      absenceFailedRef.current.delete(studentId);
+    } catch (err) {
+      absenceFailedRef.current.add(studentId);
+      setError(err instanceof Error ? err.message : "Attendance update failed.");
+    } finally {
+      absenceSavingRef.current.delete(studentId);
+      bump();
+    }
+  }
+
   function saveStatusForGoal(goalId: string): ReturnType<EntryActions["saveStatusForGoal"]> {
     const pending = [...pendingRef.current.values()].filter((item) => item.goalId === goalId);
     if (pending.some((item) => failedIdsRef.current.has(item.clientRequestId))) return "failed";
@@ -623,6 +669,13 @@ export function EntryScreen({
     onUndoLast: (goalId) => void undoLast(goalId),
     saveStatusForGoal,
     onLogAccommodation: logAccommodation,
+    isStudentAbsent: (studentId) => absencesByStudent.has(studentId),
+    absenceStatusForStudent: (studentId) => {
+      if (absenceFailedRef.current.has(studentId)) return "failed";
+      if (absenceSavingRef.current.has(studentId)) return "saving";
+      return "idle";
+    },
+    onToggleAbsence: (studentId) => void toggleAbsence(studentId),
   };
 
   const visibleStudents = students

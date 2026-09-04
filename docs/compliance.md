@@ -242,6 +242,16 @@ Built 2026-09-03, on synthetic data only, no Policy 3060 sign-off (Track A):
 
 This log will be updated as each piece moves from prototype to reviewed.
 
+## Feature-backlog Phase 3 log
+
+Built 2026-09-04, on synthetic data only, no Policy 3060 sign-off (Track A):
+
+| Piece | Status | Notes |
+|---|---|---|
+| **Phase 3 — absence handling** | ✅ Built | New table `session_absences` (migration `drizzle/0008_lively_adam_destine.sql`, applied to the `crimson-flower-01823647` dev branch) marks a student absent for a specific classroom session, so "no data logged" (goal not addressed while present) and "student wasn't here" are no longer indistinguishable on the entry screen or in the progress summary. Full CRUD at `/api/session-absences` (mark absent is idempotent — re-marking revives a soft-deleted row via the `(session_id, student_id)` unique index) and `/api/session-absences/[id]` (undo, soft-delete). A "Mark absent" / "Present today" toggle appears on `/entry` in Card stack, Focus, and Accordion layouts; Grid and Timers show a read-only "Absent" badge. Marking a student absent disables that student's goal-entry controls for the session rather than hiding them, so staff can still see what was due. |
+
+This log will be updated as each piece moves from prototype to reviewed.
+
 ## Phase 1 data-integrity release log
 
 Implemented 2026-09-02 and deployed 2026-09-03, on synthetic data only, no

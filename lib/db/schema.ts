@@ -256,6 +256,35 @@ export const sessions = pgTable("sessions", {
   ...timestamps,
 });
 
+// Marks one student absent for one classroom session, so "no data logged"
+// (goal not addressed) and "student wasn't here" never look identical on
+// the entry screen or in the progress summary. Distinct from data_points'
+// own observation-window-completion markers, which record a confirmed
+// zero for a present student, not their absence.
+export const sessionAbsences = pgTable(
+  "session_absences",
+  {
+    ...identity,
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => sessions.id),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id),
+    enteredByStaffId: uuid("entered_by_staff_id")
+      .notNull()
+      .references(() => staff.id),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("session_absences_session_student_unique").on(
+      table.sessionId,
+      table.studentId
+    ),
+    index("session_absences_student_id_idx").on(table.studentId),
+  ]
+);
+
 export const dataPoints = pgTable(
   "data_points",
   {

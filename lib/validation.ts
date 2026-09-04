@@ -429,6 +429,13 @@ export const updateStudentSchema = z
   })
   .strict();
 
+export const createSessionAbsenceSchema = z
+  .object({
+    sessionId: z.uuid(),
+    studentId: z.uuid(),
+  })
+  .strict();
+
 export const createAccommodationLogSchema = z
   .object({
     studentId: z.uuid(),

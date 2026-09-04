@@ -37,6 +37,9 @@ function actions(valueNumeric: number | null): EntryActions {
     onUndoLast: () => undefined,
     saveStatusForGoal: () => "idle",
     onLogAccommodation: () => undefined,
+    isStudentAbsent: () => false,
+    absenceStatusForStudent: () => "idle",
+    onToggleAbsence: () => undefined,
   };
 }
 

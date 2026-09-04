@@ -59,6 +59,9 @@ export type EntryActions = {
       reasonNotUsed: string | null;
     }
   ) => void;
+  isStudentAbsent: (studentId: string) => boolean;
+  absenceStatusForStudent: (studentId: string) => "idle" | "saving" | "failed";
+  onToggleAbsence: (studentId: string) => void;
   disabled?: boolean;
 };
 
