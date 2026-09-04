@@ -45,6 +45,16 @@ task-analysis views, and per-support accommodation summaries. Actual behavior-
 observation exposure and optional accommodation session/goal/context fields are
 stored without rewriting legacy evidence.
 
+**AI-assisted features:** deployed to the synthetic pilot 2026-09-04
+(production deployment `dpl_385Hq9VGKYVDutbcJ23FLBRQmigg`, commit `33c07cb`).
+An "AI-assisted setup" panel on the new-goal form and an "Ask for a
+suggestion" chat panel on the Accommodations section call the Anthropic API
+to propose a measurement plan or an accommodation — see "AI-assisted
+features" below. The home page, the synthetic staff roster API, and the
+build/runtime logs were confirmed working post-deploy; the authenticated
+end-to-end AI call itself has not yet been exercised against production from
+an automated check — see `docs/compliance.md`'s implementation log.
+
 ## ⚠️ FERPA / student data notice
 
 This repo is designed to eventually hold data protected by FERPA and IDEA
@@ -150,6 +160,7 @@ deploys ever regress and this history is useful context again.
   through `lib/auth/authz.ts`
 - `lib/db/schema.ts` — the schema; check against `docs/compliance.md` before adding a field
 - `lib/auth/session.ts` — **prototype-only** sign-in, replaced by SSO in Phase 5
+- `lib/ai/` — the Anthropic client, the data-minimization layer (`redact.ts`), and the goal-wizard/accommodation-chat logic; `app/api/ai/` — their Route Handlers, both proposal-only (see "AI-assisted features" below)
 
 ## Phase 1 data-integrity behavior
 
@@ -236,3 +247,31 @@ gates in `docs/compliance.md` are complete.
 - Named classroom colors can be added, edited, ordered, and retired. Their
   explanation is available on pointer hover, keyboard focus, and to assistive
   technology, with a visible text label so meaning never depends on color.
+
+## AI-assisted features (goal wizard, accommodation chat)
+
+Full strategy and compliance review: `STRATEGY-ai-goal-accommodation-assistant.md`.
+
+- An **AI-assisted setup** panel on the new-goal form (`/goals/[studentId]`)
+  proposes a structured measurement plan from a domain, entry control, and a
+  short skill/behavior description. An **Ask for a suggestion** chat panel on
+  the Accommodations section runs a bounded (max 5-exchange) conversation
+  that ends in one proposed accommodation.
+- Both call the Anthropic API (`lib/ai/client.ts`) and force structured
+  tool-use output, re-validated against the same Zod schemas manual entry
+  uses, before returning a proposal — neither route writes to the database.
+  A teacher must review and save through the existing goals/accommodations
+  API, exactly as if they had typed it themselves.
+- `lib/ai/redact.ts` builds, by construction, the only payloads either
+  feature may send: no student name or ID, and no narrative note — only
+  domain, metric type, a teacher-typed description, and (for the
+  accommodation chat) structured accommodation names/settings/effectiveness
+  ratings. If the AI call fails or times out, the UI falls back to the
+  existing manual form with a plain error message.
+- Anthropic becomes a new third-party data processor the moment either
+  feature is used with real student data — this is a new finding on top of
+  the existing Vercel/Neon third-party status, and both features remain
+  gated to synthetic data until the AI-specific blockers in
+  `docs/compliance.md` clear (no compliance-officer review of this vendor
+  yet, no data-processing agreement on file), independent of the base app's
+  own Track B gate.

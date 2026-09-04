@@ -32,6 +32,7 @@ const TOC = [
   ["controls", "What each control does"],
   ["managing-goals", "Changing a student's goals"],
   ["accommodations", "Logging accommodations"],
+  ["ai-assistance", "Getting AI help with goals and accommodations"],
   ["absences", "Marking a student absent"],
   ["summary", "The progress summary"],
   ["data-privacy", "Data & privacy"],
@@ -333,6 +334,40 @@ export default function HelpPage() {
           </p>
         </Section>
 
+        <Section id="ai-assistance" title="Getting AI help with goals and accommodations">
+          <p>
+            Two optional AI-assisted helpers, built on the Anthropic API, are available from a
+            student&apos;s <strong>Manage goals</strong> screen. Both only ever <em>propose</em> —
+            nothing they suggest is saved until you review it and click the same Add/Save button
+            you&apos;d use if you&apos;d typed it yourself.
+          </p>
+          <ul className="list-disc space-y-2 pl-5">
+            <li>
+              <strong>AI-assisted setup</strong>, on the &quot;+ Add a new goal&quot; form: set the
+              domain and entry control, describe the skill or behavior in your own words, and
+              optionally add a short baseline summary. &quot;Suggest a measurement plan&quot; fills
+              in the baseline, observable definition, method, mastery criterion, schedule, and
+              setting below — every field stays editable, and you still need to fill in the goal
+              text yourself before saving.
+            </li>
+            <li>
+              <strong>Ask for a suggestion</strong>, in the Accommodations section: a short,
+              bounded chat (at most 5 messages) about what the student is struggling with. Once it
+              has enough information it proposes one accommodation with a setting and
+              implementation directions, which you can send to the &quot;Add accommodation&quot;
+              form below with one click, or discard and start over.
+            </li>
+          </ul>
+          <p>
+            <strong>No student name, ID, or narrative note is ever sent to the AI</strong> — only
+            the domain, entry control, and what you type into these two panels, plus (for the
+            accommodation chat) the student&apos;s existing accommodation names, settings, and
+            effectiveness ratings. If the AI is unavailable or times out, you&apos;ll see a plain
+            error message and can keep going with the manual form exactly as before — neither
+            feature is required to add a goal or an accommodation.
+          </p>
+        </Section>
+
         <Section id="absences" title="Marking a student absent">
           <p>
             <strong>Mark absent</strong>, next to a student&apos;s name in Card stack, Focus, and
@@ -440,6 +475,12 @@ export default function HelpPage() {
             <li>
               <strong>Timers says there are no duration goals:</strong> choose All students or
               another roster group, or return to Focus or Roster for non-duration goals.
+            </li>
+            <li>
+              <strong>&quot;AI unavailable&quot; on the goal wizard or accommodation
+              chat:</strong> the Anthropic API call failed or timed out. Continue with the manual
+              form below the message — neither feature is required, and no partial AI response is
+              saved.
             </li>
             <li>
               <strong>You want to see the tour again:</strong> the{" "}
