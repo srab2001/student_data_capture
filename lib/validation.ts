@@ -519,6 +519,71 @@ export const interventionAnnotationSchema = z
   })
   .strict();
 
+/**
+ * AI-assisted feature request/response shapes (docs/compliance.md
+ * "AI-assisted features"). These are validated on the way in (what a
+ * teacher may ask for) and, just as importantly, on the way out (what an
+ * AI response must look like before this app trusts it as a measurement
+ * plan or accommodation) — see lib/ai/goal-wizard.ts and
+ * lib/ai/accommodation-chat.ts.
+ */
+
+export const goalWizardRequestSchema = z
+  .object({
+    domain: z.enum(goalDomainValues),
+    metricType: z.enum(metricTypeValues),
+    skillDescription: z.string().trim().min(1).max(300),
+    baselineSummary: z.string().trim().min(1).max(300).nullable().optional(),
+  })
+  .strict();
+
+const accommodationChatMessageSchema = z
+  .object({
+    role: z.enum(["user", "assistant"]),
+    content: z.string().trim().min(1).max(500),
+  })
+  .strict();
+
+const ACCOMMODATION_CHAT_MAX_EXCHANGES = 5;
+
+export const accommodationChatRequestSchema = z
+  .object({
+    studentId: z.uuid(),
+    domain: z.enum(goalDomainValues),
+    messages: z.array(accommodationChatMessageSchema).min(1).max(2 * ACCOMMODATION_CHAT_MAX_EXCHANGES - 1),
+  })
+  .strict()
+  .refine((value) => value.messages[value.messages.length - 1].role === "user", {
+    message: "The conversation must end with the teacher's own message.",
+    path: ["messages"],
+  })
+  .refine(
+    (value) =>
+      value.messages.filter((message) => message.role === "user").length <=
+      ACCOMMODATION_CHAT_MAX_EXCHANGES,
+    {
+      message: "This suggestion has reached its turn limit — start a new one.",
+      path: ["messages"],
+    }
+  );
+
+export const accommodationChatQuestionSchema = z
+  .object({
+    kind: z.literal("question"),
+    question: z.string().trim().min(1).max(300),
+  })
+  .strict();
+
+export const accommodationChatSuggestionSchema = z
+  .object({
+    kind: z.literal("suggestion"),
+    name: z.string().trim().min(1).max(200),
+    setting: z.string().trim().min(1).max(200),
+    implementationNotes: z.string().trim().min(1).max(500),
+    rationale: z.string().trim().min(1).max(500),
+  })
+  .strict();
+
 export const summaryFilterSchema = z
   .object({
     studentId: z.uuid().optional(),

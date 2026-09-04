@@ -856,6 +856,104 @@ function GoalEditor({
   );
 }
 
+function AiGoalWizard({
+  draft,
+  onApply,
+}: {
+  draft: DraftGoal;
+  onApply: (plan: MeasurementPlan) => void;
+}) {
+  const [skillDescription, setSkillDescription] = useState("");
+  const [baselineSummary, setBaselineSummary] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [applied, setApplied] = useState(false);
+
+  async function suggest() {
+    setLoading(true);
+    setError(null);
+    setApplied(false);
+    try {
+      const res = await apiFetch<{ measurementPlan: MeasurementPlan }>("/api/ai/goal-wizard", {
+        method: "POST",
+        body: JSON.stringify({
+          domain: draft.domain,
+          metricType: draft.metricType,
+          skillDescription,
+          baselineSummary: baselineSummary.trim() || null,
+        }),
+      });
+      onApply(res.measurementPlan);
+      setApplied(true);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `${err.message} Continue filling in the measurement plan manually below.`
+          : "AI suggestion unavailable — continue filling in the measurement plan manually below."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="card" style={{ borderStyle: "dashed", marginBottom: "var(--space-3)" }}>
+      <h3>AI-assisted setup (optional)</h3>
+      <p className="text-muted mt-1 text-xs">
+        Set the domain and entry control above, describe the skill or behavior in your own words,
+        and the AI will propose a measurement plan below for you to review and edit. Nothing
+        saves until you click &quot;Add goal.&quot; No student name or identifying detail is ever
+        sent — only the domain, entry control, and what you type here.
+      </p>
+      <label className="text-muted mt-3 flex flex-col text-xs">
+        Skill or behavior description
+        <textarea
+          className="input mt-1"
+          rows={2}
+          value={skillDescription}
+          disabled={loading}
+          onChange={(e) => setSkillDescription(e.target.value)}
+          placeholder="e.g. Reading grade-level passages aloud with few errors"
+        />
+      </label>
+      <label className="text-muted mt-3 flex flex-col text-xs">
+        Baseline summary (optional)
+        <input
+          className="input mt-1"
+          value={baselineSummary}
+          disabled={loading}
+          onChange={(e) => setBaselineSummary(e.target.value)}
+          placeholder="e.g. 40% accuracy over 3 sessions"
+        />
+      </label>
+      {error && (
+        <p role="alert" className="mt-2 text-sm" style={{ color: "#b91c1c" }}>
+          {error}
+        </p>
+      )}
+      {applied && !error && (
+        <p
+          role="status"
+          className="mt-2 text-sm"
+          style={{ color: "var(--color-accent-700)", fontWeight: 600 }}
+        >
+          AI-suggested — review every field in the measurement plan below before saving.
+        </p>
+      )}
+      <div className="mt-3 flex justify-end">
+        <button
+          type="button"
+          className="btn btn-secondary"
+          disabled={loading || !skillDescription.trim()}
+          onClick={suggest}
+        >
+          {loading ? "Asking AI…" : "Suggest a measurement plan"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (g: Goal) => void }) {
   const [draft, setDraft] = useState<DraftGoal>(BLANK_DRAFT);
   const [saving, setSaving] = useState(false);
@@ -902,6 +1000,10 @@ function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (
     <div className="card" style={{ borderStyle: "dashed" }}>
       <p style={{ fontWeight: 600 }}>+ Add a new goal</p>
       <div className="mt-3">
+        <AiGoalWizard
+          draft={draft}
+          onApply={(measurementPlan) => setDraft((prev) => ({ ...prev, measurementPlan }))}
+        />
         <GoalFields draft={draft} onChange={setDraft} disabled={saving} />
       </div>
       {!valid && (
@@ -1013,6 +1115,177 @@ function AccommodationEditor({
   );
 }
 
+type AccommodationSuggestion = {
+  name: string;
+  setting: string;
+  implementationNotes: string;
+  rationale: string;
+};
+
+type AccommodationChatTurn =
+  | { kind: "question"; question: string }
+  | ({ kind: "suggestion" } & AccommodationSuggestion);
+
+function AccommodationChat({
+  studentId,
+  onSuggestion,
+}: {
+  studentId: string;
+  onSuggestion: (suggestion: AccommodationSuggestion) => void;
+}) {
+  const MAX_EXCHANGES = 5;
+  const [domain, setDomain] = useState<(typeof goalDomainValues)[number]>("accommodation");
+  const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
+  const [draftMessage, setDraftMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState<AccommodationSuggestion | null>(null);
+  const turnsUsed = messages.filter((m) => m.role === "user").length;
+  const turnLimitReached = turnsUsed >= MAX_EXCHANGES;
+
+  function reset() {
+    setMessages([]);
+    setSuggestion(null);
+    setError(null);
+    setDraftMessage("");
+  }
+
+  async function send() {
+    const text = draftMessage.trim();
+    if (!text) return;
+    const nextMessages = [...messages, { role: "user" as const, content: text }];
+    setMessages(nextMessages);
+    setDraftMessage("");
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiFetch<{ turn: AccommodationChatTurn }>(
+        "/api/ai/accommodation-chat",
+        { method: "POST", body: JSON.stringify({ studentId, domain, messages: nextMessages }) }
+      );
+      if (res.turn.kind === "question") {
+        setMessages([...nextMessages, { role: "assistant", content: res.turn.question }]);
+      } else {
+        const { name, setting, implementationNotes, rationale } = res.turn;
+        setMessages([...nextMessages, { role: "assistant", content: `Suggestion: ${name}. ${rationale}` }]);
+        setSuggestion({ name, setting, implementationNotes, rationale });
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `${err.message} Continue choosing an accommodation manually below.`
+          : "AI unavailable — continue choosing an accommodation manually below."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="card" style={{ borderStyle: "dashed" }}>
+      <h3>Ask for a suggestion</h3>
+      <p className="text-muted mt-1 text-xs">
+        A short, bounded conversation (up to {MAX_EXCHANGES} messages) to help pick an
+        accommodation. No student name is ever sent — only the domain below and this
+        student&apos;s existing accommodations and effectiveness ratings.
+      </p>
+      <label className="text-muted mt-3 flex flex-col text-xs">
+        Domain
+        <select
+          className="input mt-1"
+          value={domain}
+          disabled={messages.length > 0}
+          onChange={(event) => setDomain(event.target.value as typeof domain)}
+        >
+          {goalDomainValues.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {messages.length > 0 && (
+        <ul
+          aria-live="polite"
+          className="mt-3 flex flex-col gap-2 text-sm"
+          style={{ listStyle: "none", padding: 0 }}
+        >
+          {messages.map((m, index) => (
+            <li key={index}>
+              <strong>{m.role === "user" ? "You" : "AI"}:</strong> {m.content}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {error && (
+        <p role="alert" className="mt-2 text-sm" style={{ color: "#b91c1c" }}>
+          {error}
+        </p>
+      )}
+
+      {suggestion ? (
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              onSuggestion(suggestion);
+              reset();
+            }}
+          >
+            Use this suggestion below
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={reset}>
+            Start over
+          </button>
+        </div>
+      ) : turnLimitReached ? (
+        <p role="status" className="mt-3 text-sm">
+          This suggestion has reached its turn limit.{" "}
+          <button type="button" className="btn btn-ghost" onClick={reset}>
+            Start a new one
+          </button>
+        </p>
+      ) : (
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <label className="text-muted flex flex-1 flex-col text-xs">
+            {messages.length === 0 ? "What is the student struggling with?" : "Your reply"}
+            <input
+              className="input mt-1"
+              value={draftMessage}
+              disabled={loading}
+              onChange={(event) => setDraftMessage(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  send();
+                }
+              }}
+              placeholder="Describe the difficulty, not the student."
+            />
+          </label>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ alignSelf: "flex-end" }}
+            disabled={loading || !draftMessage.trim()}
+            onClick={send}
+          >
+            {loading ? "Asking…" : "Send"}
+          </button>
+        </div>
+      )}
+      {messages.length > 0 && !suggestion && (
+        <p className="text-muted mt-2 text-xs">
+          {turnsUsed}/{MAX_EXCHANGES} messages used
+        </p>
+      )}
+    </div>
+  );
+}
+
 function AccommodationPlan({
   studentId,
   accommodations,
@@ -1069,6 +1342,19 @@ function AccommodationPlan({
         {accommodations.length === 0 && (
           <p className="text-muted text-sm">No accommodations configured.</p>
         )}
+      </div>
+      <div className="mt-3">
+        <AccommodationChat
+          studentId={studentId}
+          onSuggestion={(suggestion) => {
+            setDraft({
+              name: suggestion.name,
+              setting: suggestion.setting,
+              implementationNotes: suggestion.implementationNotes,
+            });
+            setMessage(`AI-suggested — review before adding. ${suggestion.rationale}`);
+          }}
+        />
       </div>
       <div className="card mt-3" style={{ borderStyle: "dashed" }}>
         <h3>Add accommodation</h3>

@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  accommodationChatRequestSchema,
+  accommodationChatSuggestionSchema,
   createDataPointSchema,
   createAccommodationLogSchema,
   createGoalSchema,
   entryPreferencesSchema,
+  goalWizardRequestSchema,
   interventionAnnotationSchema,
   rosterGroupSchema,
   studentAccommodationSchema,
@@ -422,6 +425,102 @@ describe("Phase 3 workflow validation", () => {
         layout: "cards",
         workflowMode: "dashboard",
         selectedGroupId: null,
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("goalWizardRequestSchema", () => {
+  it("accepts a domain, metric type, and skill description", () => {
+    expect(
+      goalWizardRequestSchema.safeParse({
+        domain: "academic",
+        metricType: "accuracy_pct",
+        skillDescription: "Reading grade-level passages aloud.",
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects a request that names a student", () => {
+    expect(
+      goalWizardRequestSchema.safeParse({
+        domain: "academic",
+        metricType: "accuracy_pct",
+        skillDescription: "Reading grade-level passages aloud.",
+        studentId: "00000000-0000-4000-8000-000000000001",
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects a missing skill description", () => {
+    expect(
+      goalWizardRequestSchema.safeParse({
+        domain: "academic",
+        metricType: "accuracy_pct",
+        skillDescription: "",
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("accommodationChatRequestSchema", () => {
+  const studentId = "00000000-0000-4000-8000-000000000001";
+
+  it("accepts a conversation ending with the teacher's message", () => {
+    expect(
+      accommodationChatRequestSchema.safeParse({
+        studentId,
+        domain: "accommodation",
+        messages: [{ role: "user", content: "The student struggles with reading fluency." }],
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects a conversation ending with an assistant message", () => {
+    expect(
+      accommodationChatRequestSchema.safeParse({
+        studentId,
+        domain: "accommodation",
+        messages: [
+          { role: "user", content: "The student struggles with reading fluency." },
+          { role: "assistant", content: "How long has this been an issue?" },
+        ],
+      }).success
+    ).toBe(false);
+  });
+
+  it("rejects a conversation past the 5-exchange turn limit", () => {
+    const messages = [];
+    for (let i = 0; i < 6; i += 1) {
+      messages.push({ role: "user" as const, content: `Message ${i}` });
+      if (i < 5) messages.push({ role: "assistant" as const, content: `Reply ${i}` });
+    }
+    expect(
+      accommodationChatRequestSchema.safeParse({ studentId, domain: "accommodation", messages })
+        .success
+    ).toBe(false);
+  });
+});
+
+describe("accommodationChatSuggestionSchema", () => {
+  it("accepts a complete suggestion", () => {
+    expect(
+      accommodationChatSuggestionSchema.safeParse({
+        kind: "suggestion",
+        name: "Text-to-speech",
+        setting: "Reading assessments",
+        implementationNotes: "Provide audio playback of assessment text on request.",
+        rationale: "Matches the student's existing accommodation for the same domain.",
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects a suggestion missing a required field", () => {
+    expect(
+      accommodationChatSuggestionSchema.safeParse({
+        kind: "suggestion",
+        name: "Text-to-speech",
+        setting: "Reading assessments",
       }).success
     ).toBe(false);
   });
