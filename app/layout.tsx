@@ -26,8 +26,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`h-full antialiased ${caprasimo.variable} ${figtree.variable}`}>
       <body className="min-h-full flex">
         <Header />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+        <div className="flex flex-1 flex-col">
+          <div className="flex flex-1 flex-col">{children}</div>
           <Footer />
         </div>
       </body>
