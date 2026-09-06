@@ -36,6 +36,12 @@ export default function Home() {
           <span className="tag tag-neutral">Track A — prototype</span>
         </div>
 
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/entry" className="btn btn-primary">Enter classroom</Link>
+          <Link href="/help" className="btn btn-secondary">View guide</Link>
+        </div>
+        <details className="mt-6">
+          <summary className="min-h-11 cursor-pointer font-semibold">About this pilot</summary>
         <h2 className="mt-8" style={{ fontSize: 16 }}>
           Build phases
         </h2>
@@ -58,6 +64,8 @@ export default function Home() {
             </li>
           ))}
         </ul>
+
+        </details>
 
         <div
           className="mt-8 flex flex-col gap-2 pt-6 text-sm sm:flex-row sm:items-center sm:justify-between"
