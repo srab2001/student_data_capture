@@ -9,6 +9,7 @@ import { localDateIso } from "@/lib/observations";
 import { InterventionPanel } from "./InterventionPanel";
 import { ProgressChart } from "./ProgressChart";
 import type { ProgressSummaryResponse } from "./types";
+import { ExplainGoalButton } from "@/components/ExplainGoalButton";
 
 const DOMAINS = ["all", "academic", "behavioral", "independence", "accommodation"] as const;
 
@@ -186,7 +187,10 @@ export function SummaryView({ canManageInterventions }: { canManageInterventions
           {selected ? (
             <>
               <p className="text-muted text-xs">{selected.studentName}</p>
-              <h2 className="text-sm font-semibold">{selected.goal.goal.goalText}</h2>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <h2 className="text-sm font-semibold">{selected.goal.goal.goalText}</h2>
+                <ExplainGoalButton goal={selected.goal.goal} />
+              </div>
               <p className="text-muted mt-1 text-xs capitalize">{selected.goal.goal.domain} · {selected.goal.goal.metricType.replaceAll("_", " ")}</p>
 
               <div className="mt-4">

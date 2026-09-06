@@ -1,4 +1,5 @@
 import type { goalDomainValues, metricTypeValues } from "@/lib/validation";
+import type { MeasurementPlan } from "@/lib/measurement-plans";
 
 /**
  * Builds the only payloads this app is allowed to send to Anthropic
@@ -100,5 +101,33 @@ export function buildAccommodationChatContext(
     existingAccommodations,
   };
   assertNoIdentifyingKeys(payload, "accommodation-chat");
+  return payload;
+}
+
+export type ExplainGoalInput = {
+  domain: (typeof goalDomainValues)[number];
+  metricType: (typeof metricTypeValues)[number];
+  goalText: string;
+  measurementPlan: MeasurementPlan | null;
+};
+
+export type ExplainGoalPayload = ExplainGoalInput;
+
+/**
+ * Same fields a teacher already reviews on the entry/summary screens
+ * (domain, metric type, goal text, measurement plan) — no student
+ * name/ID, roster, or recorded observation ever included.
+ */
+export function buildExplainGoalPayload(input: ExplainGoalInput): ExplainGoalPayload {
+  const payload: ExplainGoalPayload = {
+    domain: input.domain,
+    metricType: input.metricType,
+    goalText: input.goalText,
+    measurementPlan: input.measurementPlan,
+  };
+  assertNoIdentifyingKeys(payload, "explain-goal");
+  if (payload.measurementPlan) {
+    assertNoIdentifyingKeys(payload.measurementPlan, "explain-goal:measurementPlan");
+  }
   return payload;
 }

@@ -3,6 +3,7 @@
 import type { Student, Goal } from "@/lib/db/types";
 import type { EntryActions } from "./types";
 import { GoalRow } from "./GoalRow";
+import { ExplainGoalButton } from "@/components/ExplainGoalButton";
 
 const DOMAIN_LABEL: Record<Goal["domain"], string> = {
   academic: "Academic",
@@ -45,7 +46,12 @@ export function GridView({
                 {student.displayName}
                 {isAbsent && <span className="tag tag-neutral ml-2">Absent</span>}
               </td>
-              <td>{goal.goalText}</td>
+              <td>
+                {goal.goalText}
+                <div className="mt-1">
+                  <ExplainGoalButton goal={goal} />
+                </div>
+              </td>
               <td>
                 <span className="tag tag-neutral">{DOMAIN_LABEL[goal.domain]}</span>
               </td>

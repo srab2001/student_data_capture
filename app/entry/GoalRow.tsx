@@ -7,6 +7,7 @@ import { PROMPT_LEVELS } from "@/lib/icon-sets";
 import type { IconSetKey } from "@/lib/icon-sets";
 import type { MeasurementPlanStatus } from "@/lib/measurement-plans";
 import { DEFAULT_PROMPT_HIERARCHY, TARGET_FREQUENCY_LABEL } from "@/lib/student-data-plan";
+import { ExplainGoalButton } from "@/components/ExplainGoalButton";
 
 const DOMAIN_LABEL: Record<Goal["domain"], string> = {
   academic: "Academic",
@@ -144,17 +145,20 @@ export function GoalRow({
               {goal.measurementPlan ? ` · ${goal.measurementPlan.setting}` : ""}
             </p>
           </div>
-          {showNote && (
-            <button
-              type="button"
-              data-tour="note-toggle"
-              onClick={() => setNoteOpen((v) => !v)}
-              className="btn btn-ghost shrink-0"
-              aria-expanded={noteOpen}
-            >
-              {noteOpen ? "Hide note" : "+ Note"}
-            </button>
-          )}
+          <div className="flex shrink-0 items-start gap-2">
+            <ExplainGoalButton goal={goal} />
+            {showNote && (
+              <button
+                type="button"
+                data-tour="note-toggle"
+                onClick={() => setNoteOpen((v) => !v)}
+                className="btn btn-ghost shrink-0"
+                aria-expanded={noteOpen}
+              >
+                {noteOpen ? "Hide note" : "+ Note"}
+              </button>
+            )}
+          </div>
         </div>
       )}
 
