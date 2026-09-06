@@ -1,5 +1,7 @@
 # User guide
 
+Tags: interface, student data capture, verification
+
 This is the repository copy of the Phase 1–4 workflow and classroom-admin
 guide. The same guidance is presented in the application at `/help`. The full
 workflow is live only as a synthetic-data pilot; Track B approval is still
