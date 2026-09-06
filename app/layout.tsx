@@ -24,10 +24,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`h-full antialiased ${caprasimo.variable} ${figtree.variable}`}>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex">
         <Header />
-        <div className="flex flex-1 flex-col">{children}</div>
-        <Footer />
+        <div className="flex flex-1 flex-col">
+          <div className="flex flex-1 flex-col">{children}</div>
+          <Footer />
+        </div>
       </body>
     </html>
   );

@@ -357,14 +357,22 @@ export default function HelpPage() {
               implementation directions, which you can send to the &quot;Add accommodation&quot;
               form below with one click, or discard and start over.
             </li>
+            <li>
+              <strong>Ask AI to explain</strong>, next to any goal on <span className="font-mono text-xs">/entry</span> or
+              in a goal&apos;s detail panel on <span className="font-mono text-xs">/summary</span>: a
+              short, plain-language explanation of what that goal measures and how to record data
+              for it. This one is read-only — there is nothing to review or save — and it&apos;s
+              available to anyone who can see the goal, not just staff who can edit it.
+            </li>
           </ul>
           <p>
             <strong>No student name, ID, or narrative note is ever sent to the AI</strong> — only
-            the domain, entry control, and what you type into these two panels, plus (for the
+            the domain, entry control, and what you type into these panels, plus (for the
             accommodation chat) the student&apos;s existing accommodation names, settings, and
-            effectiveness ratings. If the AI is unavailable or times out, you&apos;ll see a plain
-            error message and can keep going with the manual form exactly as before — neither
-            feature is required to add a goal or an accommodation.
+            effectiveness ratings, or (for the goal explainer) the goal&apos;s own text, metric
+            type, and measurement plan. If the AI is unavailable or times out, you&apos;ll see a
+            plain error message and can keep going without it — none of these features is required
+            to add a goal, add an accommodation, or record data.
           </p>
         </Section>
 

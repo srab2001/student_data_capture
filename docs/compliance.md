@@ -142,30 +142,41 @@ later without losing audit history.
   consent to record a conversation, a second legal issue on top of
   everything above.
 
-## AI-assisted features (goal/measurement-plan wizard, accommodation chat)
+## AI-assisted features (goal/measurement-plan wizard, accommodation chat, goal explainer)
 
 Full review: `STRATEGY-ai-goal-accommodation-assistant.md`. Summary here,
 kept current as the source of truth this code is built to match:
 
-- **Anthropic's API becomes a data processor** the moment either feature
-  is used — the same "self-built doesn't mean no vendor" logic already
-  recorded above for Vercel/Neon applies here. This is new versus the rest
-  of the app, which has never sent student data to a third party before.
+- **Anthropic's API becomes a data processor** the moment any of these
+  features is used — the same "self-built doesn't mean no vendor" logic
+  already recorded above for Vercel/Neon applies here. This is new versus
+  the rest of the app, which has never sent student data to a third party
+  before.
 - **Data minimization is enforced by construction, not by caller
-  discipline.** `lib/ai/redact.ts` builds the only payloads either feature
-  is allowed to send: the goal wizard sends goal domain, metric type, a
-  short skill/behavior description, and an optional numeric baseline
-  summary — never a student name, ID, or any other identifying field. The
-  accommodation chat sends goal domain plus existing accommodation
+  discipline.** `lib/ai/redact.ts` builds the only payloads any feature is
+  allowed to send: the goal wizard sends goal domain, metric type, a short
+  skill/behavior description, and an optional numeric baseline summary.
+  The accommodation chat sends goal domain plus existing accommodation
   names/settings/effectiveness ratings — never narrative
   `implementationNotes`/`reasonNotUsed` text, which is the field most
-  likely to carry identifying detail. Neither route even accepts a student
-  name in its request body.
-- **The AI never gets a write path.** Both `app/api/ai/goal-wizard` and
+  likely to carry identifying detail. The goal explainer (`POST
+  /api/ai/explain-goal`, a small "Ask AI to explain" button on the entry
+  and summary screens' goal rows) sends only domain, metric type, goal
+  text, and the structured measurement plan — the same fields a teacher
+  already sees on screen. None of these routes accepts a student name or
+  ID in its request body.
+- **The AI never gets a write path.** `app/api/ai/goal-wizard` and
   `app/api/ai/accommodation-chat` only return a proposal; saving it still
   goes through the existing, authorized, audited `POST /api/goals` and
   `POST /api/student-accommodations` endpoints with an explicit teacher
-  action in between.
+  action in between. `app/api/ai/explain-goal` is read-only end to end —
+  there is nothing to save.
+- **Access is broader for the explainer than the wizard/chat**, matching
+  what it actually does: `explain-goal` only requires the same
+  student-data access already needed to see the goal row at all
+  (recording data, viewing reports, or managing goals/students) — not
+  `canManageGoals` specifically, since explaining a goal doesn't create or
+  change anything.
 - **Blockers before real student data reaches either feature** (same
   Track A/B gate as the rest of this app, plus these AI-specific items):
   no compliance officer yet to review a new AI vendor; no Anthropic data
@@ -284,6 +295,17 @@ Built 2026-09-04, on synthetic data only, no Policy 3060 sign-off (Track A):
 | Piece | Status | Notes |
 |---|---|---|
 | **Phase 3 — absence handling** | ✅ Built | New table `session_absences` (migration `drizzle/0008_lively_adam_destine.sql`, applied to the `crimson-flower-01823647` dev branch) marks a student absent for a specific classroom session, so "no data logged" (goal not addressed while present) and "student wasn't here" are no longer indistinguishable on the entry screen or in the progress summary. Full CRUD at `/api/session-absences` (mark absent is idempotent — re-marking revives a soft-deleted row via the `(session_id, student_id)` unique index) and `/api/session-absences/[id]` (undo, soft-delete). A "Mark absent" / "Present today" toggle appears on `/entry` in Card stack, Focus, and Accordion layouts; Grid and Timers show a read-only "Absent" badge. Marking a student absent disables that student's goal-entry controls for the session rather than hiding them, so staff can still see what was due. |
+
+This log will be updated as each piece moves from prototype to reviewed.
+
+## Sidebar navigation and goal explainer log
+
+Built 2026-09-06, on synthetic data only, no Policy 3060 sign-off (Track A):
+
+| Piece | Status | Notes |
+|---|---|---|
+| **Left sidebar navigation** | ✅ Built | Replaces the horizontal top nav with a persistent left sidebar (`components/Header.tsx`, `components/SidebarNav.tsx`): Entry, Summary, Admin, and Guide render as a vertical column of pill-style buttons, gated by the same per-staff permission flags as before, with the current page highlighted. `app/layout.tsx` switched from a stacked (column) body layout to a side-by-side (row) one. |
+| **AI goal explainer** | ✅ Built | A new "Ask AI to explain" button (`components/ExplainGoalButton.tsx`) on each goal row in `/entry` (Card stack, Focus, Accordion, Grid) and the selected-goal detail panel on `/summary`. `POST /api/ai/explain-goal` returns a short plain-language explanation of what the goal measures and how to record data for it — read-only, bounded to domain/metric type/goal text/measurement plan (see "AI-assisted features" above), never a student name or ID. Available to anyone who can see the goal, not gated behind goal-management permission. |
 
 This log will be updated as each piece moves from prototype to reviewed.
 

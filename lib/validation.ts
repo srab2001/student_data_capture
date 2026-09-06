@@ -584,6 +584,21 @@ export const accommodationChatSuggestionSchema = z
   })
   .strict();
 
+export const explainGoalRequestSchema = z
+  .object({
+    domain: z.enum(goalDomainValues),
+    metricType: z.enum(metricTypeValues),
+    goalText: z.string().trim().min(1).max(500),
+    measurementPlan: measurementPlanSchema.nullable().optional(),
+  })
+  .strict();
+
+export const explainGoalResponseSchema = z
+  .object({
+    explanation: z.string().trim().min(1).max(800),
+  })
+  .strict();
+
 export const summaryFilterSchema = z
   .object({
     studentId: z.uuid().optional(),
