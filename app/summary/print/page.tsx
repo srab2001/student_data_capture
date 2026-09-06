@@ -14,7 +14,7 @@ function defaultFrom() {
 export default async function PrintSummaryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ studentId?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ studentId?: string; from?: string; to?: string; domain?: string }>;
 }) {
   const current = await getCurrentStaff();
   if (!current) redirect("/login");
@@ -24,6 +24,7 @@ export default async function PrintSummaryPage({
   const params = await searchParams;
   const filters = summaryFilterSchema.safeParse({
     studentId: params.studentId,
+    domain: params.domain ?? "all",
     from: params.from ?? defaultFrom(),
     to: params.to ?? schoolDateIso(),
   });
@@ -52,7 +53,7 @@ export default async function PrintSummaryPage({
 
       <h1 className="text-xl font-semibold text-zinc-950">IEP Progress Summary</h1>
       <p className="text-sm text-zinc-600">
-        Reporting period: {summary.rangeFrom} to {summary.rangeTo} · Generated{" "}
+        Domain: {filters.data.domain} · Reporting period: {summary.rangeFrom} to {summary.rangeTo} · Generated{" "}
         {new Date(summary.generatedAt).toLocaleString()}
       </p>
       <p className="mt-1 text-xs text-zinc-500">
@@ -87,7 +88,7 @@ export default async function PrintSummaryPage({
               </tr>
             </thead>
             <tbody>
-              {s.goals.map((g) => (
+              {s.goals.filter((g) => filters.data.domain === "all" || g.goal.domain === filters.data.domain).map((g) => (
                 <tr key={g.goal.id} className="border-t border-zinc-200">
                   <td className="py-1 pr-2 align-top capitalize">{g.goal.domain}</td>
                   <td className="py-1 pr-2 align-top">{g.goal.goalText}</td>
@@ -105,17 +106,17 @@ export default async function PrintSummaryPage({
                   </td>
                 </tr>
               ))}
-              {s.goals.length === 0 && (
+              {!s.goals.some((g) => filters.data.domain === "all" || g.goal.domain === filters.data.domain) && (
                 <tr>
                   <td colSpan={5} className="py-2 text-zinc-400">
-                    No goals on file.
+                    No goals match this filter.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
 
-          {s.accommodations.logs.length > 0 && (
+          {(filters.data.domain === "all" || filters.data.domain === "accommodation") && s.accommodations.logs.length > 0 && (
             <div className="mt-3 text-xs text-zinc-600">
               <p>
                 Accommodation usage: {s.accommodations.usageRatePct ?? "—"}% ·
