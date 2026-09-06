@@ -1,5 +1,7 @@
 # Test plan
 
+Tags: interface, student data capture, verification
+
 ## Scope
 
 Phase 1–4 implementation: immutable observation events, derived session aggregates,
