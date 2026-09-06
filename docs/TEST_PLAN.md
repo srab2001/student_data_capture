@@ -298,3 +298,8 @@ Use ChromeOS or Chrome at 1366×768 and 100%/200% zoom:
   fixture-dependent follow-ups.
 - HCPSS privacy, security, accessibility, and operational approval remains a
   Track B gate. These tests do not authorize real student data.
+
+
+## UI review changes — 2026-09-06
+
+Regression checks cover blank versus zero fluency, domain validation, CSV exclusion of other domains, and accommodation export. Verify keyboard navigation through goal steps, filter agreement across screen/CSV/print, and queued-entry retries after reconnect with synthetic data. No live classroom writes were performed.
