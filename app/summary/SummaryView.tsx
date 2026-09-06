@@ -88,6 +88,7 @@ export function SummaryView({ canManageInterventions }: { canManageInterventions
             href={`/api/export/csv?${new URLSearchParams({
               from,
               to,
+              domain,
               ...(studentId !== "all" ? { studentId } : {}),
             }).toString()}`}
             className="btn btn-secondary"
@@ -98,6 +99,7 @@ export function SummaryView({ canManageInterventions }: { canManageInterventions
             href={`/summary/print?${new URLSearchParams({
               from,
               to,
+              domain,
               ...(studentId !== "all" ? { studentId } : {}),
             }).toString()}`}
             target="_blank"
@@ -204,11 +206,11 @@ export function SummaryView({ canManageInterventions }: { canManageInterventions
                   <dd className="mt-1 text-xs" style={{ color: statusColor(selected.goal.collectionEvidence.kind), fontWeight: 600 }}>{selected.goal.collectionEvidence.label}</dd>
                 </div>
                 <div className="rounded-lg p-2" style={{ background: "var(--color-neutral-100)" }}>
-                  <dt className="text-muted text-xs">Evidence depth</dt>
+                  <dt className="text-muted text-xs">Days with observations</dt>
                   <dd className="mt-1 text-xs" style={{ color: statusColor(selected.goal.dataSufficiency.kind), fontWeight: 600 }}>{selected.goal.dataSufficiency.label}</dd>
                 </div>
                 <div className="rounded-lg p-2" style={{ background: "var(--color-neutral-100)" }}>
-                  <dt className="text-muted text-xs">Aim line</dt>
+                  <dt className="text-muted text-xs">Progress toward target</dt>
                   <dd className="mt-1 text-xs" style={{ color: statusColor(selected.goal.aimStatus.kind), fontWeight: 600 }}>{selected.goal.aimStatus.label}</dd>
                 </div>
               </dl>
@@ -268,7 +270,7 @@ export function SummaryView({ canManageInterventions }: { canManageInterventions
         </div>
       </div>
 
-      {data?.students.some((student) => student.accommodations.bySupport.length > 0) ? (
+      {(domain === "all" || domain === "accommodation") && data?.students.some((student) => student.accommodations.bySupport.length > 0) ? (
         <section className="mt-6" aria-labelledby="accommodation-analysis-heading">
           <h2 id="accommodation-analysis-heading">Accommodation implementation</h2>
           <p className="text-muted mt-1 text-sm">
@@ -282,7 +284,7 @@ export function SummaryView({ canManageInterventions }: { canManageInterventions
                   <th scope="col">Setting</th>
                   <th scope="col">Used</th>
                   <th scope="col">Effectiveness</th>
-                  <th scope="col">Fidelity</th>
+                  <th scope="col">Support delivered as planned</th>
                   <th scope="col">Context linked</th>
                 </tr>
               </thead>
