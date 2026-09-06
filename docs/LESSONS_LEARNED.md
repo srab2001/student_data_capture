@@ -1,5 +1,7 @@
 # Lessons learned
 
+Tags: interface, student data capture, verification
+
 ## 2026-09-03 — Rebase migration numbering on the deployed journal, not a stale worktree
 
 - **Context:** The admin/data-readiness release began from a long-lived dirty
