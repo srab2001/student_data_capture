@@ -214,7 +214,7 @@ export function summarizeGoal(
 
 export async function getProgressSummary(
   classroomId: string,
-  opts: { studentId?: string; from: string; to: string }
+  opts: { studentId?: string; from: string; to: string; domain?: "all" | "academic" | "behavioral" | "independence" | "accommodation" }
 ): Promise<ProgressSummary> {
   const studentRows = await db
     .select()
@@ -238,8 +238,8 @@ export async function getProgressSummary(
   }
 
   const [goalRows, accommodationRows] = await Promise.all([
-    db.select().from(goals).where(inArray(goals.studentId, studentIds)),
-    db
+    db.select().from(goals).where(and(inArray(goals.studentId, studentIds), opts.domain && opts.domain !== "all" ? eq(goals.domain, opts.domain) : undefined)),
+    opts.domain && opts.domain !== "all" && opts.domain !== "accommodation" ? [] : db
       .select()
       .from(accommodationLogs)
       .where(

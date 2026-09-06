@@ -601,6 +601,7 @@ export const explainGoalResponseSchema = z
 
 export const summaryFilterSchema = z
   .object({
+    domain: z.enum(["all", "academic", "behavioral", "independence", "accommodation"]).default("all"),
     studentId: z.uuid().optional(),
     from: z.iso.date(),
     to: z.iso.date(),

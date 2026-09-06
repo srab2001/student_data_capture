@@ -460,3 +460,20 @@ h6 { font-size: 13px; line-height: 1.4; text-transform: uppercase; letter-spacin
 textarea.input {
   min-height: auto;
 }
+
+/* UI review: readable controls and consistent keyboard focus. */
+body > div { min-width: 0; }
+.seg { background: var(--color-neutral-200); color: var(--color-text); flex-wrap: wrap; border-radius: var(--radius-sm); }
+.seg-opt { min-height: 44px; color: var(--color-text); }
+.sidebar { background: var(--color-accent-700); }
+.table th { background: var(--color-accent-700); color: #fff; }
+button:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--color-accent-600); outline-offset: 3px; }
+.sidebar a:focus-visible, .sidebar button:focus-visible { outline-color: #fff; }
+@media (max-width: 640px) { h1 { font-size: 30px; } h2 { font-size: 24px; } .page { padding-top: 16px; } }
+
+@media (max-width: 640px) {
+  body { flex-direction: column; }
+  .sidebar { width: 100%; flex-basis: auto; min-height: auto; gap: var(--space-2); border-right: 0; }
+  .sidebar-nav { flex-direction: row; flex-wrap: wrap; }
+  .sidebar-footer { margin-top: 0; flex-direction: row; flex-wrap: wrap; align-items: center; }
+}

@@ -1,5 +1,7 @@
 # User guide
 
+Tags: interface, student data capture, verification
+
 This is the repository copy of the Phase 1–4 workflow and classroom-admin
 guide. The same guidance is presented in the application at `/help`. The full
 workflow is live only as a synthetic-data pilot; Track B approval is still
@@ -311,3 +313,8 @@ add or remove them. Aides also cannot add students or manage goals/groups.
 - **"AI unavailable" on the goal wizard or accommodation chat:** the Anthropic
   API call failed or timed out. Continue with the manual form below the
   message — neither feature is required, and no partial AI response is saved.
+
+
+## UI review changes — 2026-09-06
+
+Enter classroom opens the entry workflow. View options contains workflow and layout controls; Manage roster groups is collapsed. Accuracy buttons show Correct and Incorrect. Leaving fluency blank records nothing; entering 0 records zero. Retry save resends the retained entry with its original request ID. Goal creation uses Goal, Measurement, Schedule, and Review. Existing goal editors expand from their titles. CSV and print use the chosen domain as well as student and date filters.

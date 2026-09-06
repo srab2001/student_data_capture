@@ -1,5 +1,7 @@
 # Lessons learned
 
+Tags: interface, student data capture, verification
+
 ## 2026-09-03 — Rebase migration numbering on the deployed journal, not a stale worktree
 
 - **Context:** The admin/data-readiness release began from a long-lived dirty
@@ -751,3 +753,8 @@ Append-only operational record. Do not include credentials or student data.
 - **Prevention:** For every hover disclosure, define the keyboard, touch, and
   non-visual equivalent during component design.
 - **Status:** Resolved; real screen-reader testing remains a manual gate.
+
+
+## UI review changes — 2026-09-06
+
+Blank input and observed zero must remain distinct. Export controls must carry the filters used on screen. A retry must reuse the original request ID, preserving idempotency. Configuration and collection controls should not compete for the opening screen.
