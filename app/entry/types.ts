@@ -42,6 +42,8 @@ export type EntryActions = {
   onNoteBlur: (goalId: string, note: string) => void;
   canUndoForGoal: (goalId: string) => boolean;
   onUndoLast: (goalId: string) => void;
+  canRetrySaveForGoal?: (goalId: string) => boolean;
+  onRetrySave?: (goalId: string) => void;
   saveStatusForGoal: (
     goalId: string
   ) => "idle" | "saving" | "saved" | "queued" | "failed";

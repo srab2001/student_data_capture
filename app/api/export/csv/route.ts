@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     const params = request.nextUrl.searchParams;
     const filters = summaryFilterSchema.parse({
       studentId: params.get("studentId") ?? undefined,
+      domain: params.get("domain") ?? "all",
       from: params.get("from") ?? defaultFrom(),
       to: params.get("to") ?? schoolDateIso(),
     });
@@ -39,6 +40,7 @@ export async function GET(request: NextRequest) {
       "student",
       "domain",
       "goal",
+      "report_domain_filter",
       "reporting_period_start",
       "reporting_period_end",
       "current_value",
@@ -54,12 +56,14 @@ export async function GET(request: NextRequest) {
     for (const s of summary.students) {
       const dataLabel = s.student.isSynthetic ? "SYNTHETIC" : "REAL";
       for (const g of s.goals) {
+        if (filters.domain !== "all" && g.goal.domain !== filters.domain) continue;
         lines.push(
           [
             dataLabel,
             s.student.displayName,
             g.goal.domain,
             g.goal.goalText,
+            filters.domain,
             summary.rangeFrom,
             summary.rangeTo,
             g.currentValueLabel,
@@ -91,13 +95,14 @@ export async function GET(request: NextRequest) {
             .join(",")
         );
       }
-      for (const support of s.accommodations.bySupport) {
+      for (const support of (filters.domain === "all" || filters.domain === "accommodation" ? s.accommodations.bySupport : [])) {
         lines.push(
           [
             dataLabel,
             s.student.displayName,
             "accommodation",
             `${support.accommodationName}${support.setting ? ` — ${support.setting}` : ""}`,
+            filters.domain,
             summary.rangeFrom,
             summary.rangeTo,
             `Used ${support.usedCount}/${support.logCount}; effectiveness ${support.avgEffectiveness ?? "—"}/5 (n=${support.effectivenessN}); fidelity ${support.avgFidelity ?? "—"}/5 (n=${support.fidelityN})`,

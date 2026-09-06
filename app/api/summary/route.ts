@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const params = request.nextUrl.searchParams;
     const filters = summaryFilterSchema.parse({
       studentId: params.get("studentId") ?? undefined,
+      domain: params.get("domain") ?? "all",
       from: params.get("from") ?? defaultFrom(),
       to: params.get("to") ?? schoolDateIso(),
     });

@@ -668,6 +668,12 @@ export function EntryScreen({
     canUndoForGoal: (goalId) => !!latestUndoableEvent(goalId),
     onUndoLast: (goalId) => void undoLast(goalId),
     saveStatusForGoal,
+    canRetrySaveForGoal: (goalId) => [...pendingRef.current.values()].some(pending => pending.goalId === goalId),
+    onRetrySave: (goalId) => {
+      for (const pending of pendingRef.current.values()) {
+        if (pending.goalId === goalId) void flushObservation(pending);
+      }
+    },
     onLogAccommodation: logAccommodation,
     isStudentAbsent: (studentId) => absencesByStudent.has(studentId),
     absenceStatusForStudent: (studentId) => {
@@ -730,29 +736,7 @@ export function EntryScreen({
       </div>
 
       <div data-tour="workflow-modes" className="mb-4 flex flex-wrap items-end gap-3">
-        <div>
-          <p className="card-kicker mb-1">Workflow</p>
-          <div className="seg" role="radiogroup" aria-label="Workflow mode">
-            {WORKFLOW_OPTIONS.map((option) => (
-              <label key={option.value} className="seg-opt">
-                <input
-                  type="radio"
-                  name="workflow-mode"
-                  checked={workflowMode === option.value}
-                  onChange={() => {
-                    setFocusStudentId(null);
-                    savePreferences({
-                      layout: view,
-                      workflowMode: option.value,
-                      selectedGroupId,
-                    });
-                  }}
-                />
-                {option.label}
-              </label>
-            ))}
-          </div>
-        </div>
+
 
         <label data-tour="roster-group-filter" className="flex flex-col gap-1">
           <span className="card-kicker">Roster group</span>
@@ -783,6 +767,32 @@ export function EntryScreen({
         </p>
       </div>
 
+      <details className="card mb-4">
+        <summary className="min-h-11 cursor-pointer font-semibold">View options</summary>
+        <div className="mt-3 flex flex-wrap gap-4">
+        <div>
+          <p className="card-kicker mb-1">Workflow</p>
+          <div className="seg" role="radiogroup" aria-label="Workflow mode">
+            {WORKFLOW_OPTIONS.map((option) => (
+              <label key={option.value} className="seg-opt">
+                <input
+                  type="radio"
+                  name="workflow-mode"
+                  checked={workflowMode === option.value}
+                  onChange={() => {
+                    setFocusStudentId(null);
+                    savePreferences({
+                      layout: view,
+                      workflowMode: option.value,
+                      selectedGroupId,
+                    });
+                  }}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+        </div>
       {workflowMode === "roster" && (
         <div className="mb-4">
           <p className="card-kicker mb-1">Roster layout</p>
@@ -807,6 +817,8 @@ export function EntryScreen({
           </div>
         </div>
       )}
+        </div>
+      </details>
 
       <div className="card mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -839,9 +851,10 @@ export function EntryScreen({
       )}
 
       {students && canManageStudents && (
-        <div className="mb-4">
+        <details className="mb-4">
+          <summary className="min-h-11 cursor-pointer">Manage roster groups</summary>
           <RosterGroupManager students={students} groups={groups} onChange={updateGroups} />
-        </div>
+        </details>
       )}
 
       {!students ? (

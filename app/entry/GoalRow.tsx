@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { parseFluencyInput } from "@/lib/entry-values";
 import type { Goal, DataPoint } from "@/lib/db/types";
 import { IconDegreePicker } from "@/components/IconDegreePicker";
 import { PROMPT_LEVELS } from "@/lib/icon-sets";
@@ -71,6 +72,7 @@ export function GoalRow({
   onNoteBlur,
   canUndo,
   onUndoLast,
+  onRetrySave,
   saveStatus,
   measurementStatus,
   disabled,
@@ -99,6 +101,7 @@ export function GoalRow({
   onNoteBlur: (note: string) => void;
   canUndo: boolean;
   onUndoLast: () => void;
+  onRetrySave?: () => void;
   saveStatus: "idle" | "saving" | "saved" | "queued" | "failed";
   measurementStatus: MeasurementPlanStatus;
   disabled?: boolean;
@@ -224,7 +227,7 @@ export function GoalRow({
               className="btn btn-secondary iconbtn"
               aria-label={`Correct trial for ${goal.goalText}`}
             >
-              <CheckIcon />
+              <CheckIcon /> Correct
             </button>
             <button
               type="button"
@@ -233,7 +236,7 @@ export function GoalRow({
               className="btn btn-secondary iconbtn"
               aria-label={`Incorrect trial for ${goal.goalText}`}
             >
-              <XIcon />
+              <XIcon /> Incorrect
             </button>
             <span className="text-muted">
               {total > 0 ? `${correct}/${total}${pct !== null ? ` (${pct}%)` : ""}` : "No trials yet"}
@@ -251,8 +254,9 @@ export function GoalRow({
               defaultValue={dataPoint?.valueNumeric ?? ""}
               disabled={disabled}
               onBlur={(e) => {
-                const n = Number(e.target.value);
-                if (!Number.isNaN(n)) onSetFluencyRate(n);
+                if (!e.target.validity.valid) return;
+                const value = parseFluencyInput(e.target.value);
+                if (value !== null) onSetFluencyRate(value);
               }}
               className="input"
               style={{ width: 96 }}
@@ -576,7 +580,10 @@ export function GoalRow({
         )}
       </div>
 
-      <div className="mt-2 flex min-h-11 items-center justify-between gap-2">
+      <div className="mt-2 flex min-h-11 flex-wrap items-center justify-between gap-2">
+        {(saveStatus === "failed" || saveStatus === "queued") && onRetrySave && (
+          <button type="button" className="btn btn-secondary" disabled={disabled} onClick={onRetrySave}>Retry save</button>
+        )}
         <span
           role="status"
           aria-live="polite"
@@ -585,8 +592,8 @@ export function GoalRow({
         >
           {saveStatus === "saving" && "Saving observation…"}
           {saveStatus === "saved" && "Observation saved"}
-          {saveStatus === "queued" && "Queued — will retry when connected"}
-          {saveStatus === "failed" && "Save failed — undo and record again"}
+          {saveStatus === "queued" && "Waiting to save — will retry when connected"}
+          {saveStatus === "failed" && (onRetrySave ? "Entry rejected. Review the error above; your entry remains here." : "Undo failed. Review the error above and retry undo.")}
         </span>
         <button
           type="button"
