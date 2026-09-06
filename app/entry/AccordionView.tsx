@@ -99,6 +99,7 @@ export function AccordionView({
                     onNoteBlur={(note) => actions.onNoteBlur(goal.id, note)}
                     canUndo={actions.canUndoForGoal(goal.id)}
                     onUndoLast={() => actions.onUndoLast(goal.id)}
+            onRetrySave={actions.onRetrySave && actions.canRetrySaveForGoal?.(goal.id) ? () => actions.onRetrySave!(goal.id) : undefined}
                     saveStatus={actions.saveStatusForGoal(goal.id)}
                     measurementStatus={actions.measurementStatusForGoal(goal.id)}
                     disabled={actions.disabled || isAbsent}
