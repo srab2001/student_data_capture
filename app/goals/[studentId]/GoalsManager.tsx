@@ -125,13 +125,16 @@ function GoalFields({
   draft,
   onChange,
   disabled,
+  step = "all",
 }: {
   draft: DraftGoal;
   onChange: (next: DraftGoal) => void;
   disabled?: boolean;
+  step?: "all" | "goal" | "measurement" | "schedule";
 }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {(step === "all" || step === "goal") && <>
       <label className="text-muted flex flex-col text-xs sm:col-span-2">
         Goal text
         <textarea
@@ -332,6 +335,8 @@ function GoalFields({
         </fieldset>
       )}
 
+      </>}
+      {(step !== "goal") && (
       <fieldset
         className="sm:col-span-2"
         style={{
@@ -340,11 +345,12 @@ function GoalFields({
           padding: "var(--space-3)",
         }}
       >
-        <legend style={{ fontWeight: 600, padding: "0 6px" }}>Measurement plan</legend>
+        <legend style={{ fontWeight: 600, padding: "0 6px" }}>{step === "schedule" ? "Schedule" : "Measurement plan"}</legend>
         <p className="text-muted mb-3 text-xs">
           Define exactly what staff should observe and when enough evidence has been collected.
         </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {(step !== "schedule") && <>
           <label className="text-muted flex flex-col text-xs sm:col-span-2">
             Baseline
             <input
@@ -420,6 +426,8 @@ function GoalFields({
             />
           </label>
 
+          </>}
+          {(step !== "measurement") && <>
           <label className="text-muted flex flex-col text-xs">
             Setting or activity
             <input
@@ -584,10 +592,12 @@ function GoalFields({
               />
             </label>
           </div>
+          </>}
         </div>
       </fieldset>
+      )}
 
-      {isQuantitativeMetric(draft.metricType) && (
+      {(step === "all" || step === "measurement") && isQuantitativeMetric(draft.metricType) && (
         <fieldset
           className="sm:col-span-2"
           style={{
@@ -819,11 +829,13 @@ function GoalEditor({
   }
 
   return (
-    <div
+    <details
+      open={highlighted || undefined}
       id={`goal-${goal.id}`}
       className="card"
       style={highlighted ? { outline: "3px solid var(--color-accent-600)", outlineOffset: 2 } : undefined}
     >
+      <summary className="min-h-11 cursor-pointer font-semibold">{goal.goalText} — Edit goal</summary>
       {!goal.measurementPlan && (
         <p
           role="status"
@@ -852,7 +864,7 @@ function GoalEditor({
           {saving ? "Saving…" : "Save changes"}
         </button>
       </div>
-    </div>
+    </details>
   );
 }
 
@@ -958,6 +970,8 @@ function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (
   const [draft, setDraft] = useState<DraftGoal>(BLANK_DRAFT);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stage, setStage] = useState(0);
+  const stages = ["Goal", "Measurement", "Schedule", "Review"];
   const valid = isDraftValid(draft);
 
   async function create() {
@@ -989,6 +1003,7 @@ function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (
       });
       onCreated(res.goal);
       setDraft(BLANK_DRAFT);
+      setStage(0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Create failed.");
     } finally {
@@ -997,16 +1012,20 @@ function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (
   }
 
   return (
-    <div className="card" style={{ borderStyle: "dashed" }}>
+    <div id="add-goal" className="card" style={{ borderStyle: "dashed" }}>
       <p style={{ fontWeight: 600 }}>+ Add a new goal</p>
+      <nav aria-label="Goal setup steps" className="mt-3 flex flex-wrap gap-2">
+        {stages.map((label, index) => <button key={label} type="button" className={stage === index ? "chip chip-on" : "chip"} aria-current={stage === index ? "step" : undefined} disabled={saving} onClick={() => setStage(index)}>{index + 1}. {label}</button>)}
+      </nav>
+      <p className="mt-3" role="status">Step {stage + 1} of 4: {stages[stage]}</p>
       <div className="mt-3">
-        <AiGoalWizard
+        {stage === 1 && <AiGoalWizard
           draft={draft}
           onApply={(measurementPlan) => setDraft((prev) => ({ ...prev, measurementPlan }))}
-        />
-        <GoalFields draft={draft} onChange={setDraft} disabled={saving} />
+        />}
+        <GoalFields draft={draft} onChange={setDraft} disabled={saving || stage === 3} step={(["goal", "measurement", "schedule", "all"] as const)[stage]} />
       </div>
-      {!valid && (
+      {stage === 3 && !valid && (
         <p className="text-muted mt-2 text-xs">
           Complete the goal text and all measurement-plan fields except the optional end date.
           Enter opportunities, an observation window, or both. If an aim line is enabled, complete
@@ -1018,7 +1037,9 @@ function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (
           {error}
         </p>
       )}
-      <div className="mt-3 flex justify-end">
+      <div className="mt-3 flex justify-between gap-2">
+        <button type="button" className="btn btn-secondary" disabled={saving || stage === 0} onClick={() => setStage(stage - 1)}>Back</button>
+        {stage < 3 ? <button type="button" className="btn btn-primary" disabled={saving} onClick={() => setStage(stage + 1)}>Continue</button> : (
         <button
           type="button"
           onClick={create}
@@ -1027,6 +1048,7 @@ function NewGoalForm({ studentId, onCreated }: { studentId: string; onCreated: (
         >
           {saving ? "Adding…" : "Add goal"}
         </button>
+        )}
       </div>
     </div>
   );
@@ -1473,23 +1495,7 @@ export function GoalsManager({
         </p>
       )}
 
-      {student && (
-        <section className="mt-5" aria-labelledby="supported-data-heading">
-          <h2 id="supported-data-heading">Supported data collection</h2>
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {DATA_COLLECTION_CATEGORIES.map((category) => (
-              <article key={category.title} className="card">
-                <h3>{category.title}</h3>
-                <p className="text-muted mt-1 text-sm">{category.description}</p>
-              </article>
-            ))}
-          </div>
-          <p className="text-muted mt-3 text-sm">
-            Collection cadence is set by the IEP team for each goal. Quarterly reporting
-            summarizes evidence; it does not replace scheduled probes or observations.
-          </p>
-        </section>
-      )}
+
 
       {!goals || !accommodations ? (
         <p className="text-muted mt-6 text-sm">Loading…</p>
@@ -1499,7 +1505,7 @@ export function GoalsManager({
         </p>
       ) : (
         <div className="mt-6 flex flex-col gap-4">
-          <h2>Goals & measurement plans</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2"><h2>Goals &amp; measurement plans</h2><a className="btn btn-primary" href="#add-goal">Add goal</a></div>
           {goals.map((goal) => (
             <GoalEditor
               key={goal.id}
@@ -1529,6 +1535,23 @@ export function GoalsManager({
             onChange={setAccommodations}
           />
         </div>
+      )}
+      {student && (
+        <details className="mt-5">
+          <summary className="min-h-11 cursor-pointer font-semibold">Help choosing a collection method</summary>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {DATA_COLLECTION_CATEGORIES.map((category) => (
+              <article key={category.title} className="card">
+                <h3>{category.title}</h3>
+                <p className="text-muted mt-1 text-sm">{category.description}</p>
+              </article>
+            ))}
+          </div>
+          <p className="text-muted mt-3 text-sm">
+            Collection cadence is set by the IEP team for each goal. Quarterly reporting
+            summarizes evidence; it does not replace scheduled probes or observations.
+          </p>
+        </details>
       )}
     </main>
   );
