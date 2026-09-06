@@ -491,6 +491,11 @@ export default function HelpPage() {
           </ul>
         </Section>
       </div>
-    </main>
+    <section className="card mt-6">
+        <h2>Entry and report controls</h2>
+        <p>Use View options to choose the workflow or layout. Retry save keeps the entry and its request ID. A blank fluency field records nothing; enter 0 to record zero.</p>
+        <p>Add goal uses Goal, Measurement, Schedule, and Review. CSV and print include the domain, student, and date filters selected in the summary.</p>
+      </section>
+      </main>
   );
 }
